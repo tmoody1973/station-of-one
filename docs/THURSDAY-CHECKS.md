@@ -279,3 +279,11 @@ Original notes:
 - Build 2026-11-26T18: all 11 steps done in 199.8 s (scrape 154.9, judge 15.4, voice 18.8, assemble 3.5, publish 1.6, archive 1.7, finish 1.2). Public front page switched to the 6 pm newscast; public control room shows Publish and Archive; checkpoint `v5` "build 2026-11-26T18". The checkpoint did not visibly interrupt the build (finish is last).
 - `sprite-env checkpoints` has no delete subcommand, so checkpoints accumulate (one per build).
 - Still to measure: GitHub Actions' real start delay (needs the `SPRITES_TOKEN` repo secret).
+
+### 11. Pinecone duplicates (Nov 26, Task 16)
+
+- Connector `pinecone` (allow_all). The gateway speaks an older API version: a 2026-07 `POST /indexes` schema body → 422 "missing field `spec`". So: `POST /indexes/create-for-model` (header 2026-04) → 201, index `station-one`, llama-text-embed-v2, 1024 dims, field `text`; ready in ~5 s. (Tarik's existing `budget` index left untouched.)
+- Records API through the gateway: `POST /indexes/station-one/records/namespaces/<ns>/upsert` (NDJSON) → 201; `.../search` → `result.hits[]._score`. Indexing lag: searched after 12 s.
+- Probe: same story, other outlet 0.67; unrelated ≤ 0.12. Real data: ARTnews vs The Art Newspaper (Venice Biennale, the Nov 26 5 pm duplicate) 0.71; next unrelated art story 0.28. Threshold set to 0.50; Jev decides.
+- Gotchas found on real data: one empty text rejects the whole upsert batch (now skipped); record ids must be ASCII (now SHA-1 of the post id, real id stored as `post_id`).
+- Seeded 214 stories from the last 24 h in 3.3 s. Leftovers: namespace `probe` (3 test records) and some raw-id records from the failed first seed (ignored by search: no `post_id`).
