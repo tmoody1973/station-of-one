@@ -326,3 +326,7 @@ Original notes:
 - Fresh draft + fresh ruling: Uncle 2.97 vs Anchor 2.90 (record Uncle 1–0). Shows the verdict follows Jev, not the writer.
 - Writer delivery fell back twice because the "win" check caught ordinary uses ("details win people over", "the legibility win this font claims"); narrowed to debate-winner phrases; reasons now logged. Third run: delivery accepted, Uncle in character.
 - Open: Tarik listens (`spikes/output/table_2026-11-26.mp3`). Wording to review: one claim relays a commenter's "psychotic devotion to legibility".
+
+### 14. Hourly trigger, take two (Nov 26)
+- GitHub Actions' schedule (`48 * * * *` UTC, active) fired **zero** times across the 1:48, 2:48 and 3:12 pm checks. Moved to a Cloudflare Worker Cron Trigger (`trigger/`, no public URL, token as a Worker secret).
+- First Cloudflare run: build 2026-11-26T16 started **15:48:31 Central** (31 s after the minute), all 11 steps done by 15:50:30. Unattended.
