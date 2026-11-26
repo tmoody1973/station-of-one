@@ -291,8 +291,15 @@ def cmd_video(run: Path) -> None:
     log = RunLog.open(run / "run_log.json", run_id=run.name)
     with log.step("video", "Deepgram + Remotion") as rec:
         made = make_video(run.name[:10], Gateway(), prefs, runs_root)
+        from station.store import record_decision
+
+        asked_at = datetime.now(UTC).isoformat()
+        with closing(_db()) as db:  # every Jev answer is logged with its probability
+            for story_id, answer in made["hot_topic_answers"].items():
+                record_decision(db, story_id, "hot_topic", answer, made["jev_model"], asked_at)
         rec.counts.update(story=made["headline"], newscast=made["newscast"], seconds=made["durationMs"] / 1000,
-                          words=len(made["captions"]), key=made["key"], bytes=made["bytes"])
+                          words=len(made["captions"]), key=made["key"], bytes=made["bytes"],
+                          hot_topics_skipped=len(made["skipped"]))
 
 
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
