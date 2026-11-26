@@ -66,3 +66,10 @@ def test_aired_posts_since(db):
     from station.store import aired_posts_since
     assert [p.id for p in aired_posts_since(db, datetime(2026, 11, 27, 0, 0, tzinfo=UTC))] == ["hn:1"]
     assert aired_posts_since(db, datetime(2026, 11, 28, 0, 0, tzinfo=UTC)) == []
+
+
+def test_aired_count_since(db):
+    from station.store import aired_count_since
+    record_aired(db, "a", [("hn:1", "lead", 0.6), ("hn:2", "story", 0.5)], "2026-11-27T15:00:00+00:00")
+    assert aired_count_since(db, datetime(2026, 11, 27, 6, 0, tzinfo=UTC)) == 2
+    assert aired_count_since(db, datetime(2026, 11, 28, 6, 0, tzinfo=UTC)) == 0

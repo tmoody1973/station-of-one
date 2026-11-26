@@ -117,3 +117,7 @@ def aired_posts_since(db: sqlite3.Connection, since_utc: datetime) -> list[Post]
         " p.visibility FROM aired a JOIN posts p ON p.id = a.post_id WHERE a.aired_at >= ? ORDER BY a.aired_at",
         (since_utc.isoformat(),)).fetchall()
     return [post_from_row(r) for r in rows]
+
+
+def aired_count_since(db: sqlite3.Connection, since_utc: datetime) -> int:
+    return db.execute("SELECT COUNT(*) FROM aired WHERE aired_at >= ?", (since_utc.isoformat(),)).fetchone()[0]

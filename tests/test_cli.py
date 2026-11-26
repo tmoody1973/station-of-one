@@ -73,3 +73,32 @@ def test_rundown_cli(tmp_path, monkeypatch):
     assert asked == ["b"] and out["short"] is True and out["dropped_ids"] == ["x"]
     counts = json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"]
     assert counts == {"stories": 2, "dropped": 1, "short": True, "overheard": False}
+
+
+def test_write_cli_uses_cluster_sources_and_counts(tmp_path, monkeypatch):
+    from station.steps import write as write_mod
+    from station.steps.rundown import Rundown
+    from tests.test_rundown import j
+
+    monkeypatch.setenv("STATION_DB", str(tmp_path / "s.db"))
+    run = tmp_path / "2026-11-27T09"
+    run.mkdir()
+    lead = j("hn:1", 0.6)
+    (run / "rundown.json").write_text(json.dumps(Rundown((lead,), {"hn:1": 90}, None, (), (), True, False).to_dict()))
+    base = {"source": "Ex", "beat": "ai-dev", "kind": "story", "author": "u", "title": "T", "text": "", "url": "https://a",
+            "posted_at": "2026-11-27T14:00:00Z", "engagement": {}, "visibility": "public"}
+    (run / "posts.json").write_text(json.dumps([{**base, "id": "hn:1"}, {**base, "id": "rss:9"}]))
+    (run / "clusters.json").write_text(json.dumps({"clusters": [{"primary_id": "hn:1", "member_ids": ["hn:1", "rss:9"]}],
+                                                   "candidates": []}))
+    captured = {}
+
+    def fake_write_all(gw, rundown, prefs, hour_local, read_today, not_aired_today, sources, concurrency=3):
+        captured.update(hour=hour_local.hour, sources={k: [p.id for p in v] for k, v in sources.items()})
+        return [write_mod.Chapter(0, "open", "Open", None, (write_mod.Turn("host", "hi"),))], ["note"]
+
+    monkeypatch.setattr(write_mod, "write_all", fake_write_all)
+    assert main(["write", "--run", str(run)]) == 0
+    assert captured == {"hour": 9, "sources": {"hn:1": ["hn:1", "rss:9"]}}
+    assert json.loads((run / "scripts.json").read_text())[0]["kind"] == "open"
+    step = json.loads((run / "run_log.json").read_text())["steps"][-1]
+    assert (step["tool"], step["counts"]["chapters"], step["notes"]) == ("Ollama Cloud", 1, ["note"])

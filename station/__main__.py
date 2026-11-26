@@ -87,7 +87,43 @@ def cmd_rundown(run: Path) -> None:
                           overheard=rundown.overheard is not None)
 
 
-COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown}
+def hour_of(run: Path, tz: str) -> datetime:
+    """Run folders are named <YYYY-MM-DDTHH>; anything else means 'now' (hand-run test folders)."""
+    from zoneinfo import ZoneInfo
+
+    try:
+        return datetime.strptime(run.name, "%Y-%m-%dT%H").replace(tzinfo=ZoneInfo(tz))
+    except ValueError:
+        return datetime.now(ZoneInfo(tz)).replace(minute=0, second=0, microsecond=0)
+
+
+def cmd_write(run: Path) -> None:
+    from station.steps import write as write_mod
+    from station.steps.rundown import Rundown
+    from station.store import aired_count_since, local_midnight_utc, posts_read_since
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("write", "Ollama Cloud") as rec:
+        prefs = load_prefs()
+        rundown = Rundown.from_dict(read_json(run, "rundown.json"))
+        by_id = {p.id: p for p in load_posts(run)}
+        members = {c["primary_id"]: c["member_ids"] for c in read_json(run, "clusters.json")["clusters"]}
+        sources = {s.post.id: [by_id[m] for m in members.get(s.post.id, [s.post.id]) if m in by_id]
+                   for s in rundown.stories}
+        db = _db()
+        midnight = local_midnight_utc(datetime.now(UTC), prefs.station.timezone)
+        read_today = posts_read_since(db, midnight)
+        not_aired = max(read_today - aired_count_since(db, midnight) - len(rundown.stories), 0)
+        chapters, notes = write_mod.write_all(Gateway(), rundown, prefs, hour_of(run, prefs.station.timezone),
+                                              read_today, not_aired, sources)
+        write_json(run, "scripts.json", [c.to_dict() for c in chapters])
+        rec.counts.update(chapters=len(chapters), words=sum(len(t.text.split()) for c in chapters for t in c.turns),
+                          read_today=read_today, not_aired_today=not_aired)
+        rec.notes.extend(notes)
+
+
+COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
+            "write": cmd_write}
 
 
 def main(argv: list[str] | None = None) -> int:
