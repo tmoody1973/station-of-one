@@ -73,3 +73,20 @@ def test_aired_count_since(db):
     record_aired(db, "a", [("hn:1", "lead", 0.6), ("hn:2", "story", 0.5)], "2026-11-27T15:00:00+00:00")
     assert aired_count_since(db, datetime(2026, 11, 27, 6, 0, tzinfo=UTC)) == 2
     assert aired_count_since(db, datetime(2026, 11, 28, 6, 0, tzinfo=UTC)) == 0
+
+
+def test_recent_unaired_judged(db):
+    from station.store import recent_unaired_judged
+    upsert_posts(db, [post(1), post(2), post(3)])
+    noul = {"type": "noul", "noul": 0.6}
+    for pid in ("hn:1", "hn:2"):
+        record_decision(db, pid, "matter_week", noul, "jev-1.14.0", "2026-11-27T14:00:00+00:00")
+    record_decision(db, "hn:3", "matter_week", noul, "jev-1.14.0", "2026-11-27T09:00:00+00:00")  # too old
+    record_aired(db, "x", [("hn:2", "story", 0.6)], "2026-11-27T15:00:00+00:00")
+    got = recent_unaired_judged(db, datetime(2026, 11, 27, 12, 0, tzinfo=UTC))
+    assert [(p.id, answers["matter_week"]["noul"], model) for p, answers, model in got] == [("hn:1", 0.6, "jev-1.14.0")]
+
+
+def test_record_decision_tolerates_missing_probabilities(db):
+    record_decision(db, "hn:1", "part", {"type": "choice", "choice": "story"}, "jev-1.14.0", "t")
+    assert db.execute("SELECT value, probability FROM decisions").fetchone() == ("story", None)

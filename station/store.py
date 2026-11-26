@@ -72,7 +72,8 @@ def record_decision(db: sqlite3.Connection, post_id: str, question_id: str, answ
         value, conf = ("yes" if prob >= 0.5 else "no"), None
     elif answer["type"] == "choice":
         value = answer["choice"]
-        prob, conf = float(answer["probabilities"][value]), answer.get("confidence")
+        p = answer.get("probabilities", {}).get(value)
+        prob, conf = (float(p) if p is not None else None), answer.get("confidence")
     else:  # score
         value, prob, conf = str(answer["score"]), None, answer.get("confidence")
     db.execute("INSERT OR REPLACE INTO decisions VALUES (?,?,?,?,?,?,?,?,?)",
@@ -121,3 +122,23 @@ def aired_posts_since(db: sqlite3.Connection, since_utc: datetime) -> list[Post]
 
 def aired_count_since(db: sqlite3.Connection, since_utc: datetime) -> int:
     return db.execute("SELECT COUNT(*) FROM aired WHERE aired_at >= ?", (since_utc.isoformat(),)).fetchone()[0]
+
+
+def recent_unaired_judged(db: sqlite3.Connection, since_utc: datetime) -> list[tuple[Post, dict, str]]:
+    """Posts judged since `since_utc` that never aired, with their latest answer per question."""
+    rows = db.execute(
+        "SELECT d.post_id, d.question_id, d.raw, d.model FROM decisions d"
+        " WHERE d.asked_at >= ? AND d.post_id NOT IN (SELECT post_id FROM aired)"
+        " ORDER BY d.post_id, d.asked_at", (since_utc.isoformat(),)).fetchall()
+    answers: dict[str, dict] = {}
+    models: dict[str, str] = {}
+    for post_id, qid, raw, model in rows:
+        answers.setdefault(post_id, {})[qid] = json.loads(raw)
+        models[post_id] = model
+    out = []
+    for post_id in sorted(answers):
+        row = db.execute("SELECT id, source, beat, kind, author, title, url, text, posted_at, engagement_json, visibility"
+                         " FROM posts WHERE id = ?", (post_id,)).fetchone()
+        if row:
+            out.append((post_from_row(row), answers[post_id], models[post_id]))
+    return out

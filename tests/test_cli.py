@@ -72,7 +72,7 @@ def test_rundown_cli(tmp_path, monkeypatch):
     assert [s["post"]["id"] for s in out["stories"]] == ["a", "b"] and out["seconds"] == {"a": 90, "b": 33}
     assert asked == ["b"] and out["short"] is True and out["dropped_ids"] == ["x"]
     counts = json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"]
-    assert counts == {"stories": 2, "dropped": 1, "short": True, "overheard": False}
+    assert counts == {"stories": 2, "dropped": 1, "short": True, "overheard": False, "carried_over": 0}
 
 
 def test_write_cli_uses_cluster_sources_and_counts(tmp_path, monkeypatch):
@@ -181,3 +181,40 @@ def test_step_without_run_is_an_error():
 
     with pytest.raises(SystemExit):
         main(["scrape"])
+
+
+def test_rundown_cli_adds_recent_unaired_from_db(tmp_path, monkeypatch, make_db):
+    from datetime import UTC, datetime
+
+    from station.steps import judge as judge_mod
+    from station.store import record_decision, upsert_posts
+    from tests.test_rundown import j
+
+    db_path = tmp_path / "s.db"
+    monkeypatch.setenv("STATION_DB", str(db_path))
+    earlier = j("hn:earlier", 0.7)
+    db = make_db("s.db")
+    upsert_posts(db, [earlier.post])
+    now = datetime.now(UTC).isoformat()
+    for qid, ans in earlier.answers.items():
+        record_decision(db, earlier.post.id, qid, ans, "jev-1.14.0", now)
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "judged.json").write_text(json.dumps([j("hn:new", 0.5).to_dict()]))
+    monkeypatch.setattr(judge_mod, "judge_seconds", lambda gw, stories: {})
+    assert main(["rundown", "--run", str(run)]) == 0
+    out = json.loads((run / "rundown.json").read_text())
+    assert [s["post"]["id"] for s in out["stories"]] == ["hn:earlier", "hn:new"]
+    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"]["carried_over"] == 1
+
+
+def test_load_sources_falls_back_to_story_post(tmp_path):
+    from station.__main__ import load_sources
+    from tests.test_rundown import j
+
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "posts.json").write_text("[]")
+    (run / "clusters.json").write_text(json.dumps({"clusters": [], "candidates": []}))
+    old = j("hn:old", 0.6).post
+    assert load_sources(run, [old]) == {"hn:old": [old]}
