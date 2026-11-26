@@ -201,6 +201,11 @@ def cmd_assemble(run: Path) -> None:
                                      load_sources(run, [s.post for s in rundown.stories]), counts, duration)
         write_json(run, "chapters.json", timings)
         write_json(run, "newscast.json", record)
+        from station.store import record_aired
+
+        with closing(_db()) as db:  # the lookback must not re-air these next hour
+            record_aired(db, run.name, [(x["id"], x["part"], x["score_matter_week"]) for x in record["stories"]],
+                         datetime.now(UTC).isoformat())
         rec.counts.update(chapters=len(timings), duration_s=round(duration / 1000, 1))
 
 

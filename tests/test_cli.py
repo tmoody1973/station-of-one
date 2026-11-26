@@ -218,3 +218,31 @@ def test_load_sources_falls_back_to_story_post(tmp_path):
     (run / "clusters.json").write_text(json.dumps({"clusters": [], "candidates": []}))
     old = j("hn:old", 0.6).post
     assert load_sources(run, [old]) == {"hn:old": [old]}
+
+
+def test_assemble_records_aired_stories(tmp_path, monkeypatch, make_db):
+    """Without this, the 3-hour lookback re-airs the same stories every hour (seen live, Nov 26)."""
+    from station.steps import assemble as asm
+    from station.steps.rundown import Rundown
+    from station.steps.write import Chapter, Turn
+    from tests.test_rundown import j
+    from tests.test_voice import wav_bytes
+
+    monkeypatch.setenv("STATION_DB", str(tmp_path / "s.db"))
+    run = tmp_path / "2026-11-27T09"
+    (run / "audio").mkdir(parents=True)
+    chs = [Chapter(0, "open", "Open", None, (Turn("host", "o"),)),
+           Chapter(1, "lead", "Lead story", "hn:2", (Turn("host", "l"),), "H", "S"),
+           Chapter(2, "signoff", "Sign-off", None, (Turn("host", "b"),))]
+    (run / "scripts.json").write_text(json.dumps([c.to_dict() for c in chs]))
+    for i in range(3):
+        (run / "audio" / f"ch_{i:02d}.wav").write_bytes(wav_bytes(1.0))
+    (run / "voice.json").write_text(json.dumps({"paths": {str(i): str(run / f"audio/ch_{i:02d}.wav") for i in range(3)},
+                                                "seconds": {}, "failed": []}))
+    (run / "rundown.json").write_text(json.dumps(Rundown((j("hn:2", 0.6),), {"hn:2": 90}, None, (), (), True, False).to_dict()))
+    (run / "posts.json").write_text("[]")
+    (run / "clusters.json").write_text(json.dumps({"clusters": [], "candidates": []}))
+    monkeypatch.setattr(asm, "assemble_audio", lambda run_, wavs, timings, title: run_ / "newscast.mp3")
+    assert main(["assemble", "--run", str(run)]) == 0
+    db = make_db("s.db")
+    assert db.execute("SELECT post_id, newscast_id, part FROM aired").fetchall() == [("hn:2", "2026-11-27T09", "lead")]
