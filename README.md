@@ -1,32 +1,82 @@
-# Station of One: handoff package
+# Station of One · WONE 1.0 FM
 
-A personal agent on a Fly.io Sprite that reads your feeds and produces a five-minute
-newscast at the top of every hour, a live front page, and a daily vertical video.
-Entry for Fly.io Hacksgiving. Submissions close before midnight PST, Sunday Nov 29, 2026.
+**A radio station with exactly one listener, run by an agent on a Fly.io Sprite.** Every hour from 7 am to 7 pm Central it reads public posts (about 1,300 a day), lets TypeSafe AI's Jev decide what airs, and publishes a five-minute newscast with synthetic voices, chapters, a live front page and a control room that shows every decision; each morning it also grades last week's calls (Corrections) and stages a debate show, The Table, that Jev referees.
 
-## What is in here
+Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and the show is machine-edited. WONE 1.0 FM and WNCL are fictional stations.
 
-| Path | What it is |
+## Open it
+
+| What | Link |
 | --- | --- |
-| `CLAUDE.md` | Project rules for Claude Code. Read automatically. |
-| `docs/SPEC.md` | The build spec: formats, requirements, pipeline, scope, schedule. |
-| `docs/THURSDAY-CHECKS.md` | Five things to prove before writing the plan. |
-| `docs/KICKOFF-PROMPT.md` | Prompts to paste into Claude Code, in order. |
-| `docs/STATION-ID.md` | Call sign, show names and station ID lines. |
-| `docs/LINKS.md` | Links to the full PRD and the mockup canvas. |
-| `config/preferences.example.json` | Beats, sources, music taste, hours, thresholds. |
-| `config/jev_questions.json` | The typed questions Jev answers, in a neutral format. |
-| `mockups/` | Markup for the four screens, as layout reference. |
+| Front page (latest newscast, player, stories, Corrections, almost-made-air) | https://patient-mountain-3400.fly.storage.tigris.dev/index.html |
+| Control room (every step, tool, timing and Jev decision for the hour) | https://patient-mountain-3400.fly.storage.tigris.dev/control-room/index.html |
+| Settings (beats, sources, thresholds, connectors; read-only) | https://patient-mountain-3400.fly.storage.tigris.dev/settings/index.html |
+| The Table, episode 1 ("Is Intel One Mono worth switching to?") | https://patient-mountain-3400.fly.storage.tigris.dev/table/2026-11-26/index.html |
+| Daily vertical video | https://patient-mountain-3400.fly.storage.tigris.dev/video/2026-11-26.mp4 |
+| Podcast feed (latest newscast plus every Table episode) | https://patient-mountain-3400.fly.storage.tigris.dev/feed.xml |
 
-## How to start
+## What happens each hour
 
-1. Unzip into a new folder and run `git init`.
-2. Open Claude Code in the folder.
-3. Paste prompt 1 from `docs/KICKOFF-PROMPT.md` (the Thursday checks).
-4. When the checks pass, paste prompt 2 (write the plan).
+1. **At :48** a Cloudflare Worker cron calls the Sprites exec API. The Sprite wakes and starts the build; a lock stops two builds overlapping, and a Tasks API hold keeps the Sprite awake until it finishes.
+2. **Scrape.** Apify Actors read Hacker News, Reddit, RSS feeds, Bluesky and Google News for five news beats.
+3. **Find duplicates.** Link matching, title overlap, and Pinecone similarity against earlier hours; Jev's "same story?" question makes the merge.
+4. **Judge.** Jev answers five typed questions per post (likely to matter in a week? new or a reaction? which part of the show? primary source? could it harm a private person?), each with a probability. Every answer is logged.
+5. **Rundown.** Code applies the thresholds: drop anything 20%+ likely to harm a private person, air the best story per beat and then the top scores at 40%+, up to five. A language model never chooses what airs.
+6. **Write.** Ollama Cloud writes scripts only from the posts that passed, attributed to where they were posted, in the show's own words.
+7. **Voice.** Gemini TTS: a host and a reporter (two-speaker on the lead).
+8. **Assemble.** ffmpeg joins the chapters with a sting, normalizes loudness and writes chapter markers into one MP3.
+9. **Page, publish, archive.** Static pages and audio go to the Tigris bucket; a zip of the hour (scripts, rundown, audio, every Jev answer) goes to Box.
+10. **Finish.** The control room is refreshed and the Sprite takes a checkpoint. If any step fails, the station manager (headless Claude through the Anthropic connector) picks retry or skip from a fixed menu and writes one sentence for the control room.
 
-## The full PRD
+**Once a day:** after the 7 am newscast, The Table (yesterday's pettiest low-stakes dispute, two agents, Jev scores every claim, code declares the winner) and Corrections (last week's aired calls, checked for follow-up); after the 7 pm newscast, a 30–45 s captioned vertical video of the day's top story (Deepgram word timings, Remotion).
 
-`docs/SPEC.md` carries everything needed to build. The longer PRD, with the roadmap and
-business notes, lives in the doc linked from `docs/LINKS.md`. To keep a copy in the repo,
-use the doc's Export menu, choose Markdown, and save it as `docs/PRD.md`.
+## Connectors (Sprites connector gateway)
+
+No API key is in the Sprite, the code, the config or this repo. Every call goes through the gateway.
+
+| Connector | Its job here | Where to see it |
+| --- | --- | --- |
+| **Apify** | Scrapes every source each hour (5 Actors) | Control room, "Scrape sources" |
+| **TypeSafe AI (Jev)** | Every editorial decision, as typed answers with probabilities: what airs, duplicates, airtime, hot topics, The Table's topic and every claim's ruling, Corrections | Control room decision log; Table rulings |
+| **Ollama Cloud** | Writes the newscast scripts and The Table's claims (`deepseek-v4.1-flash`) | Any newscast; Table page |
+| **Google Gemini** | Voices: host/reporter for the news, Anchor/Uncle for The Table (`gemini-3.8-flash-tts`) | The audio |
+| **Pinecone** | Same-story detection across hours, and the memory Corrections searches for follow-ups | Control room, "Find duplicates"; Corrections box |
+| **Box** | Archive of every newscast and Table episode with its full decision log | "Station of One archive" folder |
+| **Tigris** | Public hosting of pages, audio, feed and video | Every link above |
+| **Deepgram** | Word timestamps for the video captions | The vertical video |
+| **Anthropic** | Station manager: picks a repair when a step fails (headless Claude CLI). The planned daily "source scout" was not built. | Control room, "Station manager" |
+
+The hourly trigger itself runs on a Cloudflare Worker (`trigger/`), after GitHub Actions' schedule skipped its first two slots (`docs/decisions/005-cloudflare-trigger.md`).
+
+## Editorial rules enforced in code
+
+- Jev decides; code applies the thresholds. Scripts are written only from posts that passed selection.
+- Every claim is attributed to where it was posted; nothing scraped is stated as fact. At most one short quote per story.
+- Posts likely to harm a private individual are dropped and never shown, anywhere.
+- Public sources only. No licensed music. Voices are synthetic, and every page and the feed say so.
+- The daily video and The Table skip elections, contested policy, religion and health (a Jev screen). The Table never names or quotes a commenter.
+- Story photos are shown from the publisher's own address, credited and linked, never copied (`docs/decisions/004-story-photos.md`).
+
+## Run it yourself
+
+The Sprite holds the state (SQLite, run folders); the code is plain Python, one module and one command per step. Each step reads and writes files in a run folder, so any step can run by hand:
+
+```bash
+uv sync
+uv run pytest -q                                              # 271 tests
+uv run python -m station scrape   --run data/runs/2026-11-27T09   # one step
+uv run python -m station judge    --run data/runs/2026-11-27T09
+uv run python -m station build    --hour 2026-11-27T09            # a whole newscast
+uv run python -m station table    --day 2026-11-26                # an episode of The Table
+uv run python -m station video    --day 2026-11-26                # the daily video
+```
+
+The network steps need the Sprites connector gateway, so they run on a Sprite with the connectors above attached. `config/preferences.json` holds the beats, sources, thresholds and voices; the settings page is rendered from it.
+
+## How it was built
+
+- `docs/SPEC.md`: what the station must do. `docs/THURSDAY-CHECKS.md`: every risky assumption, proven or corrected with real runs (request shapes, timings, costs, failures).
+- `docs/decisions/`: the decisions where a reasonable person could have chosen differently, with what was given up.
+- `docs/superpowers/plans/`: the two implementation plans (the newscast, then The Table), executed task by task with tests written first.
+
+Station identity: WONE at 1.0 FM, an invented frequency. The call signs have not been checked against the FCC's database; the page says the stations are fictional.
