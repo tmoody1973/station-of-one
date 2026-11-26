@@ -272,3 +272,10 @@ Original notes:
 - `POST /2.0/folders` → 201; same name again → **409** `item_name_in_use` with the existing id in `context_info.conflicts` (a list for folders).
 - Upload routing: `POST <box gateway>/upload/files/content`, multipart with `attributes` first → 201 (1 KB `probe.txt`, left in "Station of One archive").
 - Real run: `Station of One archive/2026-11-26/2026-11-26T17.zip` (1.7 MB: newscast.json, chapters.json, scripts.json, rundown.json, run_log.json, newscast.mp3, decisions.jsonl with 305 Jev answers) in 2.3 s. A second run got 409 (`conflicts` is one object for files) and uploaded a new version to the same file id. `GET /files/<id>/versions` returned no count, so the version history itself is unverified.
+
+### 10. Hourly trigger path and full build (Nov 26, Task 18)
+
+- `POST https://api.sprites.dev/v1/sprites/brave-indigo-lion/exec?cmd=bash&cmd=/home/sprite/station/scripts/start_build.sh&cmd=--hour&cmd=2026-11-26T18` (sent with `sprite api`, Tarik's CLI login) → HTTP 200 `build started`, returned immediately; the build kept running after the HTTP call ended.
+- Build 2026-11-26T18: all 11 steps done in 199.8 s (scrape 154.9, judge 15.4, voice 18.8, assemble 3.5, publish 1.6, archive 1.7, finish 1.2). Public front page switched to the 6 pm newscast; public control room shows Publish and Archive; checkpoint `v5` "build 2026-11-26T18". The checkpoint did not visibly interrupt the build (finish is last).
+- `sprite-env checkpoints` has no delete subcommand, so checkpoints accumulate (one per build).
+- Still to measure: GitHub Actions' real start delay (needs the `SPRITES_TOKEN` repo secret).
