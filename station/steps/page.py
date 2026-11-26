@@ -103,6 +103,7 @@ def _detail(name: str, c: dict) -> str:
         "assemble": f"join, normalize, {g('chapters', 0)} chapters",
         "page": "front page and hour page",
         "publish": f"{g('files', 0)} files to the public bucket",
+        "archive": f"bundle of {round(g('bytes', 0) / 1e6, 1)} MB with the decision log",
     }.get(name, "")
 
 

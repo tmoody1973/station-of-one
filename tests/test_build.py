@@ -14,7 +14,7 @@ CHI = ZoneInfo("America/Chicago")
 
 
 def test_steps_in_spec_order():
-    assert STEPS == ["scrape", "dedupe", "judge", "rundown", "write", "voice", "assemble", "page", "publish"]
+    assert STEPS == ["scrape", "dedupe", "judge", "rundown", "write", "voice", "assemble", "page", "publish", "archive"]
 
 
 def test_target_hour_is_next_top_of_hour_from_48():

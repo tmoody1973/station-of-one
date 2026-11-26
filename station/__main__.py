@@ -242,9 +242,18 @@ def cmd_publish(run: Path) -> None:
         rec.counts.update(files=len(keys), url=f"{prefs.hosting.public_base}/index.html")
 
 
+def cmd_archive(run: Path) -> None:
+    from station.steps.archive import archive
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("archive", "Box") as rec:
+        file_id = archive(Gateway(), run)
+        rec.counts.update(bytes=(run / f"{run.name}.zip").stat().st_size, box_file_id=file_id)
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish}
+            "publish": cmd_publish, "archive": cmd_archive}
 
 
 def cmd_build(hour: str | None) -> None:
