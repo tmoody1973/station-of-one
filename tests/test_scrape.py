@@ -58,12 +58,14 @@ def test_actor_input_shapes():
     assert red["includeNsfw"] is False and red["sort"] == "new"
     hn = actor_input("hackernews", ["topstories"], since)
     assert hn["mode"] == "topstories" and hn["dateFromUnix"] == int(since.timestamp())
+    assert hn["includeComments"] is False  # 735 comments for 20 stories on Nov 26; Overheard uses Reddit
 
 
 def runs_routes(actor_id: str, ds: str, items: list, extra_status=("RUNNING",)):
     return {
         ("POST", "apify", f"/v2/actors/{actor_id}/runs"): [ok({"data": {"id": f"run-{ds}", "status": "READY", "defaultDatasetId": ds}}, 201)],
-        ("GET", "apify", f"/v2/actor-runs/run-{ds}"): [ok({"data": {"id": f"run-{ds}", "status": s, "defaultDatasetId": ds}})
+        ("GET", "apify", f"/v2/actor-runs/run-{ds}"): [ok({"data": {"id": f"run-{ds}", "status": s, "defaultDatasetId": ds,
+                                                                  "usageTotalUsd": 0.012}})
                                                        for s in (*extra_status, "SUCCEEDED")],
         ("GET", "apify", f"/v2/datasets/{ds}/items"): [ok(items)],
     }
@@ -71,7 +73,8 @@ def runs_routes(actor_id: str, ds: str, items: list, extra_status=("RUNNING",)):
 
 def test_run_actor_polls_until_succeeded():
     gw = FakeGateway(runs_routes("a~b", "ds1", [{"x": 1}], extra_status=("RUNNING", "RUNNING")))
-    assert run_actor(gw, "a~b", {}) == [{"x": 1}]
+    run = run_actor(gw, "a~b", {})
+    assert run.items == [{"x": 1}] and run.status == "SUCCEEDED" and run.usd == 0.012
     assert sum(1 for c in gw.calls if c[2].startswith("/v2/actor-runs/")) == 3
 
 
@@ -96,6 +99,7 @@ def test_scrape_returns_only_new_posts_and_advances_cursor(tmp_path):
     first = scrape(FakeGateway(_all_routes()), prefs, db, NOW)
     assert first.posts and first.counts["new_posts"] == len(first.posts)
     assert get_cursor(db, "rss") == NOW
+    assert first.counts["apify_usd"] == 0.036  # three runs at 0.012, read from each run object
     second = scrape(FakeGateway(_all_routes()), prefs, db, NOW)
     assert second.posts == []
 

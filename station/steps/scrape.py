@@ -32,6 +32,14 @@ class ScrapeError(Exception):
     pass
 
 
+@dataclass(frozen=True)
+class ActorRun:
+    items: list[dict]
+    run_id: str
+    status: str
+    usd: float
+
+
 @dataclass
 class ScrapeResult:
     posts: list[Post]
@@ -53,8 +61,8 @@ def _iso_z(when: datetime) -> str:
 
 def actor_input(source_type: str, refs: list[str], since: datetime) -> dict:
     if source_type == "hackernews":
-        return {"mode": refs[0], "maxItems": 20, "includeComments": True, "maxCommentDepth": 1,
-                "dateFromUnix": int(since.timestamp())}
+        # Comments off: the Actor has no per-story cap (735 comments for 20 stories on Nov 26).
+        return {"mode": refs[0], "maxItems": 20, "includeComments": False, "dateFromUnix": int(since.timestamp())}
     if source_type == "subreddit":
         return {"urls": [f"https://www.reddit.com/r/{r}/" for r in refs], "sort": "new",
                 "postedAfter": _iso_z(since), "maxPostsPerSource": 25, "includeComments": True,
@@ -65,7 +73,7 @@ def actor_input(source_type: str, refs: list[str], since: datetime) -> dict:
 
 
 def run_actor(gw, actor_id: str, actor_input: dict, cap_usd: float = 0.25, memory_mb: int | None = None,
-              timeout_s: int = 240) -> list[dict]:
+              timeout_s: int = 240) -> ActorRun:
     params = {"timeout": timeout_s, "maxTotalChargeUsd": cap_usd}
     if memory_mb:
         params["memory"] = memory_mb
@@ -75,7 +83,8 @@ def run_actor(gw, actor_id: str, actor_input: dict, cap_usd: float = 0.25, memor
     items = gw.json("GET", "apify", f"/v2/datasets/{run['defaultDatasetId']}/items?clean=1&format=json")
     if run["status"] != "SUCCEEDED" and not items:
         raise ScrapeError(f"{actor_id} ended {run['status']} with no items")
-    return items
+    # The connector refuses run-list endpoints, so cost is only readable from this run object.
+    return ActorRun(items, run["id"], run["status"], float(run.get("usageTotalUsd") or 0))
 
 
 def _hn(item: dict, beat: str) -> list[Post]:
@@ -145,21 +154,23 @@ def _beat_for(source_type: str, item: dict, refs: dict[str, str]) -> str:
 def scrape(gw, prefs: Prefs, db, now: datetime) -> ScrapeResult:
     result = ScrapeResult(posts=[])
     found = 0
+    usd = 0.0
     for source_type, refs in _beat_lookup(prefs).items():
         since = get_cursor(db, source_type) or now - FIRST_RUN_WINDOW
         if source_type == "hackernews":
             since = now - HN_WINDOW
         try:
-            items = run_actor(gw, ACTORS[source_type], actor_input(source_type, list(refs), since),
-                              memory_mb=HN_MEMORY_MB if source_type == "hackernews" else None)
+            run = run_actor(gw, ACTORS[source_type], actor_input(source_type, list(refs), since),
+                            memory_mb=HN_MEMORY_MB if source_type == "hackernews" else None)
         except (GatewayError, ScrapeError) as e:
             result.notes.append(f"{source_type} failed: {e}")
             continue
-        posts = [p for item in items for p in normalize(source_type, item, _beat_for(source_type, item, refs))]
+        usd += run.usd
+        posts = [p for item in run.items for p in normalize(source_type, item, _beat_for(source_type, item, refs))]
         found += len(posts)
         new = upsert_posts(db, posts)
         result.posts.extend(new)
         result.counts[f"{source_type}_new"] = len(new)
         set_cursor(db, source_type, now)
-    result.counts.update(new_posts=len(result.posts), seen=found)
+    result.counts.update(new_posts=len(result.posts), seen=found, apify_usd=round(usd, 4))
     return result
