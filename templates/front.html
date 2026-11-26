@@ -74,6 +74,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
   .lead h1{font-size:30px}.art{height:180px}
 }
 </style>
+<link rel="alternate" type="application/rss+xml" title="{{ station.show_name }} podcast feed" href="/feed.xml">
 </head>
 <body>
 <header class="site"><div class="wrap">
@@ -164,6 +165,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
 <footer>
   <span>Voices are synthetic. This show is machine-edited from public posts, with every source linked.</span>
   <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+  <a href="/feed.xml">Podcast feed (RSS)</a>
 </footer>
 </main>
 <script src="/player.js"></script>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+  <title>{{ station.show_name }} · {{ station.name }}</title>
+  <link>{{ base }}/index.html</link>
+  <atom:link href="{{ base }}/feed.xml" rel="self" type="application/rss+xml"/>
+  <description>An hourly five-minute newscast from {{ station.call_sign }} {{ station.frequency }}, a fictional one-listener station. The show is machine-edited: TypeSafe AI's Jev decides what airs from public posts, and every claim is attributed to where it was posted. Voices are synthetic.</description>
+  <language>en-us</language>
+  <itunes:author>{{ station.name }}</itunes:author>
+  <itunes:image href="{{ base }}/cover.png"/>
+  <itunes:category text="News"/>
+  <itunes:explicit>false</itunes:explicit>
+  <itunes:type>episodic</itunes:type>
+  <item>
+    <title>{{ hour_label }} newscast, {{ date_label }}</title>
+    <description>{% for c in n.chapters %}{{ (c.start_ms) | duration }} {{ c.title }}
+{% endfor %}
+Voices are synthetic; the show is machine-edited. Sources for every story: {{ base }}/{{ page }}</description>
+    <enclosure url="{{ base }}/audio/{{ n.id }}.mp3" length="{{ audio_bytes }}" type="audio/mpeg"/>
+    <guid isPermaLink="false">{{ n.id }}</guid>
+    <pubDate>{{ pub_date }}</pubDate>
+    <itunes:duration>{{ (n.audio.duration_ms / 1000) | round | int }}</itunes:duration>
+    <itunes:explicit>false</itunes:explicit>
+  </item>
+</channel>
+</rss>

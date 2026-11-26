@@ -172,6 +172,16 @@ def render_settings(prefs: Prefs, beat_counts: dict[str, tuple[int, int]]) -> st
         harm=round(prefs.thresholds.private_harm_max_probability * 100))
 
 
+def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int) -> str:
+    """Podcast feed (spec §9): one item, the latest newscast, replaced each hour."""
+    from email.utils import format_datetime
+
+    return env().get_template("feed.xml").render(
+        n=newscast, station=prefs.station, base=prefs.hosting.public_base, audio_bytes=audio_bytes,
+        hour_label=_hour_label(newscast), date_label=_date_label(newscast), page=hour_path(newscast["id"]),
+        pub_date=format_datetime(datetime.fromisoformat(newscast["hour_local"])))
+
+
 def todays_newscasts(run: Path, runs_root: Path = RUNS_ROOT) -> list[dict]:
     day = run.name[:10]
     out = []
@@ -192,7 +202,13 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     hour.write_text(render_hour(current, prefs, today))
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())
-    written = [front, hour, player]
+    feed = site / "feed.xml"
+    mp3 = run / "newscast.mp3"
+    feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0))
+    cover = site / "cover.png"
+    if (TEMPLATES.parent / "assets" / "cover.png").exists():
+        cover.write_bytes((TEMPLATES.parent / "assets" / "cover.png").read_bytes())
+    written = [front, hour, player, feed]
     if control_room and (run / "run_log.json").exists() and (run / "rundown.json").exists():
         written += write_control_room(run, prefs, current)
     if beat_counts is not None:

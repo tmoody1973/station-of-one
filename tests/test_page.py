@@ -34,7 +34,7 @@ def test_links_end_in_index_html():  # Tigris serves no index documents
     html = render_front(newscast(), [newscast(), newscast("2026-11-26T16")], PREFS)
     internal = [h for h in re.findall(r'href="([^"]+)"', html) if h.startswith("/") and not h.startswith("//")]
     files = [h.split("#")[0] for h in internal]  # a #fragment after a named file is fine
-    assert files and all(f.endswith("index.html") or f.endswith(".mp3") for f in files)
+    assert files and all(f.endswith(("index.html", ".mp3", ".xml")) for f in files)  # never a bare folder
 
 
 def test_footer_synthetic_line():
@@ -82,7 +82,7 @@ def test_page_writes_front_and_hour_files(tmp_path):
         (runs / h / "newscast.json").write_text(json.dumps(newscast(h)))
     written = page(runs / "2026-11-26T17", PREFS, runs_root=runs)
     names = sorted(str(p.relative_to(runs / "2026-11-26T17" / "site")) for p in written)
-    assert names == ["h/2026-11-26/1700/index.html", "index.html", "player.js"]
+    assert names == ["feed.xml", "h/2026-11-26/1700/index.html", "index.html", "player.js"]
 
 
 def test_only_http_links_render():  # scraped URLs are untrusted
