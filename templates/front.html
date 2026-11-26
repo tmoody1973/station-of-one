@@ -127,6 +127,17 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
       <span class="pink">{{ (n.counts.posts_read_today - n.counts.posts_not_aired_today) | thousands }} made air · {{ n.counts.posts_not_aired_today | thousands }} did not</span>
     </div>
     <div class="box"><h3>This hour</h3><p>{{ n.counts.posts_read_hour | thousands }} new posts read · {{ n.counts.stories_aired }} stor{{ 'y' if n.counts.stories_aired == 1 else 'ies' }} aired</p></div>
+    {% if corrections and corrections.called %}
+    <div class="box"><h3>Corrections</h3>
+      <p style="margin:0;font-size:15px;line-height:1.5;color:#333">A week ago this station called {{ corrections.called }} stor{{ 'y' if corrections.called == 1 else 'ies' }} likely to matter a week later. {{ corrections.held }} {{ 'was' if corrections.held == 1 else 'were' }} still being discussed in the feeds we read; {{ corrections.faded }} {{ 'was' if corrections.faded == 1 else 'were' }} not.</p>
+      {% for c in corrections['items'] %}
+      <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;border-top:1px solid #eee;padding-top:8px">
+        <a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a>
+        <span style="white-space:nowrap;font-weight:600;color:{{ '#1b7a3a' if c.held_up else '#C8102E' }}">said {{ c.said | pct }} · {{ 'held up' if c.held_up else 'faded' }}</span></div>
+      {% endfor %}
+      {% if corrections.backfill %}<p style="margin:0;font-size:13px;color:#555">Backfill: calls made this week on last week's posts, then checked against this week's feeds.</p>{% endif %}
+    </div>
+    {% endif %}
     {% if n.almost %}
     <div class="box"><h3>Almost made air</h3>
       {% for c in n.almost[:5] %}

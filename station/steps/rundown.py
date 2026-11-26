@@ -58,7 +58,8 @@ def _mix_beats(ranked: list[Judged], limit: int) -> list[Judged]:
 
 
 def select(judged: list[Judged], t: Thresholds, first_of_day: bool,
-           seconds: dict[str, int] | None = None) -> Rundown:
+           seconds: dict[str, int] | None = None, corrections: bool = False) -> Rundown:
+    """corrections: this newscast carries the Corrections segment (first of the day, when calls are due)."""
     dropped = [x for x in judged if x.private_harm >= t.private_harm_max_probability]
     kept = [x for x in judged if x.private_harm < t.private_harm_max_probability]
     stories_pool = [x for x in kept if x.post.kind == "story" and x.same_as is None]
@@ -70,7 +71,6 @@ def select(judged: list[Judged], t: Thresholds, first_of_day: bool,
     comments = [x for x in kept if x.post.kind == "comment" and x.part == "overheard"]
     overheard = max(comments, key=lambda x: (x.part_probability("overheard"), x.post.id), default=None)
 
-    corrections = False  # should-have; not built this weekend (plan "Later" section)
     secs: dict[str, int] = {}
     for i, s in enumerate(stories):
         if i == 0:

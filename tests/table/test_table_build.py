@@ -89,4 +89,5 @@ def test_build_runs_table_after_7am_newscast(monkeypatch):
     got = []
     monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append(kw.get("steps")))
     main(["build", "--hour", "2026-11-27T07"])
-    assert got == [[*build_mod.STEPS, "table"]]
+    steps = got[0]
+    assert steps[-1] == "table" and "corrections" in steps  # Corrections joins the first build too

@@ -192,7 +192,7 @@ def _write_story(gw, model: str, kind: str, index: int, story: Judged, sources: 
 
 
 def write_all(gw, rundown: Rundown, prefs: Prefs, hour_local: datetime, read_today: int, not_aired_today: int,
-              sources: dict[str, list[Post]], concurrency: int = 3) -> tuple[list[Chapter], list[str]]:
+              sources: dict[str, list[Post]], concurrency: int = 3, corrections_chapter: Chapter | None = None) -> tuple[list[Chapter], list[str]]:
     ids = prefs.station.id_lines_newscast
     jobs = [("lead" if i == 0 else "story", i, s) for i, s in enumerate(rundown.stories)]
 
@@ -208,5 +208,7 @@ def write_all(gw, rundown: Rundown, prefs: Prefs, hour_local: datetime, read_tod
     chapters += [ch for ch, _ in results if ch]
     if rundown.overheard:
         chapters.append(overheard_chapter(rundown.overheard))
+    if corrections_chapter is not None:  # first newscast of the day, code-written (station/steps/corrections.py)
+        chapters.append(corrections_chapter)
     chapters.append(signoff_chapter(read_today, not_aired_today, ids[(hour_local.hour + 1) % len(ids)], rundown.short))
     return [Chapter(i, c.kind, c.title, c.story_id, c.turns, c.headline, c.summary) for i, c in enumerate(chapters)], notes

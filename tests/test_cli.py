@@ -100,7 +100,7 @@ def test_write_cli_uses_cluster_sources_and_counts(tmp_path, monkeypatch):
                                                    "candidates": []}))
     captured = {}
 
-    def fake_write_all(gw, rundown, prefs, hour_local, read_today, not_aired_today, sources, concurrency=3):
+    def fake_write_all(gw, rundown, prefs, hour_local, read_today, not_aired_today, sources, concurrency=3, corrections_chapter=None):
         captured.update(hour=hour_local.hour, sources={k: [p.id for p in v] for k, v in sources.items()})
         return [write_mod.Chapter(0, "open", "Open", None, (write_mod.Turn("host", "hi"),))], ["note"]
 

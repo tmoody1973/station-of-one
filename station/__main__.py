@@ -9,7 +9,7 @@ import os
 import sys
 from contextlib import closing
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from station.config import load_prefs
@@ -117,9 +117,10 @@ def cmd_rundown(run: Path) -> None:
                    if p.id not in have and set(judge_mod.PER_POST_QUESTIONS) <= set(answers)]
         judged = judged + carried
         t = load_prefs().thresholds
-        first = select(judged, t, first_of_day=False)
+        corr = (run / "corrections.json").exists() and read_json(run, "corrections.json").get("called", 0) > 0
+        first = select(judged, t, first_of_day=False, corrections=corr)
         seconds = judge_mod.judge_seconds(Gateway(), [s.post for s in first.stories[1:]])
-        rundown = select(judged, t, first_of_day=False, seconds=seconds)
+        rundown = select(judged, t, first_of_day=False, seconds=seconds, corrections=corr)
         write_json(run, "rundown.json", rundown.to_dict())
         rec.counts.update(stories=len(rundown.stories), dropped=len(rundown.dropped_ids), short=rundown.short,
                           overheard=rundown.overheard is not None, carried_over=len(carried))
@@ -167,8 +168,13 @@ def cmd_write(run: Path) -> None:
         rundown = Rundown.from_dict(read_json(run, "rundown.json"))
         sources = load_sources(run, [s.post for s in rundown.stories])
         read_today, not_aired = today_counts(prefs, len(rundown.stories))
+        corr = None
+        if rundown.corrections:
+            from station.steps.corrections import corrections_chapter
+
+            corr = corrections_chapter(read_json(run, "corrections.json"))
         chapters, notes = write_mod.write_all(Gateway(), rundown, prefs, hour_of(run, prefs.station.timezone),
-                                              read_today, not_aired, sources)
+                                              read_today, not_aired, sources, corrections_chapter=corr)
         write_json(run, "scripts.json", [c.to_dict() for c in chapters])
         rec.counts.update(chapters=len(chapters), words=sum(len(t.text.split()) for c in chapters for t in c.turns),
                           read_today=read_today, not_aired_today=not_aired)
@@ -482,13 +488,34 @@ def cmd_table(run: Path) -> None:
     run_table((date.fromisoformat(run.name[:10]) - timedelta(days=1)).isoformat())
 
 
+def cmd_corrections(run: Path) -> None:
+    from station.steps import corrections as cor
+    from station.store import record_decision
+
+    prefs = load_prefs()
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("corrections", "Pinecone + TypeSafe Jev") as rec:
+        day = run.name[:10]
+        with closing(_db()) as db:
+            calls = cor.due_calls(db, day, prefs.station.timezone)
+            gw = Gateway() if calls else None
+            since = datetime.now(UTC) - timedelta(hours=48)
+            items, model = cor.grade(gw, [(c, cor.followups(gw, c, db, since)) for c in calls]) if calls else ([], None)
+            asked_at = datetime.now(UTC).isoformat()
+            for it in items:  # every Jev answer is logged with its probability
+                record_decision(db, it["post_id"], "still_discussed", {"type": "noul", "noul": it["p_still"]}, model, asked_at)
+        report = cor.summarize(day, items, any(c.newscast_id.startswith("backfill") for c in calls), model)
+        write_json(run, "corrections.json", report)
+        rec.counts.update(called=report["called"], held=report["held"], faded=report["faded"])
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
             "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
             "table-referee": cmd_table_referee, "table-script": cmd_table_script, "table-voice": cmd_table_voice,
             "table-assemble": cmd_table_assemble, "table-page": cmd_table_page, "table-publish": cmd_table_publish,
-            "table": cmd_table}
+            "table": cmd_table, "corrections": cmd_corrections}
 
 
 def cmd_build(hour: str | None) -> None:
@@ -508,7 +535,8 @@ def cmd_build(hour: str | None) -> None:
     last_hour = int(load_prefs().station.last_newscast.split(":")[0])
     first_hour = int(load_prefs().station.first_newscast.split(":")[0])
     extra = ({"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour  # daily video after the last newscast
-             else {"steps": [*build_mod.STEPS, "table"]} if when.hour == first_hour  # The Table, from yesterday
+             else {"steps": [*[s for st in build_mod.STEPS for s in (["corrections", st] if st == "rundown" else [st])],
+                             "table"]} if when.hour == first_hour  # Corrections, then The Table from yesterday
              else {})
     result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")

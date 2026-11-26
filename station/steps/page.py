@@ -83,9 +83,9 @@ def audio_path(n: dict) -> str:
 
 
 def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None,
-                 table: dict | None = None) -> str:
+                 table: dict | None = None, corrections: dict | None = None) -> str:
     return env().get_template("front.html").render(**_context(current, today, prefs, "front"), video_url=video_url,
-                                                   table=table)
+                                                   table=table, corrections=corrections)
 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None) -> str:
@@ -220,8 +220,10 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     day = current["id"][:10]
     has_video = (TEMPLATES.parent / "video" / "out" / f"{day}.mp4").exists()  # rendered after the last newscast
     episodes = table_episodes(Path(os.environ.get("STATION_TABLE", "data/table")))
+    graded = sorted(runs_root.glob(f"{day}T??/corrections.json"))  # written by the day's first build
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
-                                  table=episodes[0] if episodes else None))
+                                  table=episodes[0] if episodes else None,
+                                  corrections=json.loads(graded[0].read_text()) if graded else None))
     hour.write_text(render_hour(current, prefs, today))
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())
