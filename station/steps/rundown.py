@@ -43,6 +43,20 @@ def _rank(items: list[Judged]) -> list[Judged]:
     return sorted(items, key=lambda x: (-x.matter_week, x.post.id))
 
 
+def _mix_beats(ranked: list[Judged], limit: int) -> list[Judged]:
+    """Best eligible story from each beat first, then the rest by score (Tarik, Nov 26).
+    Returned in score order, so the lead is still the highest score overall."""
+    picked: list[Judged] = []
+    for s in ranked:
+        if s.post.beat not in {p.post.beat for p in picked}:
+            picked.append(s)
+    for s in ranked:
+        if s not in picked:
+            picked.append(s)
+    chosen = picked[:limit]
+    return [s for s in ranked if s in chosen]
+
+
 def select(judged: list[Judged], t: Thresholds, first_of_day: bool,
            seconds: dict[str, int] | None = None) -> Rundown:
     dropped = [x for x in judged if x.private_harm >= t.private_harm_max_probability]
@@ -50,7 +64,7 @@ def select(judged: list[Judged], t: Thresholds, first_of_day: bool,
     stories_pool = [x for x in kept if x.post.kind == "story" and x.same_as is None]
     eligible = [x for x in stories_pool
                 if not x.is_reaction and x.part != "none" and x.matter_week >= t.air_min_probability]
-    stories = _rank(eligible)[: t.max_stories]
+    stories = _mix_beats(_rank(eligible), t.max_stories)
     aired_ids = {s.post.id for s in stories}
     almost = [x for x in _rank(stories_pool) if x.post.id not in aired_ids][:ALMOST_COUNT]
     comments = [x for x in kept if x.post.kind == "comment" and x.part == "overheard"]

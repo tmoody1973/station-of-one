@@ -6,7 +6,7 @@ from station.store import Post
 T = Thresholds(air_min_probability=0.40, private_harm_max_probability=0.20, min_stories=3, max_stories=5)
 
 
-def j(pid, mw, harm=0.05, part="story", reaction=False, kind="story", overheard_p=0.0, same_story=None):
+def j(pid, mw, harm=0.05, part="story", reaction=False, kind="story", overheard_p=0.0, same_story=None, beat="ai-dev"):
     answers = {
         "matter_week": {"type": "noul", "noul": mw},
         "private_harm": {"type": "noul", "noul": harm},
@@ -20,7 +20,7 @@ def j(pid, mw, harm=0.05, part="story", reaction=False, kind="story", overheard_
     if same_story is not None:
         answers["same_story_0"] = {"type": "noul", "noul": same_story}
         earlier = ("hn:earlier",)
-    post = Post(pid, "HN", "ai-dev", kind, "u", f"Title {pid}", f"https://ex.com/{pid}", "", "2026-11-27T14:00:00Z", {}, "public")
+    post = Post(pid, "HN", beat, kind, "u", f"Title {pid}", f"https://ex.com/{pid}", "", "2026-11-27T14:00:00Z", {}, "public")
     return Judged(post, answers, "jev-1.14.0", earlier)
 
 
@@ -79,3 +79,20 @@ def test_almost_is_top_five_not_aired():
 def test_lead_gets_90_without_corrections_and_jev_seconds_for_others():
     r = select([j("a", 0.6), j("b", 0.5)], T, first_of_day=False, seconds={"b": 28})
     assert r.corrections is False and r.seconds == {"a": 90, "b": 28}
+
+
+def test_one_story_per_beat_then_score():  # Tarik, Nov 26
+    ai = [j(f"ai{i}", 0.9 - i / 10) for i in range(5)]  # 0.9 .. 0.5
+    r = select([*ai, j("mke", 0.45, beat="milwaukee"), j("med", 0.41, beat="media")], T, first_of_day=False)
+    assert ids(r.stories) == ["ai0", "ai1", "ai2", "mke", "med"]
+
+
+def test_beat_with_nothing_eligible_is_skipped():
+    ai = [j(f"ai{i}", 0.9 - i / 10) for i in range(5)]
+    r = select([*ai, j("mke", 0.39, beat="milwaukee")], T, first_of_day=False)
+    assert ids(r.stories) == ["ai0", "ai1", "ai2", "ai3", "ai4"]
+
+
+def test_lead_is_still_the_highest_score_overall():
+    r = select([j("mke", 0.95, beat="milwaukee"), j("ai", 0.5), j("med", 0.6, beat="media")], T, first_of_day=False)
+    assert ids(r.stories)[0] == "mke"
