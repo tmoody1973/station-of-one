@@ -320,3 +320,9 @@ Original notes:
 
 ### T5. Script (Nov 26)
 - Writer passes the delivery checks first try (1.7 s). Rulings, totals, winner, record, welcome and WNCL ID are code-written. Fixed: the writer's welcome repeated the question (now a code line). 381 words ≈ 2½–3 min, short of the spec's "about six minutes" — flagged to Tarik, not padded.
+
+### T6. First episode (Nov 26)
+- `python -m station table --day 2026-11-26`: 8 steps in 31 s (voice 15 s for 7 parts, Gemini Schedar/Gacrux, two-speaker). 2:32, 7 chapters, published (`table/2026-11-26/index.html`, audio 206), Box archived, front-page card and feed item live.
+- Fresh draft + fresh ruling: Uncle 2.97 vs Anchor 2.90 (record Uncle 1–0). Shows the verdict follows Jev, not the writer.
+- Writer delivery fell back twice because the "win" check caught ordinary uses ("details win people over", "the legibility win this font claims"); narrowed to debate-winner phrases; reasons now logged. Third run: delivery accepted, Uncle in character.
+- Open: Tarik listens (`spikes/output/table_2026-11-26.mp3`). Wording to review: one claim relays a commenter's "psychotic devotion to legibility".
