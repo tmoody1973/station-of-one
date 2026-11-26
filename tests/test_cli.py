@@ -307,3 +307,24 @@ def test_build_cli_skips_outside_broadcast_hours(monkeypatch, capsys):
     monkeypatch.setattr(build_mod, "build", lambda *a, **kw: (_ for _ in ()).throw(AssertionError("built")))
     assert main(["build"]) == 0
     assert "outside broadcast hours" in capsys.readouterr().out
+
+
+def test_build_adds_video_after_the_last_newscast(monkeypatch):
+    from station import build as build_mod
+
+    got = []
+    monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append((hour.hour, kw.get("steps"))))
+    main(["build", "--hour", "2026-11-27T19"])
+    main(["build", "--hour", "2026-11-27T18"])
+    assert got == [(19, [*build_mod.STEPS, "video"]), (18, None)]
+
+
+def test_video_day_uses_that_days_last_run(tmp_path, monkeypatch):
+    import station.__main__ as cli
+
+    monkeypatch.setenv("STATION_RUNS", str(tmp_path))
+    for h in ("2026-11-26T12", "2026-11-26T19", "2026-11-27T07"):
+        (tmp_path / h).mkdir()
+    seen = []
+    monkeypatch.setitem(cli.COMMANDS, "video", lambda run: seen.append(run.name))
+    assert main(["video", "--day", "2026-11-26"]) == 0 and seen == ["2026-11-26T19"]

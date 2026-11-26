@@ -283,9 +283,21 @@ def cmd_finish(run: Path) -> None:
         rec.notes.extend(finish(run, prefs, Gateway()))
 
 
+def cmd_video(run: Path) -> None:
+    from station.steps.video import make_video
+
+    prefs = load_prefs()
+    runs_root = Path(os.environ.get("STATION_RUNS", str(run.parent)))
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("video", "Deepgram + Remotion") as rec:
+        made = make_video(run.name[:10], Gateway(), prefs, runs_root)
+        rec.counts.update(story=made["headline"], newscast=made["newscast"], seconds=made["durationMs"] / 1000,
+                          words=len(made["captions"]), key=made["key"], bytes=made["bytes"])
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish}
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video}
 
 
 def cmd_build(hour: str | None) -> None:
@@ -302,7 +314,9 @@ def cmd_build(hour: str | None) -> None:
     if not hour and not in_broadcast_hours(datetime.now(ZoneInfo(tz)), load_prefs()):
         print(f"build {when:%Y-%m-%dT%H}: outside broadcast hours, nothing to do")
         return
-    result = build_mod.build(when, on_failure=manager.on_failure)
+    last_hour = int(load_prefs().station.last_newscast.split(":")[0])
+    extra = {"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour else {}  # daily video after the last newscast
+    result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
 
 
@@ -311,7 +325,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("step", choices=sorted([*COMMANDS, "build"]))
     parser.add_argument("--run", type=Path, help="run folder for one step, e.g. data/runs/2026-11-27T09")
     parser.add_argument("--hour", help="build: newscast hour YYYY-MM-DDTHH (local); default = next top of the hour")
+    parser.add_argument("--day", help="video: YYYY-MM-DD; uses that day's last run folder")
     args = parser.parse_args(argv)
+    if args.step == "video" and args.day and args.run is None:
+        runs = sorted(Path(os.environ.get("STATION_RUNS", "data/runs")).glob(f"{args.day}T??"))
+        if not runs:
+            parser.error(f"no runs for {args.day}")
+        args.run = runs[-1]
     if args.step == "build":
         cmd_build(args.hour)
         return 0

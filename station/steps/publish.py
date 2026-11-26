@@ -15,10 +15,12 @@ from station.gateway import GatewayError
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".mp3": "audio/mpeg", ".json": "application/json",
                  ".js": "text/javascript", ".mp4": "video/mp4", ".png": "image/png",
                  ".xml": "application/rss+xml; charset=utf-8"}
-IMMUTABLE = {".mp3", ".mp4", ".png"}  # named by newscast id, never rewritten
+IMMUTABLE = {".mp3", ".png"}  # MP3 keys carry a content fingerprint; the cover never changes
 
 
 def cache_control(key: str) -> str:
+    if Path(key).suffix == ".mp4":
+        return "max-age=300"  # the daily video may be re-rendered under the same name
     return "public, max-age=31536000, immutable" if Path(key).suffix in IMMUTABLE else "max-age=60"
 
 

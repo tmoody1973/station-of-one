@@ -110,6 +110,7 @@ def _detail(name: str, c: dict) -> str:
         "publish": f"{g('files', 0)} files to the public bucket",
         "archive": f"bundle of {round(g('bytes', 0) / 1e6, 1)} MB with the decision log",
         "finish": "control room updated, Sprite checkpoint",
+        "video": f"{g('seconds', 0):.0f} s video, {g('words', 0)} captioned words",
     }.get(name, "")
 
 
