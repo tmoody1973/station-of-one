@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS decisions (
   confidence REAL, raw TEXT, model TEXT, asked_at TEXT,
   PRIMARY KEY (post_id, question_id, asked_at));
 CREATE TABLE IF NOT EXISTS source_state (source_key TEXT PRIMARY KEY, last_success_at TEXT);
+CREATE TABLE IF NOT EXISTS table_episodes (
+  day TEXT PRIMARY KEY, question TEXT, anchor REAL, uncle REAL, winner TEXT, story_id TEXT);
 CREATE TABLE IF NOT EXISTS aired (
   post_id TEXT, newscast_id TEXT, part TEXT, score_matter_week REAL, aired_at TEXT);
 """
@@ -159,3 +161,15 @@ def counts_by_beat(db: sqlite3.Connection, start_utc: datetime, end_utc: datetim
     aired = dict(db.execute("SELECT p.beat, COUNT(*) FROM aired a JOIN posts p ON p.id = a.post_id"
                             " WHERE a.aired_at >= ? AND a.aired_at < ? GROUP BY p.beat", (s, e)).fetchall())
     return {b: (posts.get(b, 0), aired.get(b, 0)) for b in sorted(set(posts) | set(aired))}
+
+
+def record_episode(db: sqlite3.Connection, day: str, question: str, anchor: float, uncle: float, winner: str,
+                   story_id: str) -> None:
+    """The Table's result for a day; a re-run of the same day replaces it."""
+    db.execute("INSERT OR REPLACE INTO table_episodes VALUES (?,?,?,?,?,?)", (day, question, anchor, uncle, winner, story_id))
+    db.commit()
+
+
+def season_record(db: sqlite3.Connection) -> dict[str, int]:
+    counts = dict(db.execute("SELECT winner, COUNT(*) FROM table_episodes GROUP BY winner").fetchall())
+    return {k: counts.get(k, 0) for k in ("anchor", "uncle", "draw")}

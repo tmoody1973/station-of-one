@@ -347,10 +347,36 @@ def cmd_table_argue(run: Path) -> None:
         rec.counts.update(claims=len(claims), words=sum(len(c.text.split()) for c in claims))
 
 
+def cmd_table_referee(run: Path) -> None:
+    from station.store import record_decision, record_episode, season_record
+    from station.table.argue import Claim
+    from station.table.referee import referee, verdict
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("referee", "TypeSafe Jev") as rec:
+        if not (run / "claims.json").exists():
+            rec.notes.append("No episode today.")
+            return
+        topic, drafted = read_json(run, "topic.json"), read_json(run, "claims.json")
+        claims = [Claim(c["side"], c["part"], c["text"], tuple(c["source_ids"])) for c in drafted["claims"]]
+        rulings, model = referee(Gateway(), drafted["question"], claims, topic["comments"])
+        v = verdict(rulings)  # code decides the winner, before any script exists
+        asked_at = datetime.now(UTC).isoformat()
+        with closing(_db()) as db:
+            for r in rulings:  # every Jev answer is logged with its probability
+                record_decision(db, f"table:{run.name}:{r.claim_index}", "table_true", {"type": "noul", "noul": r.p_true}, model, asked_at)
+                record_decision(db, f"table:{run.name}:{r.claim_index}", "table_answered", {"type": "noul", "noul": r.answered}, model, asked_at)
+            record_episode(db, run.name, drafted["question"], v["anchor"], v["uncle"], v["winner"], topic["story"]["id"])
+            record = season_record(db)
+        write_json(run, "rulings.json", {"rulings": [asdict(r) for r in rulings], "verdict": v, "record": record, "model": model})
+        rec.counts.update(rulings=len(rulings), anchor=v["anchor"], uncle=v["uncle"], winner=v["winner"])
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
             "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
-            "table-topic": cmd_table_topic, "table-argue": cmd_table_argue}
+            "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
+            "table-referee": cmd_table_referee}
 
 
 def cmd_build(hour: str | None) -> None:
