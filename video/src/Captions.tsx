@@ -11,7 +11,8 @@ const CaptionPage: React.FC<{ page: TikTokPage; fontFamily: string }> = ({ page,
   const { fps } = useVideoConfig();
   const nowMs = page.startMs + (frame / fps) * 1000;
   return (
-    <AbsoluteFill style={{ top: 1060, bottom: 420, left: 80, right: 80, justifyContent: "flex-start" }}>
+    // A plain box, not AbsoluteFill: AbsoluteFill is always 100% wide, so left/right offsets pushed text off-screen.
+    <div style={{ position: "absolute", top: 1060, left: 80, right: 80, bottom: 420 }}>
       <div style={{ fontFamily, fontSize: 84, fontWeight: 700, lineHeight: 1.15, whiteSpace: "pre-wrap", color: "#f2f2f2" }}>
         {page.tokens.map((t) => (
           <span key={t.fromMs} style={{ color: t.fromMs <= nowMs && t.toMs > nowMs ? HIGHLIGHT : "#f2f2f2" }}>
@@ -19,7 +20,7 @@ const CaptionPage: React.FC<{ page: TikTokPage; fontFamily: string }> = ({ page,
           </span>
         ))}
       </div>
-    </AbsoluteFill>
+    </div>
   );
 };
 
