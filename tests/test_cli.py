@@ -56,3 +56,20 @@ def test_judge_cli_judges_cluster_primaries_only(tmp_path, monkeypatch):
     assert json.loads((run / "judged.json").read_text())[0]["post"]["id"] == "hn:1"
     counts = json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"]
     assert counts == {"posts_judged": 1, "decisions": 1, "input_tokens": 600, "skipped_aired": 1}
+
+
+def test_rundown_cli(tmp_path, monkeypatch):
+    from station.steps import judge as judge_mod
+    from tests.test_rundown import j
+
+    run = tmp_path / "run"
+    run.mkdir()
+    (run / "judged.json").write_text(json.dumps([j("a", 0.6).to_dict(), j("b", 0.5).to_dict(), j("x", 0.6, harm=0.4).to_dict()]))
+    asked = []
+    monkeypatch.setattr(judge_mod, "judge_seconds", lambda gw, stories: asked.extend(s.id for s in stories) or {"b": 33})
+    assert main(["rundown", "--run", str(run)]) == 0
+    out = json.loads((run / "rundown.json").read_text())
+    assert [s["post"]["id"] for s in out["stories"]] == ["a", "b"] and out["seconds"] == {"a": 90, "b": 33}
+    assert asked == ["b"] and out["short"] is True and out["dropped_ids"] == ["x"]
+    counts = json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"]
+    assert counts == {"stories": 2, "dropped": 1, "short": True, "overheard": False}

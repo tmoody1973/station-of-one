@@ -71,7 +71,23 @@ def cmd_judge(run: Path) -> None:
             rec.notes.append(f"{len(to_judge) - len(judged)} posts failed at Jev and were skipped")
 
 
-COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge}
+def cmd_rundown(run: Path) -> None:
+    from station.steps import judge as judge_mod
+    from station.steps.rundown import select
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("rundown", "Code") as rec:
+        judged = [judge_mod.Judged.from_dict(d) for d in read_json(run, "judged.json")]
+        t = load_prefs().thresholds
+        first = select(judged, t, first_of_day=False)
+        seconds = judge_mod.judge_seconds(Gateway(), [s.post for s in first.stories[1:]])
+        rundown = select(judged, t, first_of_day=False, seconds=seconds)
+        write_json(run, "rundown.json", rundown.to_dict())
+        rec.counts.update(stories=len(rundown.stories), dropped=len(rundown.dropped_ids), short=rundown.short,
+                          overheard=rundown.overheard is not None)
+
+
+COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown}
 
 
 def main(argv: list[str] | None = None) -> int:
