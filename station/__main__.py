@@ -372,11 +372,33 @@ def cmd_table_referee(run: Path) -> None:
         rec.counts.update(rulings=len(rulings), anchor=v["anchor"], uncle=v["uncle"], winner=v["winner"])
 
 
+def cmd_table_script(run: Path) -> None:
+    from station.table.argue import Claim
+    from station.table.referee import Ruling
+    from station.table.script import parts, write_script
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("script", "Ollama Cloud") as rec:
+        if not (run / "rulings.json").exists():
+            rec.notes.append("No episode today.")
+            return
+        topic, drafted, ruled = read_json(run, "topic.json"), read_json(run, "claims.json"), read_json(run, "rulings.json")
+        claims = [Claim(c["side"], c["part"], c["text"], tuple(c["source_ids"])) for c in drafted["claims"]]
+        rulings = [Ruling(**r) for r in ruled["rulings"]]
+        script = write_script(Gateway(), load_prefs().writer.model, topic["story"], drafted["question"], claims)
+        ps = parts(script, claims, rulings, ruled["verdict"], ruled["record"], topic["story"], drafted["question"])
+        fallback = not script["lines"]
+        write_json(run, "script.json", {"parts": [asdict(p) for p in ps], "fallback": fallback})
+        rec.counts.update(parts=len(ps), words=sum(len(t.text.split()) for p in ps for t in p.turns))
+        if fallback:
+            rec.notes.append("Writer's delivery failed checks twice; the checked claim text was used.")
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
             "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
-            "table-referee": cmd_table_referee}
+            "table-referee": cmd_table_referee, "table-script": cmd_table_script}
 
 
 def cmd_build(hour: str | None) -> None:
