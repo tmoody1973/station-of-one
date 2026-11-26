@@ -1,0 +1,221 @@
+{
+ "id": "2026-11-26T17",
+ "hour_local": "2026-11-26T17:00:00-06:00",
+ "show": "The Hourly Scroll",
+ "station": "WONE",
+ "frequency": "1.0 FM",
+ "short": false,
+ "counts": {
+  "posts_read_hour": 61,
+  "posts_read_today": 1073,
+  "stories_aired": 5,
+  "posts_not_aired_today": 1048
+ },
+ "stories": [
+  {
+   "id": "rss:https://www.artnews.com/?p=1234808028",
+   "beat_id": "arts-culture",
+   "part": "lead",
+   "headline": "Hoor Al Qasimi Named Curator of 2028 Venice Biennale",
+   "summary": "Sheikha Hoor Al Qasimi has been named curator of the 2028 Venice Biennale, according to ARTnews.com. The board of La Biennale di Venezia says it chose her at a November 20 meeting on the recommendation of its president, Pietrangelo Buttafuoco.",
+   "score_matter_week": 0.59,
+   "seconds": 90,
+   "chapter_start_ms": 7840,
+   "sources": [
+    {
+     "post_id": "rss:https://www.artnews.com/?p=1234808028",
+     "url": "https://www.artnews.com/art-news/news/hoor-al-qasimi-named-curator-2028-venice-biennale-1234808028/",
+     "author": "Hikmat Mohammed",
+     "source_name": "ARTnews.com",
+     "posted_at": "2026-11-26T11:34:06Z"
+    }
+   ]
+  },
+  {
+   "id": "rss:https://www.theartnewspaper.com/2026/11/26/emirati-curator-hoor-al-qasimi-to-lead-venice-biennale-in-2028",
+   "beat_id": "arts-culture",
+   "part": "story",
+   "headline": "Hoor Al Qasimi to curate 2028 Venice Biennale",
+   "summary": "The Art Newspaper reports that Hoor Al Qasimi, director of the Sharjah Art Foundation and the Sharjah Biennial, has been appointed curator of the 62nd International Art Exhibition. The post gives no further details on the appointment.",
+   "score_matter_week": 0.57,
+   "seconds": 30,
+   "chapter_start_ms": 91780,
+   "sources": [
+    {
+     "post_id": "rss:https://www.theartnewspaper.com/2026/11/26/emirati-curator-hoor-al-qasimi-to-lead-venice-biennale-in-2028",
+     "url": "https://www.theartnewspaper.com/2026/11/26/emirati-curator-hoor-al-qasimi-to-lead-venice-biennale-in-2028",
+     "author": "James Imam",
+     "source_name": " The Art Newspaper - International art news and events ",
+     "posted_at": "2026-11-26T13:24:18Z"
+    }
+   ]
+  },
+  {
+   "id": "rss:https://urbanmilwaukee.com/?p=1244122",
+   "beat_id": "milwaukee",
+   "part": "story",
+   "headline": "City Backs Metcalfe Lofts Housing Project",
+   "summary": "The Milwaukee Common Council has approved $1.1 million toward turning a former factory into affordable housing, according to Urban Milwaukee. The outlet reports the project still faces a complicated financing path.",
+   "score_matter_week": 0.48,
+   "seconds": 36,
+   "chapter_start_ms": 108840,
+   "sources": [
+    {
+     "post_id": "rss:https://urbanmilwaukee.com/?p=1244122",
+     "url": "https://urbanmilwaukee.com/2026/11/25/city-backs-metcalfe-lofts-affordable-housing/",
+     "author": "Jeramey Jannene",
+     "source_name": "Urban Milwaukee",
+     "posted_at": "2026-11-25T18:32:44Z"
+    }
+   ]
+  },
+  {
+   "id": "rss:https://www.musicbusinessworldwide.com/?p=272840",
+   "beat_id": "music-industry",
+   "part": "story",
+   "headline": "Music groups back charter on dementia access",
+   "summary": "Universal, Warner and the BPI are backing a charter aimed at barriers that keep people with dementia from accessing music, according to Music Business Worldwide. The outlet reports that only three in ten older family caregivers can stream music with the person they care for, citing Music for Dementia.",
+   "score_matter_week": 0.45,
+   "seconds": 30,
+   "chapter_start_ms": 147240,
+   "sources": [
+    {
+     "post_id": "rss:https://www.musicbusinessworldwide.com/?p=272840",
+     "url": "https://www.musicbusinessworldwide.com/universal-warner-and-the-bpi-back-charter-to-tackle-barriers-keeping-people-with-dementia-from-accessing-music/",
+     "author": "Mandy Dalugdug",
+     "source_name": "Music Business Worldwide",
+     "posted_at": "2026-11-26T11:55:27Z"
+    }
+   ]
+  },
+  {
+   "id": "hn:50650892",
+   "beat_id": "ai-dev",
+   "part": "story",
+   "headline": "PostgreSQL packaged as a single executable",
+   "summary": "A project called Minipg aims to run PostgreSQL, a database system, as one executable file, according to a post on Hacker News. The poster shares a link to the project page but offers no further details.",
+   "score_matter_week": 0.41,
+   "seconds": 28,
+   "chapter_start_ms": 168870,
+   "sources": [
+    {
+     "post_id": "hn:50650892",
+     "url": "https://progrium.github.io/minipg/",
+     "author": "rguiscard",
+     "source_name": "Hacker News",
+     "posted_at": "2026-11-26T03:00:48.000Z"
+    }
+   ]
+  }
+ ],
+ "almost": [
+  {
+   "post_id": "rss:https://www.artsjournal.com/?p=453355",
+   "title": "Funding For Public Media Will Return. But Should We Rethink How It Works?",
+   "url": "https://www.niemanlab.org/2026/11/federal-funding-for-public-media-is-coming-back-one-way-or-another-but-is-it-time-for-a-deeper-rethink/",
+   "score_matter_week": 0.59
+  },
+  {
+   "post_id": "hn:50646108",
+   "title": "Holy shit holy shit holy shit holy shit: The magnitude of what’s now happening",
+   "url": "https://scottaaronson.blog/?p=10379",
+   "score_matter_week": 0.51
+  },
+  {
+   "post_id": "rss:https://pressgazette.co.uk/?p=259478",
+   "title": "Publishers need to fight back following launch of Muse and Dots",
+   "url": "https://pressgazette.co.uk/comment-analysis/publishers-need-to-fight-back-following-launch-of-muse-and-dots/",
+   "score_matter_week": 0.51
+  },
+  {
+   "post_id": "rss:https://www.artnews.com/?p=1234808049",
+   "title": "Lisa Marei Schmidt Appointed Director of Kunstmuseum Bern and Zentrum Paul Klee",
+   "url": "https://www.artnews.com/art-news/news/lisa-schmidt-director-kunstmuseum-bern-zentrum-paul-klee-1234808049/",
+   "score_matter_week": 0.48
+  },
+  {
+   "post_id": "rss:https://huggingface.co/blog/training-swarms",
+   "title": "Swarms, Flocks, Gangs: How to build, train, and evaluate multi-agent systems",
+   "url": "https://huggingface.co/blog/training-swarms",
+   "score_matter_week": 0.46
+  }
+ ],
+ "overheard": {
+  "post_id": "hn:50653169",
+  "source": "Hacker News",
+  "author": "krstffr",
+  "url": "https://news.ycombinator.com/item?id=50653169",
+  "text": "For some reason I did not expect this from the first page of the Amiga style guide from 1991: \"English doesn’t have a good, genderless, third-person pronoun and it’s very awkward to avoid using one. So instead of just using the masculine throughout or alternating chapters with masculine / feminine /"
+ },
+ "chapters": [
+  {
+   "index": 0,
+   "title": "Open",
+   "kind": "open",
+   "story_id": null,
+   "start_ms": 0,
+   "end_ms": 7840
+  },
+  {
+   "index": 1,
+   "title": "Lead story",
+   "kind": "lead",
+   "story_id": "rss:https://www.artnews.com/?p=1234808028",
+   "start_ms": 7840,
+   "end_ms": 91780
+  },
+  {
+   "index": 2,
+   "title": "Story 2",
+   "kind": "story",
+   "story_id": "rss:https://www.theartnewspaper.com/2026/11/26/emirati-curator-hoor-al-qasimi-to-lead-venice-biennale-in-2028",
+   "start_ms": 91780,
+   "end_ms": 108840
+  },
+  {
+   "index": 3,
+   "title": "Story 3",
+   "kind": "story",
+   "story_id": "rss:https://urbanmilwaukee.com/?p=1244122",
+   "start_ms": 108840,
+   "end_ms": 147240
+  },
+  {
+   "index": 4,
+   "title": "Story 4",
+   "kind": "story",
+   "story_id": "rss:https://www.musicbusinessworldwide.com/?p=272840",
+   "start_ms": 147240,
+   "end_ms": 168870
+  },
+  {
+   "index": 5,
+   "title": "Story 5",
+   "kind": "story",
+   "story_id": "hn:50650892",
+   "start_ms": 168870,
+   "end_ms": 189020
+  },
+  {
+   "index": 6,
+   "title": "Overheard",
+   "kind": "overheard",
+   "story_id": "hn:50653169",
+   "start_ms": 189020,
+   "end_ms": 202420
+  },
+  {
+   "index": 7,
+   "title": "Sign-off",
+   "kind": "signoff",
+   "story_id": null,
+   "start_ms": 202420,
+   "end_ms": 215130
+  }
+ ],
+ "audio": {
+  "file": "newscast.mp3",
+  "duration_ms": 215130
+ },
+ "voices_synthetic": true
+}

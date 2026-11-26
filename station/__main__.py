@@ -209,8 +209,18 @@ def cmd_assemble(run: Path) -> None:
         rec.counts.update(chapters=len(timings), duration_s=round(duration / 1000, 1))
 
 
+def cmd_page(run: Path) -> None:
+    from station.steps.page import page
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("page", "Code") as rec:
+        runs_root = Path(os.environ.get("STATION_RUNS", str(run.parent)))
+        written = page(run, load_prefs(), runs_root=runs_root)
+        rec.counts.update(pages=len(written))
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
-            "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble}
+            "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page}
 
 
 def cmd_build(hour: str | None) -> None:
