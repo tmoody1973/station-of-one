@@ -302,3 +302,8 @@ Original notes:
 - Found: count-up showed the story hour's count (909), not the day's (fixed: day's max). Story pick was national politics filed under the Milwaukee beat (Wisconsin Examiner republishes national stories) — open question for Tarik.
 - Hot-topic screen (Tarik, Nov 26: video skips elections, contested policy, religion, health): one Jev call over the top 10 candidates; AR-15 bans 0.97, veterans' abortion restrictions 0.96, birthright citizenship 0.96 skipped; deer-hunting story 0.18 used. Answers logged in `decisions` as `hot_topic`.
 - Caption box overflowed the right edge (AbsoluteFill is 100% wide); now a plain positioned box. Re-render frames at 14/26/34 s wrap inside the frame.
+
+## Table checks
+
+### T1. Threads (Nov 26)
+- 2026-11-26 (Central day): 24 threads with ≥ 6 comments, almost all Hacker News (comments capped at 40). Top by size: "Intel One Mono font", "Tell HN: Happy Thanksgiving", "1Password Security Incident", "The New York Times warns photographers not to update Photoshop over AI", "Moat: Your OpenRouter Replacement".
