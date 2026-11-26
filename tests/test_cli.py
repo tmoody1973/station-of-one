@@ -170,10 +170,13 @@ def test_build_cli_passes_hour(monkeypatch):
 
     from station import build as build_mod
 
+    from station import manager
+
     got = {}
-    monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.setdefault("hour", hour))
+    monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.update(hour=hour, **kw))
     assert main(["build", "--hour", "2026-11-27T09"]) == 0
     assert got["hour"].strftime("%Y-%m-%dT%H %Z") == "2026-11-27T09 CST"
+    assert got["on_failure"] is manager.on_failure  # failures go to the station manager
 
 
 def test_step_without_run_is_an_error():

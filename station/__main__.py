@@ -244,7 +244,9 @@ def cmd_build(hour: str | None) -> None:
     tz = load_prefs().station.timezone
     when = (datetime.strptime(hour, "%Y-%m-%dT%H").replace(tzinfo=ZoneInfo(tz)) if hour
             else build_mod.target_hour(datetime.now(ZoneInfo(tz))))
-    result = build_mod.build(when)
+    from station import manager
+
+    result = build_mod.build(when, on_failure=manager.on_failure)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
 
 
