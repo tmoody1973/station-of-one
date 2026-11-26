@@ -82,6 +82,31 @@
           "type": "rss",
           "ref": "https://feeds.arstechnica.com/arstechnica/technology-lab",
           "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "MachineLearning",
+          "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "technology",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "simonwillison.net",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "github.com",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "theverge.com",
+          "visibility": "public"
         }
       ]
     },
@@ -125,6 +150,31 @@
           "type": "rss",
           "ref": "https://pressgazette.co.uk/feed/",
           "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "journalism",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "niemanlab.org",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "current.org",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "pressgazette.co.uk",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "podnews.net",
+          "visibility": "public"
         }
       ]
     },
@@ -167,6 +217,36 @@
         {
           "type": "rss",
           "ref": "https://onmilwaukee.com/rss",
+          "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "wisconsin",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "urbanmilwaukee.com",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "wisconsinexaminer.com",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "wisconsinwatch.org",
+          "visibility": "public"
+        },
+        {
+          "type": "bluesky",
+          "ref": "milwaukeenns.org",
+          "visibility": "public"
+        },
+        {
+          "type": "googlenews",
+          "ref": "Milwaukee",
           "visibility": "public"
         }
       ]

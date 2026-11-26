@@ -19,7 +19,10 @@ ACTORS = {
     "hackernews": "constructive_calm~hacker-news-scraper",
     "subreddit": "automation-lab~reddit-scraper",
     "rss": "santamaria-automations~rss-feed-reader",
+    "bluesky": "blueskyscraper~bluesky-posts-scraper",
+    "googlenews": "lhotanova~google-news-scraper",
 }
+LOW_MEMORY = {"hackernews", "googlenews"}  # these default to 4 GB; start fee is charged per GB
 # HN's front page is mostly older than an hour; read the last day and let the DB drop known posts.
 HN_WINDOW = timedelta(hours=24)
 FIRST_RUN_WINDOW = timedelta(hours=2)
@@ -70,7 +73,20 @@ def actor_input(source_type: str, refs: list[str], since: datetime) -> dict:
                 "maxCommentsPerPost": 3, "commentDepth": 1, "includeNsfw": False}
     if source_type == "rss":
         return {"feedUrls": refs, "maxItemsPerFeed": 25, "includeContent": True, "filterByDate": _iso_z(since)}
+    if source_type == "bluesky":  # postedAfter is date-only; monitoringStoreName returns only unseen posts
+        return {"mode": "posts", "handles": refs, "maxResultsPerInput": 20,
+                "postedAfter": since.astimezone(UTC).strftime("%Y-%m-%d"), "includeReposts": False,
+                "includeReplies": False, "includeProfile": False, "monitoringStoreName": "station-one"}
+    if source_type == "googlenews":  # one query per run
+        return {"query": refs[0], "language": "US:en", "openEndedDateRange": "2h", "maxItems": 15,
+                "fetchArticleDetails": True}
     raise ValueError(f"unknown source type: {source_type}")
+
+
+def runs_for(source_type: str, refs: list[str], since: datetime) -> list[dict]:
+    if source_type == "googlenews":
+        return [actor_input(source_type, [r], since) for r in refs]
+    return [actor_input(source_type, refs, since)]
 
 
 def run_actor(gw, actor_id: str, actor_input: dict, cap_usd: float = 0.25, memory_mb: int | None = None,
@@ -128,8 +144,26 @@ def _rss(item: dict, beat: str) -> list[Post]:
                  posted_at=item.get("item_published") or "", engagement={}, visibility="public")]
 
 
+def _bluesky(item: dict, beat: str) -> list[Post]:
+    if item.get("isRepost") or item.get("type", "post") != "post":
+        return []
+    text = item.get("text") or ""
+    return [Post(id=f"bsky:{item['id']}", source=f"Bluesky @{item.get('handle')}", beat=beat,
+                 kind="comment" if item.get("isReply") else "story", author=item.get("handle"),
+                 title=text[:100], url=item.get("url") or "", text=text[:TEXT_LIMIT], posted_at=item.get("createdAt") or "",
+                 engagement={"points": item.get("likeCount"), "comments": item.get("replyCount"),
+                             "reposts": item.get("repostCount")}, visibility="public")]
+
+
+def _gnews(item: dict, beat: str) -> list[Post]:
+    return [Post(id=f"gnews:{item.get('guid') or item.get('link')}", source=item.get("source") or "Google News",
+                 beat=beat, kind="story", author=None, title=item.get("title") or "", url=item.get("link") or "",
+                 text="", posted_at=item.get("publishedAt") or "", engagement={}, visibility="public")]
+
+
 def normalize(source_type: str, item: dict, beat_id: str) -> list[Post]:
-    return {"hackernews": _hn, "subreddit": _reddit, "rss": _rss}[source_type](item, beat_id)
+    return {"hackernews": _hn, "subreddit": _reddit, "rss": _rss, "bluesky": _bluesky,
+            "googlenews": _gnews}[source_type](item, beat_id)
 
 
 def _beat_lookup(prefs: Prefs) -> dict[str, dict[str, str]]:
@@ -149,6 +183,10 @@ def _beat_for(source_type: str, item: dict, refs: dict[str, str]) -> str:
     if source_type == "subreddit":
         sub = item.get("subreddit") or _subreddit_from(item.get("permalink", ""))
         return next((b for r, b in refs.items() if r.lower() == sub.lower()), next(iter(refs.values())))
+    if source_type == "bluesky":
+        return refs.get(item.get("handle", ""), next(iter(refs.values())))
+    if source_type == "googlenews":
+        return refs.get(item.get("query", ""), next(iter(refs.values())))
     return next(iter(refs.values()))
 
 
@@ -161,15 +199,22 @@ def scrape(gw, prefs: Prefs, db, now: datetime) -> ScrapeResult:
         since = get_cursor(db, source_type) or now - FIRST_RUN_WINDOW
         if source_type == "hackernews":
             since = now - HN_WINDOW
-        try:
-            run = run_actor(gw, ACTORS[source_type], actor_input(source_type, list(refs), since),
-                            memory_mb=HN_MEMORY_MB if source_type == "hackernews" else None)
-        except (GatewayError, ScrapeError) as e:
-            result.notes.append(f"{source_type} failed: {e}")
+        items: list[dict] = []
+        succeeded = False
+        for inp in runs_for(source_type, list(refs), since):
+            try:
+                run = run_actor(gw, ACTORS[source_type], inp,
+                                memory_mb=HN_MEMORY_MB if source_type in LOW_MEMORY else None)
+            except (GatewayError, ScrapeError) as e:
+                result.notes.append(f"{source_type} failed: {e}")
+                continue
+            succeeded = True
+            usd += run.usd
+            run_ids.append(run.run_id)
+            items += [{**i, "query": inp["query"]} if "query" in inp else i for i in run.items]
+        if not succeeded:
             continue
-        usd += run.usd
-        run_ids.append(run.run_id)
-        posts = [p for item in run.items for p in normalize(source_type, item, _beat_for(source_type, item, refs))]
+        posts = [p for item in items for p in normalize(source_type, item, _beat_for(source_type, item, refs))]
         found += len(posts)
         new = upsert_posts(db, posts)
         result.posts.extend(new)

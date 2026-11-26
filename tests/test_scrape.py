@@ -112,3 +112,47 @@ def test_one_failed_source_does_not_stop_others(tmp_path, make_db):
     assert any(p.source == "Hacker News" for p in result.posts)
     assert not any(p.source.startswith("Reddit") for p in result.posts)
     assert any("subreddit" in n for n in result.notes)
+
+
+def test_normalize_bluesky_post():
+    item = next(i for i in load_fixture("apify_bluesky.json") if not i.get("isReply"))
+    p = normalize("bluesky", item, "ai-dev")[0]
+    assert p.id == f"bsky:{item['id']}" and p.source == f"Bluesky @{item['handle']}" and p.kind == "story"
+    assert p.url == item["url"] and p.text == item["text"]
+    assert p.engagement == {"points": item["likeCount"], "comments": item["replyCount"], "reposts": item["repostCount"]}
+
+
+def test_normalize_bluesky_skips_reposts():
+    item = {**load_fixture("apify_bluesky.json")[0], "isRepost": True}
+    assert normalize("bluesky", item, "ai-dev") == []
+
+
+def test_normalize_google_news_item():
+    item = load_fixture("apify_gnews.json")[0]
+    p = normalize("googlenews", item, "milwaukee")[0]
+    assert p.id == f"gnews:{item['guid']}" and p.source == item["source"] and p.url == item["link"]
+    assert p.title == item["title"] and p.posted_at == item["publishedAt"]
+
+
+def test_actor_input_bluesky_and_google_news():
+    since = NOW - timedelta(hours=2)
+    bs = actor_input("bluesky", ["simonwillison.net"], since)
+    assert bs["mode"] == "posts" and bs["handles"] == ["simonwillison.net"] and bs["includeReposts"] is False
+    assert bs["monitoringStoreName"] == "station-one" and bs["postedAfter"] == "2026-11-27"
+    gn = actor_input("googlenews", ["Milwaukee"], since)
+    assert gn == {"query": "Milwaukee", "language": "US:en", "openEndedDateRange": "2h", "maxItems": 15,
+                  "fetchArticleDetails": True}
+
+
+def test_google_news_runs_one_query_per_run():
+    from station.steps.scrape import runs_for
+    assert [i["query"] for i in runs_for("googlenews", ["Milwaukee", "Wisconsin"], NOW)] == ["Milwaukee", "Wisconsin"]
+    assert len(runs_for("rss", ["https://a", "https://b"], NOW)) == 1
+
+
+def test_empty_successful_run_still_advances_cursor(tmp_path, make_db):
+    routes = _all_routes()
+    routes.update(runs_routes(ACTORS["rss"], "ds-rss", []))
+    db = make_db()
+    scrape(FakeGateway(routes), load_prefs(), db, NOW)
+    assert get_cursor(db, "rss") == NOW

@@ -4,7 +4,8 @@ import os
 
 from gw import call, connection
 
-RUNS = {"apify_rss": "YhriFC0z5QovknSSM", "apify_hn": "T6bjjyxdYK7X3mdXl", "apify_reddit": "hAp038QPHLPTAjOzh"}
+import sys
+RUNS = dict(a.split("=") for a in sys.argv[1:]) or {"apify_rss": "YhriFC0z5QovknSSM", "apify_hn": "T6bjjyxdYK7X3mdXl", "apify_reddit": "hAp038QPHLPTAjOzh"}
 base = connection("apify")["gateway_base_url"].rstrip("/")
 os.makedirs(os.path.expanduser("~/spikes/fixtures"), exist_ok=True)
 for name, run_id in RUNS.items():
