@@ -57,6 +57,8 @@ def build(hour_local: datetime, steps: list[str] | None = None, lock_path: Path 
         return None
     run = runs_root / hour_local.strftime("%Y-%m-%dT%H")
     run.mkdir(parents=True, exist_ok=True)
+    if (run / "run_log.json").exists():  # a rebuild of this hour starts a fresh log (start time, steps)
+        (run / "run_log.json").replace(run / "run_log.prev.json")
     cmds = commands()
     try:
         with hold("build"):

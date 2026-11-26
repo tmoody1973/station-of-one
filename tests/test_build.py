@@ -96,3 +96,13 @@ def test_hold_sends_put_then_delete(tmp_path):
         time.sleep(0.03)
     assert "PUT" in calls[0] and "http://sprite/v1/tasks/build" in calls[0]
     assert "DELETE" in calls[-1] and "http://sprite/v1/tasks/build" in calls[-1]
+
+
+def test_rebuild_moves_old_run_log_aside(tmp_path, monkeypatch):  # 2 pm rebuild kept the morning's start time
+    calls = []
+    monkeypatch.setattr(build_mod, "commands", lambda: fake_commands(calls))
+    run = tmp_path / "runs" / "2026-11-27T09"
+    run.mkdir(parents=True)
+    (run / "run_log.json").write_text('{"started_at": "old"}')
+    build(datetime(2026, 11, 27, 9, tzinfo=CHI), lock_path=tmp_path / "l", runs_root=tmp_path / "runs")
+    assert not (run / "run_log.json").exists() and (run / "run_log.prev.json").read_text() == '{"started_at": "old"}'
