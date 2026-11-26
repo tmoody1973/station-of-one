@@ -293,3 +293,10 @@ Original notes:
 - `feed.xml` at the bucket root: `application/rss+xml`, one item (latest newscast), chapter times as plain text, synthetic/machine-edited statement, cover `cover.png` 3000×3000 (130 KB, original art).
 - Found while checking: the public host served a **cached old copy** of a rebuilt hour's MP3 (2 pm: 1,414,470 bytes from 1:14 pm vs 1,294,307 rebuilt at 1:32 pm; `X-Tigris-Read-Source: cache`) because MP3s are cached as immutable. Fix: MP3 keys carry a content fingerprint (`audio/<id>-<sha1[:8]>.mp3`). After the fix the feed's enclosure length matches the served file exactly.
 - Not yet checked: playing the feed in a real podcast app by URL (Tarik, on his phone).
+
+### 13. Daily video (Nov 26, Task 19)
+
+- Deepgram through the connector: `POST /v1/listen?model=nova-3&smart_format=true`, body = MP3 bytes, `Content-Type: audio/mpeg` → HTTP 200 in 0.3 s for a 36.5 s clip; 109 words with `start`/`end` seconds and `punctuated_word`.
+- `python -m station video --day 2026-11-26` on the Sprite: pick (top aired story with a chapter ≥ 24 s) → ffmpeg cut → Deepgram → Remotion 4.0.547 render → upload. 55 s end to end. Output 45.0 s, 1080×1920, 30 fps, H.264 + AAC, 3.1 MB, public `video/2026-11-26.mp4` → 200 `video/mp4`.
+- Frames checked (count-up, headline + highlighted captions, end card): text inside the safe area.
+- Found: count-up showed the story hour's count (909), not the day's (fixed: day's max). Story pick was national politics filed under the Milwaukee beat (Wisconsin Examiner republishes national stories) — open question for Tarik.

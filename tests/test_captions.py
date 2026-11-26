@@ -75,3 +75,19 @@ def test_props_contain_captions_and_end_card_url():
 
 def test_video_cache_is_short():  # a re-render must not be hidden by a year-long cache
     assert cache_control("video/2026-11-26.mp4") == "max-age=300"
+
+
+def test_posts_read_is_the_days_total_not_the_story_hours():  # video said 909 (1 pm) on a 1,275-post day
+    from station.steps.video import days_posts_read
+
+    ns = day(("2026-11-26T13", [("a", 0.9, 40)]), ("2026-11-26T18", [("b", 0.5, 40)]))
+    ns[0]["counts"]["posts_read_today"], ns[1]["counts"]["posts_read_today"] = 909, 1275
+    assert days_posts_read(ns) == 1275
+
+
+def test_footer_links_todays_video():
+    from station.steps.page import render_front
+
+    n = newscast()
+    assert 'href="/video/2026-11-26.mp4"' in render_front(n, [n], PREFS, video_url="/video/2026-11-26.mp4")
+    assert "/video/" not in render_front(n, [n], PREFS)

@@ -81,8 +81,8 @@ def audio_path(n: dict) -> str:
     return "/" + ((n.get("audio") or {}).get("key") or f"audio/{n['id']}.mp3")
 
 
-def render_front(current: dict, today: list[dict], prefs: Prefs) -> str:
-    return env().get_template("front.html").render(**_context(current, today, prefs, "front"))
+def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None) -> str:
+    return env().get_template("front.html").render(**_context(current, today, prefs, "front"), video_url=video_url)
 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None) -> str:
@@ -205,7 +205,9 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     front = site / "index.html"
     hour = site / hour_path(current["id"])
     hour.parent.mkdir(parents=True, exist_ok=True)
-    front.write_text(render_front(current, today, prefs))
+    day = current["id"][:10]
+    has_video = (TEMPLATES.parent / "video" / "out" / f"{day}.mp4").exists()  # rendered after the last newscast
+    front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None))
     hour.write_text(render_hour(current, prefs, today))
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())

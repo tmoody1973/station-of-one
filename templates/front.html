@@ -165,6 +165,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
 <footer>
   <span>Voices are synthetic. This show is machine-edited from public posts, with every source linked.</span>
   <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+  {% if video_url %}<a href="{{ video_url }}" download>Download today's video</a>{% endif %}
   <a href="/feed.xml">Podcast feed (RSS)</a>
 </footer>
 </main>

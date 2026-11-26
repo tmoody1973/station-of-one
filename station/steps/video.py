@@ -27,11 +27,17 @@ def pick(newscasts: list[dict]) -> tuple[dict, dict, int, int] | None:
     return best
 
 
-def props(newscast: dict, story: dict, captions: list[dict], clip_ms: int, prefs: Prefs) -> dict:
+def days_posts_read(newscasts: list[dict]) -> int:
+    return max((n["counts"]["posts_read_today"] for n in newscasts), default=0)
+
+
+def props(newscast: dict, story: dict, captions: list[dict], clip_ms: int, prefs: Prefs,
+          posts_read: int | None = None) -> dict:
     beat = next((b for b in prefs.beats if b.id == story.get("beat_id")), None)
     host = prefs.hosting.public_base.removeprefix("https://").removeprefix("http://")
     return {"headline": story["headline"], "beat": beat.name if beat else "", "beatColor": beat.color if beat else "#C8102E",
-            "postsRead": newscast["counts"]["posts_read_today"], "captions": captions, "clipMs": clip_ms,
+            "postsRead": posts_read if posts_read is not None else newscast["counts"]["posts_read_today"],
+            "captions": captions, "clipMs": clip_ms,
             "introMs": INTRO_MS, "endMs": END_MS, "durationMs": INTRO_MS + clip_ms + END_MS,
             "show": prefs.station.show_name, "station": f"{prefs.station.call_sign} {prefs.station.frequency}",
             "url": f"{host}/index.html"}
@@ -59,7 +65,7 @@ def make_video(day: str, gw, prefs: Prefs, runs_root: Path, video_dir: Path = VI
         raise ValueError(f"no aired story on {day} has a chapter of at least {MIN_CLIP_MS // 1000} s")
     n, story, start, end = chosen
     clip = story_clip(runs_root / n["id"] / "newscast.mp3", start, end, video_dir / "public" / "clip.mp3")
-    p = props(n, story, to_captions(words(gw, clip)), end - start, prefs)
+    p = props(n, story, to_captions(words(gw, clip)), end - start, prefs, days_posts_read(newscasts))
     (video_dir / "public" / "props.json").write_text(json.dumps(p))
     out = render(day, video_dir)
     key = f"video/{day}.mp4"
