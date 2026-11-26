@@ -100,6 +100,7 @@ def test_scrape_returns_only_new_posts_and_advances_cursor(tmp_path):
     assert first.posts and first.counts["new_posts"] == len(first.posts)
     assert get_cursor(db, "rss") == NOW
     assert first.counts["apify_usd"] == 0.036  # three runs at 0.012, read from each run object
+    assert sorted(first.counts["apify_runs"]) == ["run-ds-hn", "run-ds-rd", "run-ds-rss"]  # finish re-reads final cost
     second = scrape(FakeGateway(_all_routes()), prefs, db, NOW)
     assert second.posts == []
 

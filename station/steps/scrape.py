@@ -155,6 +155,7 @@ def scrape(gw, prefs: Prefs, db, now: datetime) -> ScrapeResult:
     result = ScrapeResult(posts=[])
     found = 0
     usd = 0.0
+    run_ids: list[str] = []
     for source_type, refs in _beat_lookup(prefs).items():
         since = get_cursor(db, source_type) or now - FIRST_RUN_WINDOW
         if source_type == "hackernews":
@@ -166,11 +167,12 @@ def scrape(gw, prefs: Prefs, db, now: datetime) -> ScrapeResult:
             result.notes.append(f"{source_type} failed: {e}")
             continue
         usd += run.usd
+        run_ids.append(run.run_id)
         posts = [p for item in run.items for p in normalize(source_type, item, _beat_for(source_type, item, refs))]
         found += len(posts)
         new = upsert_posts(db, posts)
         result.posts.extend(new)
         result.counts[f"{source_type}_new"] = len(new)
         set_cursor(db, source_type, now)
-    result.counts.update(new_posts=len(result.posts), seen=found, apify_usd=round(usd, 4))
+    result.counts.update(new_posts=len(result.posts), seen=found, apify_usd=round(usd, 4), apify_runs=run_ids)
     return result
