@@ -1,7 +1,7 @@
 import json
 
 from station.gateway import GatewayError, Response
-from station.steps.dedupe import PINECONE_VERSION, cluster, pinecone_pairs, similar, upsert_texts
+from station.steps.dedupe import PINECONE_VERSION, cluster, pinecone_pairs, record_id, similar, upsert_texts
 from station.steps.judge import judge_all
 from station.store import Post
 from tests.fakes import FakeGateway
@@ -22,7 +22,8 @@ class PineFake:
         if self.fail:
             raise GatewayError("pinecone", 503, "down")
         if path.endswith("/search"):
-            return Response(200, {}, json.dumps({"result": {"hits": [{"_id": i, "_score": s} for i, s in self.hits]}}).encode())
+            return Response(200, {}, json.dumps({"result": {"hits": [{"_id": record_id(i), "_score": s, "fields": {"post_id": i}}
+                                                                for i, s in self.hits]}}).encode())
         return Response(201, {}, b"{}")
 
 
@@ -31,7 +32,8 @@ def test_high_similarity_becomes_candidate():
     pairs, notes = pinecone_pairs(gw, [story("new:2", "Hoor Al Qasimi to curate 2028 Venice Biennale")])
     assert pairs == [("old:1", "new:2")] and notes == []  # itself and the 0.2 match are ignored
     upsert = [c for c in gw.calls if c[2].endswith("/upsert")][0]
-    assert json.loads(upsert[3].decode().splitlines()[0])["_id"] == "new:2"  # stored after searching
+    first = json.loads(upsert[3].decode().splitlines()[0])  # stored after searching
+    assert first["_id"] == record_id("new:2") and first["post_id"] == "new:2"
 
 
 def test_sends_version_header():
@@ -67,5 +69,10 @@ def test_posts_with_no_text_are_skipped():  # Pinecone rejects a whole batch wit
     gw = PineFake()
     pairs, notes = pinecone_pairs(gw, [empty, story("new:2", "Real title")])
     assert notes == [] and len([c for c in gw.calls if c[2].endswith("/search")]) == 1
-    upserted = [json.loads(x)["_id"] for c in gw.calls if c[2].endswith("/upsert") for x in c[3].decode().splitlines()]
+    upserted = [json.loads(x)["post_id"] for c in gw.calls if c[2].endswith("/upsert") for x in c[3].decode().splitlines()]
     assert upserted == ["new:2"]
+
+
+def test_record_ids_are_short_ascii():  # Pinecone refused an RSS id holding an accented URL
+    rid = record_id("rss:https://www.theartnewspaper.com/2026/11/26/titian-self-portrait-é")
+    assert rid.isascii() and len(rid) <= 64 and rid == record_id("rss:https://www.theartnewspaper.com/2026/11/26/titian-self-portrait-é")

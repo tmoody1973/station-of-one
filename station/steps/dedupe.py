@@ -11,6 +11,7 @@ with "missing field spec"), so the index is an integrated index (llama-text-embe
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from concurrent.futures import ThreadPoolExecutor
@@ -117,18 +118,25 @@ def embed_text(p: Post) -> str:
     return f"{p.title} {p.text[:300]}".strip()  # title + start only: free-tier embedding budget
 
 
+def record_id(post_id: str) -> str:
+    """Pinecone ids must be ASCII; post ids can hold any URL. The real id rides along as post_id."""
+    return hashlib.sha1(post_id.encode()).hexdigest()
+
+
 def upsert_texts(gw, index: str, namespace: str, items: list[tuple[str, str]]) -> None:
     items = [(pid, text) for pid, text in items if text.strip()]
     for i in range(0, len(items), 96):  # Pinecone's batch limit
-        lines = "\n".join(json.dumps({"_id": pid, "text": text}) for pid, text in items[i:i + 96])
+        lines = "\n".join(json.dumps({"_id": record_id(pid), "post_id": pid, "text": text})
+                          for pid, text in items[i:i + 96])
         _pine(gw, "POST", f"/indexes/{index}/records/namespaces/{namespace}/upsert", lines.encode(),
               "application/x-ndjson")
 
 
 def similar(gw, index: str, namespace: str, text: str, top_k: int = 5) -> list[tuple[str, float]]:
-    body = json.dumps({"query": {"inputs": {"text": text}, "top_k": top_k}, "fields": []}).encode()
+    body = json.dumps({"query": {"inputs": {"text": text}, "top_k": top_k}, "fields": ["post_id"]}).encode()
     r = _pine(gw, "POST", f"/indexes/{index}/records/namespaces/{namespace}/search", body, "application/json")
-    return [(h["_id"], float(h["_score"])) for h in json.loads(r.body)["result"]["hits"]]
+    return [(h["fields"]["post_id"], float(h["_score"])) for h in json.loads(r.body)["result"]["hits"]
+            if h.get("fields", {}).get("post_id")]
 
 
 def pinecone_pairs(gw, stories: list[Post]) -> tuple[list[tuple[str, str]], list[str]]:
