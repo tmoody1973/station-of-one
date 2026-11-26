@@ -25,6 +25,7 @@ ATTRIBUTION = ("according to", " say", " says", " said", "posted", "wrote", "rep
 LABEL = re.compile(r"(?im)^\s*(host|reporter|anchor|narrator|speaker\s*\d*)\s*:")
 STAGE = re.compile(r"\([^)]*\)|\[[^\]]*\]|\*")
 TAG = re.compile(r"<[^>]+>")
+INNER_QUOTES = str.maketrans({'"': "'", "\u201c": "'", "\u201d": "'"})
 
 SYSTEM = """You write copy for The Hourly Scroll, a five-minute public-radio-style newscast on WONE, 1.0 FM.
 Rules, all mandatory:
@@ -94,7 +95,7 @@ def _first_sentence(text: str, max_words: int = 25) -> str:
 def overheard_chapter(comment: Judged) -> Chapter:
     p = comment.post
     text = (f"Overheard this hour, on {p.source}. A poster who goes by {p.author or 'an anonymous user'} "
-            f'wrote: "{_first_sentence(p.text)}"')
+            f'wrote: "{_first_sentence(p.text).translate(INNER_QUOTES)}"')
     return Chapter(0, "overheard", "Overheard", p.id, (Turn("host", text),))
 
 
@@ -151,17 +152,19 @@ def messages_for(kind: str, story: Judged, sources: list[Post], seconds: int) ->
 
 def _write_story(gw, model: str, kind: str, index: int, story: Judged, sources: list[Post], seconds: int):
     title = "Lead story" if kind == "lead" else f"Story {index + 1}"
+    messages = messages_for(kind, story, sources, seconds)
     last = "no reply"
-    for _ in range(2):  # one retry
+    for attempt in range(2):  # one retry, told what was wrong
         try:
             reply = gw.json("POST", "ollama", "/api/chat", {
-                "model": model, "messages": messages_for(kind, story, sources, seconds),
-                "stream": False, "think": False, "options": {"temperature": 0.4}})["message"]["content"]
+                "model": model, "messages": messages, "stream": False, "think": False,
+                "options": {"temperature": 0.4}})["message"]["content"]
             headline, summary, script = parse_story_reply(reply)
         except GatewayError as e:
             return None, f"{title} dropped: writer error {e.status}"
         except (ValueError, KeyError, TypeError) as e:
             last = str(e)
+            messages = [*messages, {"role": "user", "content": f"That reply was unusable ({last}). Use the exact format."}]
             continue
         turns = parse_turns(script) if kind == "lead" else (Turn("host", script),)
         chapter = Chapter(0, kind, title, story.post.id, turns, headline, summary)
@@ -169,6 +172,12 @@ def _write_story(gw, model: str, kind: str, index: int, story: Judged, sources: 
         if not issues:
             return chapter, None
         last = "; ".join(issues)
+        if attempt == 1 and all(i.startswith("length") for i in issues):
+            return chapter, f"{title} kept with {last}"  # a short lead beats no lead
+        target = round(seconds * WORDS_PER_SECOND)
+        messages = [*messages, {"role": "assistant", "content": reply},
+                    {"role": "user", "content": f"Fix these problems and rewrite: {last}. "
+                                                f"The script must be about {target} words."}]
     return None, f"{title} dropped after retry: {last}"
 
 

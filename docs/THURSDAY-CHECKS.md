@@ -256,3 +256,4 @@ Original notes:
    - `POST /api/chat` with `{"model":"gemma4:31b","messages":[...],"stream":false,"think":false}` →
      **402 `{"error":"Add usage credits or subscribe and save up to 66%: https://ollama.com/plans"}`**.
      The gateway forwards correctly; the Ollama account has no credits. No free cloud usage.
+   - After Tarik added credits: same request → **200 in 0.6 s**, `{"model":"gemma4:31b","message":{"role":"assistant","content":"..."},"done":true,"done_reason":"stop","total_duration":250502667,"prompt_eval_count":24,"eval_count":30}`. **PASS.**

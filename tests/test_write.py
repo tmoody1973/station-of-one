@@ -103,3 +103,24 @@ def test_ollama_error_drops_chapter_not_build():
     chapters, notes = write_all(gw, rundown_of(j("a", 0.6)), load_prefs(), datetime(2026, 11, 27, 9, 0, tzinfo=CHI),
                                 read_today=10, not_aired_today=9, sources={}, concurrency=1)
     assert [c.kind for c in chapters] == ["open", "signoff"] and notes
+
+
+SHORT_LEAD = ("HEADLINE: Lead headline\nSUMMARY: One. Two.\nSCRIPT:\nHOST: Our lead, according to Hacker News.\n"
+              "REPORTER: " + " ".join(["word"] * 60) + " posters say.\nHOST: That's the lead.")
+
+
+def test_retry_tells_model_what_was_wrong_and_keeps_length_only_miss():
+    gw = FakeGateway({("POST", "ollama", "/api/chat"): [ok({"message": {"content": SHORT_LEAD}}),
+                                                       ok({"message": {"content": SHORT_LEAD}})]})
+    chapters, notes = write_all(gw, rundown_of(j("a", 0.6)), load_prefs(), datetime(2026, 11, 27, 9, 0, tzinfo=CHI),
+                                read_today=10, not_aired_today=9, sources={}, concurrency=1)
+    assert [c.kind for c in chapters] == ["open", "lead", "signoff"]  # kept despite length
+    assert any("length" in n and "kept" in n for n in notes)
+    retry_prompt = gw.calls[1][3]["messages"][-1]["content"]
+    assert "words" in retry_prompt and "252" in retry_prompt
+
+
+def test_overheard_inner_quotes_become_single():
+    c = j("c1", 0.5, kind="comment", part="overheard", overheard_p=0.8)
+    c = type(c)(c.post.__class__(**{**c.post.__dict__, "text": 'It says "English is hard" here.'}), c.answers, c.model)
+    assert '"It says \'English is hard\' here."' in overheard_chapter(c).turns[0].text
