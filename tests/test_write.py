@@ -44,6 +44,21 @@ def test_parse_story_reply():
     assert (h, s, script) == ("Firefox ESR 115 nears its end", "One. Two.", "Posters say it ends.")
 
 
+def test_short_script_is_not_a_problem():  # thin source -> short story; padding invites invention
+    assert problems(Chapter(1, "story", "x", "s", (Turn("host", "Posters on Hacker News say a paper claims faster factoring."),)), 40) == []
+
+
+def test_too_long_is_a_problem():
+    long = " ".join(["word"] * 200) + " according to Hacker News."
+    assert any(p.startswith("length") for p in problems(Chapter(1, "story", "x", "s", (Turn("host", long),)), 40))
+
+
+def test_prompt_says_length_is_a_maximum_and_never_pad():
+    from station.steps.write import messages_for
+    text = messages_for("story", j("a", 0.6), [], 40)[-1]["content"]
+    assert "at most" in text and "never add facts" in text.lower()
+
+
 def test_problems_flags_label_bracket_and_length():
     bad = Chapter(1, "story", "x", "s", (Turn("host", "Host: (calmly) hi"),))
     assert problems(bad, 40)
@@ -86,7 +101,7 @@ def test_write_all_orders_chapters_and_keeps_headlines():
     assert [c.kind for c in chapters] == ["open", "lead", "story", "signoff"]
     assert chapters[1].headline == "Lead headline" and [t.speaker for t in chapters[1].turns] == ["host", "reporter", "host"]
     body = gw.calls[0][3]
-    assert body["stream"] is False and body["think"] is False and body["model"] == "gemma4:31b"
+    assert body["stream"] is False and body["think"] is False and body["model"] == "deepseek-v4.1-flash"
 
 
 def test_write_all_retries_once_then_drops_chapter():
@@ -106,7 +121,7 @@ def test_ollama_error_drops_chapter_not_build():
 
 
 SHORT_LEAD = ("HEADLINE: Lead headline\nSUMMARY: One. Two.\nSCRIPT:\nHOST: Our lead, according to Hacker News.\n"
-              "REPORTER: " + " ".join(["word"] * 60) + " posters say.\nHOST: That's the lead.")
+              "REPORTER: " + " ".join(["word"] * 400) + " posters say.\nHOST: That's the lead.")  # too long
 
 
 def test_retry_tells_model_what_was_wrong_and_keeps_length_only_miss():
@@ -117,7 +132,7 @@ def test_retry_tells_model_what_was_wrong_and_keeps_length_only_miss():
     assert [c.kind for c in chapters] == ["open", "lead", "signoff"]  # kept despite length
     assert any("length" in n and "kept" in n for n in notes)
     retry_prompt = gw.calls[1][3]["messages"][-1]["content"]
-    assert "words" in retry_prompt and "252" in retry_prompt
+    assert "words" in retry_prompt and "252" in retry_prompt and "never add facts" in retry_prompt.lower()
 
 
 def test_overheard_inner_quotes_become_single():

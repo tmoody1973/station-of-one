@@ -209,6 +209,6 @@
   },
   "feedback": [],
   "writer": {
-    "model": "gemma4:31b"
+    "model": "deepseek-v4.1-flash"
   }
 }

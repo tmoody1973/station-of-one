@@ -27,7 +27,7 @@ def test_beats_and_sources():
     assert ai.used_in == "newscast"
     assert any(s.type == "hackernews" for s in ai.sources)
     assert p.station.timezone == "America/Chicago"
-    assert p.writer.model == "gemma4:31b"
+    assert p.writer.model == "deepseek-v4.1-flash"
     assert p.station.id_lines_newscast[0] == "WONE, 1.0 FM. One station, one listener."
 
 

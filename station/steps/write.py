@@ -128,8 +128,8 @@ def problems(chapter: Chapter, seconds: int) -> list[str]:
         found.append("stage direction or markup")
     words = len(TAG.sub("", spoken).split())
     target = seconds * WORDS_PER_SECOND
-    if not (1 - LENGTH_TOLERANCE) * target <= words <= (1 + LENGTH_TOLERANCE) * target:
-        found.append(f"length {words} words, target {round(target)}")
+    if words > (1 + LENGTH_TOLERANCE) * target:  # short is fine: thin sources must not be padded
+        found.append(f"length {words} words, at most {round(target)}")
     if not any(a in spoken.lower() for a in ATTRIBUTION):
         found.append("no attribution")
     return found
@@ -138,7 +138,8 @@ def problems(chapter: Chapter, seconds: int) -> list[str]:
 def messages_for(kind: str, story: Judged, sources: list[Post], seconds: int) -> list[dict]:
     target = round(seconds * WORDS_PER_SECOND)
     posts = [story.post, *[s for s in sources if s.id != story.post.id]]
-    lines = [f"Write the {'lead story' if kind == 'lead' else 'story'} script, about {target} words ({seconds} seconds)."]
+    lines = [f"Write the {'lead story' if kind == 'lead' else 'story'} script: at most {target} words ({seconds} seconds). "
+             "If the posts give less material, write less. Never add facts, quotes or comments that are not in the posts."]
     if story.primary_source < 0.5:
         lines.append("The central claim has no linked primary source: hedge clearly.")
     if kind == "lead":
@@ -177,7 +178,7 @@ def _write_story(gw, model: str, kind: str, index: int, story: Judged, sources: 
         target = round(seconds * WORDS_PER_SECOND)
         messages = [*messages, {"role": "assistant", "content": reply},
                     {"role": "user", "content": f"Fix these problems and rewrite: {last}. "
-                                                f"The script must be about {target} words."}]
+                                                f"At most {target} words. Never add facts that are not in the posts."}]
     return None, f"{title} dropped after retry: {last}"
 
 
