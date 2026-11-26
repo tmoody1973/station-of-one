@@ -287,3 +287,9 @@ Original notes:
 - Probe: same story, other outlet 0.67; unrelated ≤ 0.12. Real data: ARTnews vs The Art Newspaper (Venice Biennale, the Nov 26 5 pm duplicate) 0.71; next unrelated art story 0.28. Threshold set to 0.50; Jev decides.
 - Gotchas found on real data: one empty text rejects the whole upsert batch (now skipped); record ids must be ASCII (now SHA-1 of the post id, real id stored as `post_id`).
 - Seeded 214 stories from the last 24 h in 3.3 s. Leftovers: namespace `probe` (3 test records) and some raw-id records from the failed first seed (ignored by search: no `post_id`).
+
+### 12. Podcast feed (Nov 26, spec §9)
+
+- `feed.xml` at the bucket root: `application/rss+xml`, one item (latest newscast), chapter times as plain text, synthetic/machine-edited statement, cover `cover.png` 3000×3000 (130 KB, original art).
+- Found while checking: the public host served a **cached old copy** of a rebuilt hour's MP3 (2 pm: 1,414,470 bytes from 1:14 pm vs 1,294,307 rebuilt at 1:32 pm; `X-Tigris-Read-Source: cache`) because MP3s are cached as immutable. Fix: MP3 keys carry a content fingerprint (`audio/<id>-<sha1[:8]>.mp3`). After the fix the feed's enclosure length matches the served file exactly.
+- Not yet checked: playing the feed in a real podcast app by URL (Tarik, on his phone).
