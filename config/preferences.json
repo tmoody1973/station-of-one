@@ -362,6 +362,12 @@
   "writer": {
     "model": "deepseek-v4.1-flash"
   },
+  "table_voices": {
+    "anchor": "Schedar",
+    "uncle": "Gacrux",
+    "anchor_style": "calm, careful public-radio host; warm, measured, brisk",
+    "uncle_style": "confident and playful know-it-all at a backyard barbecue, a little conspiratorial, brisk"
+  },
   "hosting": {
     "bucket": "patient-mountain-3400",
     "public_base": "https://patient-mountain-3400.fly.storage.tigris.dev"

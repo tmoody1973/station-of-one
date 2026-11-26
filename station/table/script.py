@@ -35,6 +35,7 @@ class TablePart:
     kind: str  # question | opening | round1 | round2 | round3 | verdict | record
     title: str
     turns: tuple[Turn, ...]
+    story_id: str | None = None  # lets the newscast's chapter_timings() time Table parts too
 
 
 def _issues(data: dict) -> list[str]:

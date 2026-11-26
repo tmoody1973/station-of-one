@@ -22,5 +22,17 @@ Voices are synthetic; the show is machine-edited. Sources for every story: {{ ba
     <itunes:duration>{{ (n.audio.duration_ms / 1000) | round | int }}</itunes:duration>
     <itunes:explicit>false</itunes:explicit>
   </item>
+  {% for t in table_episodes %}
+  <item>
+    <title>The Table: {{ t.question }}</title>
+    <description>A daily debate from WNCL: the Anchor and the Uncle argue a thread from {{ t.thread.source }}, and TypeSafe AI's Jev scores every claim. {% for c in t.chapters %}{{ c.start_ms | duration }} {{ c.title }}
+{% endfor %}Voices are synthetic; the show is machine-edited. Rulings and sources: {{ base }}/table/{{ t.day }}/index.html</description>
+    <enclosure url="{{ base }}/{{ t.audio.key }}" length="{{ t.audio.bytes }}" type="audio/mpeg"/>
+    <guid isPermaLink="false">{{ t.id }}</guid>
+    <pubDate>{{ t.pub_date }}</pubDate>
+    <itunes:duration>{{ (t.audio.duration_ms / 1000) | round | int }}</itunes:duration>
+    <itunes:explicit>false</itunes:explicit>
+  </item>
+  {% endfor %}
 </channel>
 </rss>

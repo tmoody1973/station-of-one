@@ -7,6 +7,7 @@ link names its file (/index.html, /h/<date>/<HHMM>/index.html).
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -81,8 +82,10 @@ def audio_path(n: dict) -> str:
     return "/" + ((n.get("audio") or {}).get("key") or f"audio/{n['id']}.mp3")
 
 
-def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None) -> str:
-    return env().get_template("front.html").render(**_context(current, today, prefs, "front"), video_url=video_url)
+def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None,
+                 table: dict | None = None) -> str:
+    return env().get_template("front.html").render(**_context(current, today, prefs, "front"), video_url=video_url,
+                                                   table=table)
 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None) -> str:
@@ -111,6 +114,7 @@ def _detail(name: str, c: dict) -> str:
         "archive": f"bundle of {round(g('bytes', 0) / 1e6, 1)} MB with the decision log",
         "finish": "control room updated, Sprite checkpoint",
         "video": f"{g('seconds', 0):.0f} s video, {g('words', 0)} captioned words",
+        "table": "The Table, from yesterday's threads",
     }.get(name, "")
 
 
@@ -178,7 +182,12 @@ def render_settings(prefs: Prefs, beat_counts: dict[str, tuple[int, int]]) -> st
         harm=round(prefs.thresholds.private_harm_max_probability * 100))
 
 
-def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int) -> str:
+def table_episodes(table_root: Path) -> list[dict]:
+    """The Table's episodes, newest first (data/table/<day>/table.json)."""
+    return [json.loads(f.read_text()) for f in sorted(table_root.glob("*/table.json"), reverse=True)]
+
+
+def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int, table_episodes: list[dict] = ()) -> str:
     """Podcast feed (spec §9): one item, the latest newscast, replaced each hour."""
     from email.utils import format_datetime
 
@@ -186,7 +195,9 @@ def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int) -> str:
         n=newscast, station=prefs.station, base=prefs.hosting.public_base, audio_bytes=audio_bytes,
         audio=audio_path(newscast),
         hour_label=_hour_label(newscast), date_label=_date_label(newscast), page=hour_path(newscast["id"]),
-        pub_date=format_datetime(datetime.fromisoformat(newscast["hour_local"])))
+        pub_date=format_datetime(datetime.fromisoformat(newscast["hour_local"])),
+        table_episodes=[{**t, "pub_date": format_datetime(datetime.fromisoformat(f"{t['day']}T08:00:00-06:00"))}
+                        for t in table_episodes])
 
 
 def todays_newscasts(run: Path, runs_root: Path = RUNS_ROOT) -> list[dict]:
@@ -207,13 +218,15 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     hour.parent.mkdir(parents=True, exist_ok=True)
     day = current["id"][:10]
     has_video = (TEMPLATES.parent / "video" / "out" / f"{day}.mp4").exists()  # rendered after the last newscast
-    front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None))
+    episodes = table_episodes(Path(os.environ.get("STATION_TABLE", "data/table")))
+    front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
+                                  table=episodes[0] if episodes else None))
     hour.write_text(render_hour(current, prefs, today))
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
-    feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0))
+    feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0, episodes))
     for asset in ("cover-dial.png", "logo.svg"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())

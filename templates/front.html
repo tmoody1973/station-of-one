@@ -153,6 +153,13 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
 </section>
 {% endif %}
 
+{% if table %}
+<section class="table-card" style="border:2px solid #141414;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:8px">
+  <span style="font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:#C8102E">The Table · WNCL · daily debate</span>
+  <a href="/table/{{ table.day }}/index.html" style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;text-decoration:none">{{ table.question }}</a>
+  <span style="color:#555">The Anchor vs. the Uncle, refereed by Jev. {{ {"anchor": "The Anchor took it", "uncle": "The Uncle took it", "draw": "A draw"}[table.verdict.winner] }}, {{ "%.1f" | format(table.verdict.anchor) }} to {{ "%.1f" | format(table.verdict.uncle) }}. Season: Anchor {{ table.record.anchor }}, Uncle {{ table.record.uncle }}.</span>
+</section>
+{% endif %}
 <section id="newscasts" class="hours">
   <h2>Today's newscasts</h2>
   {% for h in today %}

@@ -44,7 +44,12 @@ def tts_request(chapter: Chapter, voices: Voices) -> dict:
 
 
 def synthesize(gw, chapter: Chapter, voices: Voices, out: Path) -> float:
-    resp = gw.json("POST", "gemini", PATH, tts_request(chapter, voices), timeout=180)
+    return synthesize_request(gw, tts_request(chapter, voices), out)
+
+
+def synthesize_request(gw, req: dict, out: Path) -> float:
+    """Send one TTS request, save the WAV, return its seconds (shared with The Table)."""
+    resp = gw.json("POST", "gemini", PATH, req, timeout=180)
     data = base64.b64decode(resp["candidates"][0]["content"]["parts"][0]["inlineData"]["data"])
     if data[:4] != b"RIFF":
         raise ValueError(f"expected a RIFF WAV from Gemini, got {data[:4]!r}")

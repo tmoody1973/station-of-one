@@ -31,10 +31,10 @@ def _decision_lines(run: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def bundle(run: Path) -> Path:
+def bundle(run: Path, files: list[str] = FILES) -> Path:
     out = run / f"{run.name}.zip"
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-        for name in FILES:
+        for name in files:
             if (run / name).exists():
                 z.write(run / name, name)
         z.writestr("decisions.jsonl", _decision_lines(run))
@@ -77,7 +77,7 @@ def upload(gw, folder_id: str, path: Path) -> str:
     return _check(r)["entries"][0]["id"]
 
 
-def archive(gw, run: Path) -> str:
+def archive(gw, run: Path, files: list[str] = FILES) -> str:
     top = ensure_folder(gw, "0", ARCHIVE_FOLDER)
     day = ensure_folder(gw, top, run.name[:10])
-    return upload(gw, day, bundle(run))
+    return upload(gw, day, bundle(run, files))

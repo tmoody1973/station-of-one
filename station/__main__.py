@@ -394,11 +394,88 @@ def cmd_table_script(run: Path) -> None:
             rec.notes.append("Writer's delivery failed checks twice; the checked claim text was used.")
 
 
+def _table_parts(run: Path) -> list:
+    from station.steps.write import Turn
+    from station.table.script import TablePart
+
+    return [TablePart(p["index"], p["kind"], p["title"], tuple(Turn(**t) for t in p["turns"]))
+            for p in read_json(run, "script.json")["parts"]]
+
+
+def cmd_table_voice(run: Path) -> None:
+    from station.table.build import voice_parts
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("voice", "Gemini TTS") as rec:
+        wavs = voice_parts(Gateway(), _table_parts(run), load_prefs().table_voices, run)
+        write_json(run, "voice.json", {"paths": {str(i): str(p) for i, p in wavs.items()}})
+        rec.counts.update(parts_voiced=len(wavs))
+
+
+def cmd_table_assemble(run: Path) -> None:
+    from station.table.build import assemble_table, episode_record
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("assemble", "ffmpeg") as rec:
+        wavs = {int(i): Path(p) for i, p in read_json(run, "voice.json")["paths"].items()}
+        timings = assemble_table(run, _table_parts(run), wavs, STING)
+        ep = episode_record(run.name, read_json(run, "topic.json"), read_json(run, "claims.json"),
+                            read_json(run, "rulings.json"), timings, run / "newscast.mp3")
+        write_json(run, "table.json", ep)
+        rec.counts.update(chapters=len(timings), duration_s=round(ep["audio"]["duration_ms"] / 1000, 1))
+
+
+def cmd_table_page(run: Path) -> None:
+    from station.table.build import render_table, table_path
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("page", "Code") as rec:
+        out = run / "site" / table_path(run.name)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(render_table(read_json(run, "table.json"), load_prefs()))
+        rec.counts.update(pages=1)
+
+
+def cmd_table_publish(run: Path) -> None:
+    from station.steps.archive import archive
+    from station.table.build import ARCHIVE_FILES, publish_table
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("publish", "Tigris + Box") as rec:
+        gw = Gateway()
+        keys = publish_table(gw, run, load_prefs())
+        rec.counts.update(files=len(keys), box_file_id=archive(gw, run, ARCHIVE_FILES))
+
+
+TABLE_STEPS = ["table-topic", "table-argue", "table-referee", "table-script", "table-voice", "table-assemble",
+               "table-page", "table-publish"]
+
+
+def run_table(day: str) -> Path:
+    """The whole Table episode for `day`. Any failure raises before publish (no half episode)."""
+    run = Path(os.environ.get("STATION_TABLE", "data/table")) / day
+    run.mkdir(parents=True, exist_ok=True)
+    for step in TABLE_STEPS:
+        COMMANDS[step](run)
+        if step == "table-topic" and (run / "topic.json").exists() and read_json(run, "topic.json").get("none"):
+            break  # no qualifying thread today: no episode, noted in the run log
+    return run
+
+
+def cmd_table(run: Path) -> None:
+    """Build step after the first newscast of the day: The Table from yesterday's threads."""
+    from datetime import date, timedelta
+
+    run_table((date.fromisoformat(run.name[:10]) - timedelta(days=1)).isoformat())
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
             "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
-            "table-referee": cmd_table_referee, "table-script": cmd_table_script}
+            "table-referee": cmd_table_referee, "table-script": cmd_table_script, "table-voice": cmd_table_voice,
+            "table-assemble": cmd_table_assemble, "table-page": cmd_table_page, "table-publish": cmd_table_publish,
+            "table": cmd_table}
 
 
 def cmd_build(hour: str | None) -> None:
@@ -416,7 +493,10 @@ def cmd_build(hour: str | None) -> None:
         print(f"build {when:%Y-%m-%dT%H}: outside broadcast hours, nothing to do")
         return
     last_hour = int(load_prefs().station.last_newscast.split(":")[0])
-    extra = {"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour else {}  # daily video after the last newscast
+    first_hour = int(load_prefs().station.first_newscast.split(":")[0])
+    extra = ({"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour  # daily video after the last newscast
+             else {"steps": [*build_mod.STEPS, "table"]} if when.hour == first_hour  # The Table, from yesterday
+             else {})
     result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
 
@@ -428,6 +508,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--hour", help="build: newscast hour YYYY-MM-DDTHH (local); default = next top of the hour")
     parser.add_argument("--day", help="video: YYYY-MM-DD; uses that day's last run folder")
     args = parser.parse_args(argv)
+    if args.step == "table" and args.day:
+        run_table(args.day)
+        return 0
     if args.step == "video" and args.day and args.run is None:
         runs = sorted(Path(os.environ.get("STATION_RUNS", "data/runs")).glob(f"{args.day}T??"))
         if not runs:

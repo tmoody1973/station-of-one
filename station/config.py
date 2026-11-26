@@ -41,6 +41,14 @@ class Voices:
 
 
 @dataclass(frozen=True)
+class TableVoices:
+    anchor: str
+    uncle: str
+    anchor_style: str
+    uncle_style: str
+
+
+@dataclass(frozen=True)
 class Station:
     name: str
     show_name: str
@@ -71,6 +79,7 @@ class Prefs:
     beats: tuple[Beat, ...]
     writer: Writer
     hosting: Hosting
+    table_voices: TableVoices
 
 
 def _need(d: dict[str, Any], key: str, where: str) -> Any:
@@ -111,4 +120,7 @@ def load_prefs(path: Path = DEFAULT_PREFS) -> Prefs:
     writer = Writer(model=_need(_need(d, "writer", "top level"), "model", "writer"))
     h = _need(d, "hosting", "top level")
     hosting = Hosting(bucket=_need(h, "bucket", "hosting"), public_base=_need(h, "public_base", "hosting"))
-    return Prefs(station=station, voices=voices, thresholds=thresholds, beats=beats, writer=writer, hosting=hosting)
+    tv = _need(d, "table_voices", "top level")
+    table_voices = TableVoices(**{k: _need(tv, k, "table_voices") for k in ("anchor", "uncle", "anchor_style", "uncle_style")})
+    return Prefs(station=station, voices=voices, thresholds=thresholds, beats=beats, writer=writer, hosting=hosting,
+                 table_voices=table_voices)
