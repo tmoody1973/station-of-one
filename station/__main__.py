@@ -122,8 +122,27 @@ def cmd_write(run: Path) -> None:
         rec.notes.extend(notes)
 
 
+def cmd_voice(run: Path) -> None:
+    from station.steps import voice as voice_mod
+    from station.steps.write import Chapter
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("voice", "Gemini TTS") as rec:
+        chapters = [Chapter.from_dict(d) for d in read_json(run, "scripts.json")]
+        result = voice_mod.voice_all(Gateway(), chapters, load_prefs().voices, run)
+        write_json(run, "voice.json", {"paths": {i: str(p) for i, p in result.paths.items()},
+                                       "seconds": result.seconds, "failed": result.failed})
+        rec.counts.update(chapters_voiced=len(result.paths), failed=len(result.failed),
+                          audio_seconds=round(sum(result.seconds.values()), 1))
+        rec.notes.extend(result.notes)
+        required = {c.index: c.kind for c in chapters if c.kind in ("open", "signoff")}
+        missing = [required[i] for i in result.failed if i in required]
+        if missing:
+            raise RuntimeError(f"required chapters not voiced: {', '.join(missing)}")
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
-            "write": cmd_write}
+            "write": cmd_write, "voice": cmd_voice}
 
 
 def main(argv: list[str] | None = None) -> int:

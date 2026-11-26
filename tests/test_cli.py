@@ -102,3 +102,31 @@ def test_write_cli_uses_cluster_sources_and_counts(tmp_path, monkeypatch):
     assert json.loads((run / "scripts.json").read_text())[0]["kind"] == "open"
     step = json.loads((run / "run_log.json").read_text())["steps"][-1]
     assert (step["tool"], step["counts"]["chapters"], step["notes"]) == ("Ollama Cloud", 1, ["note"])
+
+
+def _scripts(run):
+    from station.steps.write import Chapter, Turn
+    chs = [Chapter(0, "open", "Open", None, (Turn("host", "o"),)), Chapter(1, "story", "Story 2", "hn:2", (Turn("host", "s"),)),
+           Chapter(2, "signoff", "Sign-off", None, (Turn("host", "b"),))]
+    (run / "scripts.json").write_text(json.dumps([c.to_dict() for c in chs]))
+
+
+def test_voice_cli_tolerates_failed_story(tmp_path, monkeypatch):
+    import pytest
+    from station.steps import voice as voice_mod
+
+    run = tmp_path / "run"
+    run.mkdir()
+    _scripts(run)
+    monkeypatch.setattr(voice_mod, "voice_all", lambda gw, chs, voices, run_: voice_mod.VoiceResult(
+        {0: run_ / "audio/ch_00.wav", 2: run_ / "audio/ch_02.wav"}, {0: 4.0, 2: 6.0}, [1], ["Story 2 not voiced: x"]))
+    assert main(["voice", "--run", str(run)]) == 0
+    out = json.loads((run / "voice.json").read_text())
+    assert out["failed"] == [1] and out["seconds"] == {"0": 4.0, "2": 6.0}
+    step = json.loads((run / "run_log.json").read_text())["steps"][-1]
+    assert step["counts"] == {"chapters_voiced": 2, "failed": 1, "audio_seconds": 10.0} and step["notes"]
+
+    monkeypatch.setattr(voice_mod, "voice_all", lambda gw, chs, voices, run_: voice_mod.VoiceResult(
+        {1: run_ / "a"}, {1: 3.0}, [0, 2], ["open failed"]))
+    with pytest.raises(RuntimeError, match="open"):
+        main(["voice", "--run", str(run)])
