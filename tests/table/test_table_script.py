@@ -88,6 +88,7 @@ def test_ordinary_win_allowed_but_declaring_a_winner_is_not():  # real run: "det
     from station.table.script import FORBIDDEN
 
     assert not FORBIDDEN.search("Here's my theory: details win people over, some posters say.")
+    assert not FORBIDDEN.search("One poster reports it is exactly the legibility win this font claims.")  # real claim text
     for bad in ("And the Uncle wins this one.", "I win, some posters say.", "The winner is clear.",
-                "That wins the debate.", "It's 80% true.", "Jev's verdict is in.", "Ask @mallory."):
+                "That wins the debate.", "This one wins this round.", "It's 80% true.", "Jev's verdict is in.", "Ask @mallory."):
         assert FORBIDDEN.search(bad), bad

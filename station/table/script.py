@@ -18,7 +18,7 @@ STATION_ID = "WNCL, broadcasting to a potential audience of one."
 WELCOME = "Welcome to The Table, where two of us argue about one thread and Jev keeps score."  # code-written: the writer repeated the question
 SPEAKER = {"anchor": "Anchor", "uncle": "Uncle"}
 # Declaring a result is code's job. "win" as an ordinary verb ("details win people over") is fine.
-FORBIDDEN = re.compile(r"\d\s*%|\bpercent\b|\bwinner\b|\b(?:I|we|you|he|anchor|uncle)\s+wins?\b|\bwins?\s+(?:this|the|today|tonight)\b"
+FORBIDDEN = re.compile(r"\d\s*%|\bpercent\b|\bwinner\b|\b(?:I|we|you|he|anchor|uncle)\s+wins?\b|\bwins?\s+(?:this|the|today's|tonight's)\s+(?:one|round|debate|argument|day)\b"
                        r"|\bverdict\b|\bscor(?:e|ed|ing)\b|@\w", re.I)
 MAX_WORDS = 75
 
