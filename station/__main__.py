@@ -221,6 +221,8 @@ def cmd_assemble(run: Path) -> None:
         record = asm.newscast_record(run.name, hour_of(run, prefs.station.timezone), prefs, chapters, timings, rundown,
                                      load_sources(run, [s.post for s in rundown.stories]), counts, duration)
         write_json(run, "chapters.json", timings)
+        if (run / "newscast.mp3").exists():
+            record["audio"]["key"] = asm.audio_key(run.name, run / "newscast.mp3")
         write_json(run, "newscast.json", record)
         from station.store import record_aired
 

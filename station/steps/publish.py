@@ -7,6 +7,7 @@ the previous front page stays online.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from station.gateway import GatewayError
@@ -34,7 +35,8 @@ def _files(run: Path) -> list[tuple[str, Path]]:
     pages = sorted((str(p.relative_to(site)), p) for p in site.rglob("*") if p.is_file())
     front = [kp for kp in pages if kp[0] == "index.html"]
     rest = [kp for kp in pages if kp[0] != "index.html"]
-    return [(f"audio/{nid}.mp3", run / "newscast.mp3"), (f"data/{nid}.json", run / "newscast.json"), *rest, *front]
+    key = json.loads((run / "newscast.json").read_text()).get("audio", {}).get("key") or f"audio/{nid}.mp3"
+    return [(key, run / "newscast.mp3"), (f"data/{nid}.json", run / "newscast.json"), *rest, *front]
 
 
 def publish(gw, run: Path, bucket: str) -> list[str]:

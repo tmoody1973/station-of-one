@@ -112,3 +112,10 @@ def newscast_record(run_id: str, hour_local: datetime, prefs: Prefs, chapters: l
         "overheard": overheard, "chapters": timings,
         "audio": {"file": "newscast.mp3", "duration_ms": duration_ms}, "voices_synthetic": True,
     }
+
+
+def audio_key(newscast_id: str, mp3: Path) -> str:
+    """Content-fingerprinted bucket key: a rebuilt hour gets a new address, so year-long caching is safe."""
+    import hashlib
+
+    return f"audio/{newscast_id}-{hashlib.sha1(mp3.read_bytes()).hexdigest()[:8]}.mp3"

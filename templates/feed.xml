@@ -16,7 +16,7 @@
     <description>{% for c in n.chapters %}{{ (c.start_ms) | duration }} {{ c.title }}
 {% endfor %}
 Voices are synthetic; the show is machine-edited. Sources for every story: {{ base }}/{{ page }}</description>
-    <enclosure url="{{ base }}/audio/{{ n.id }}.mp3" length="{{ audio_bytes }}" type="audio/mpeg"/>
+    <enclosure url="{{ base }}{{ audio }}" length="{{ audio_bytes }}" type="audio/mpeg"/>
     <guid isPermaLink="false">{{ n.id }}</guid>
     <pubDate>{{ pub_date }}</pubDate>
     <itunes:duration>{{ (n.audio.duration_ms / 1000) | round | int }}</itunes:duration>

@@ -67,13 +67,18 @@ def _context(current: dict, today: list[dict], prefs: Prefs, mode: str) -> dict:
     for n in ordered:
         n["hour_label"] = _hour_label(n)
         n["page"] = "/" + hour_path(n["id"])
-        n["audio_url"] = f"/audio/{n['id']}.mp3"
+        n["audio_url"] = audio_path(n)
     current = {**current, "hour_label": _hour_label(current), "page": "/" + hour_path(current["id"]),
-               "audio_url": f"/audio/{current['id']}.mp3"}
+               "audio_url": audio_path(current)}
     stories = current["stories"]
     return {"n": current, "lead": stories[0] if stories else None, "others": stories[1:], "today": ordered,
             "beats": beats, "station": prefs.station, "date_label": _date_label(current), "mode": mode,
             "chapters_json": json.dumps(current["chapters"])}
+
+
+def audio_path(n: dict) -> str:
+    """Public path of a newscast's MP3: its fingerprinted key, or the plain name for older hours."""
+    return "/" + ((n.get("audio") or {}).get("key") or f"audio/{n['id']}.mp3")
 
 
 def render_front(current: dict, today: list[dict], prefs: Prefs) -> str:
@@ -178,6 +183,7 @@ def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int) -> str:
 
     return env().get_template("feed.xml").render(
         n=newscast, station=prefs.station, base=prefs.hosting.public_base, audio_bytes=audio_bytes,
+        audio=audio_path(newscast),
         hour_label=_hour_label(newscast), date_label=_date_label(newscast), page=hour_path(newscast["id"]),
         pub_date=format_datetime(datetime.fromisoformat(newscast["hour_local"])))
 
