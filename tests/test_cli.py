@@ -24,10 +24,18 @@ def test_dedupe_cli_writes_clusters(tmp_path, monkeypatch):
     post = {"id": "hn:1", "source": "Hacker News", "beat": "ai-dev", "kind": "story", "author": "u", "title": "T",
             "url": "https://ex.com/a", "text": "", "posted_at": "2026-11-27T14:00:00Z", "engagement": {}, "visibility": "public"}
     (run / "posts.json").write_text(json.dumps([post, {**post, "id": "rss:1", "url": "https://ex.com/a?utm_source=x"}]))
+    from station.steps import dedupe as dedupe_mod
+
+    asked = []
+    monkeypatch.setattr(dedupe_mod, "pinecone_pairs",
+                        lambda gw, stories: asked.extend(s.id for s in stories) or ([("old:9", "hn:1")], []))
+    monkeypatch.setattr("station.__main__.Gateway", lambda: None)
     assert main(["dedupe", "--run", str(run)]) == 0
     out = json.loads((run / "clusters.json").read_text())
-    assert out["clusters"] == [{"primary_id": "hn:1", "member_ids": ["hn:1", "rss:1"]}] and out["candidates"] == []
-    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"posts": 2, "clusters": 1, "candidates": 0}
+    assert out["clusters"] == [{"primary_id": "hn:1", "member_ids": ["hn:1", "rss:1"]}]
+    assert out["candidates"] == [["old:9", "hn:1"]] and asked == ["hn:1"]
+    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {
+        "posts": 2, "clusters": 1, "candidates": 1, "pinecone_pairs": 1}
 
 
 def test_judge_cli_judges_cluster_primaries_only(tmp_path, monkeypatch):
@@ -46,7 +54,7 @@ def test_judge_cli_judges_cluster_primaries_only(tmp_path, monkeypatch):
         {"primary_id": "hn:old", "member_ids": ["hn:old", "rss:2"]}], "candidates": []}))
     seen = []
 
-    def fake_judge_all(gw, db, posts, candidates, concurrency=8):
+    def fake_judge_all(gw, db, posts, candidates, concurrency=8, known=()):
         seen.extend(p.id for p in posts)
         return [judge_mod.Judged(posts[0], {"matter_week": {"type": "noul", "noul": 0.5}}, "jev-1.14.0", (), 600)]
 

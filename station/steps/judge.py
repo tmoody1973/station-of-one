@@ -116,8 +116,10 @@ class Judged:
         return None
 
 
-def judge_all(gw, db, posts: list[Post], candidates: list[tuple[str, str]], concurrency: int = 8) -> list[Judged]:
-    by_id = {p.id: p for p in posts}
+def judge_all(gw, db, posts: list[Post], candidates: list[tuple[str, str]], concurrency: int = 8,
+              known: list[Post] = ()) -> list[Judged]:
+    """`known`: earlier-hour posts a candidate pair may point back to."""
+    by_id = {**{k.id: k for k in known}, **{p.id: p for p in posts}}
     earlier: dict[str, list[Post]] = {}
     for first, second in candidates:
         if first in by_id and second in by_id:

@@ -42,20 +42,40 @@ def load_posts(run: Path) -> list:
     return [Post(**d) for d in read_json(run, "posts.json")]
 
 
+def _recent_posts() -> list:
+    """Earlier-hour stories new posts may duplicate: aired in 24 h, or judged and still eligible (3 h)."""
+    from datetime import timedelta
+
+    from station.store import aired_posts_since, recent_unaired_judged
+
+    now = datetime.now(UTC)
+    with closing(_db()) as db:
+        aired = aired_posts_since(db, now - timedelta(hours=24))
+        eligible = [p for p, _, _ in recent_unaired_judged(db, now - timedelta(hours=LOOKBACK_HOURS))]
+    return list({p.id: p for p in [*aired, *eligible]}.values())
+
+
 def cmd_dedupe(run: Path) -> None:
     from datetime import timedelta
 
-    from station.steps.dedupe import cluster
+    from station.steps import dedupe as dedupe_mod
     from station.store import aired_posts_since
 
     log = RunLog.open(run / "run_log.json", run_id=run.name)
-    with log.step("dedupe", "Code (link match)") as rec:  # Task 16 adds Pinecone
+    with log.step("dedupe", "Code + Pinecone") as rec:
         posts = load_posts(run)
+        by_id = {p.id: p for p in posts}
         with closing(_db()) as db:
             aired = aired_posts_since(db, datetime.now(UTC) - timedelta(hours=24))
-        clusters, candidates = cluster(posts, aired)
+        clusters, candidates = dedupe_mod.cluster(posts, aired, recent=_recent_posts())
+        aired_ids = {a.id for a in aired}
+        new_stories = [by_id[c.primary_id] for c in clusters
+                       if c.primary_id in by_id and c.primary_id not in aired_ids and by_id[c.primary_id].kind == "story"]
+        pine, notes = dedupe_mod.pinecone_pairs(Gateway(), new_stories)
+        candidates = list(dict.fromkeys([*candidates, *pine]))
         write_json(run, "clusters.json", {"clusters": [asdict(c) for c in clusters], "candidates": candidates})
-        rec.counts.update(posts=len(posts), clusters=len(clusters), candidates=len(candidates))
+        rec.counts.update(posts=len(posts), clusters=len(clusters), candidates=len(candidates), pinecone_pairs=len(pine))
+        rec.notes.extend(notes)
 
 
 def cmd_judge(run: Path) -> None:
@@ -68,7 +88,8 @@ def cmd_judge(run: Path) -> None:
         to_judge = [by_id[c["primary_id"]] for c in clusters["clusters"] if c["primary_id"] in by_id]
         skipped = len(clusters["clusters"]) - len(to_judge)
         with closing(_db()) as db:
-            judged = judge_mod.judge_all(Gateway(), db, to_judge, [tuple(c) for c in clusters["candidates"]])
+            judged = judge_mod.judge_all(Gateway(), db, to_judge, [tuple(c) for c in clusters["candidates"]],
+                                         known=_recent_posts())
         write_json(run, "judged.json", [j.to_dict() for j in judged])
         rec.counts.update(posts_judged=len(judged), decisions=sum(len(j.answers) for j in judged),
                           input_tokens=sum(j.input_tokens for j in judged), skipped_aired=skipped)
