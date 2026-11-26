@@ -1,6 +1,7 @@
 """Per-build run log: step, tool, counts, seconds, status. The control room reads it."""
 from __future__ import annotations
 
+import json
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -27,6 +28,16 @@ class RunLog:
         self.started_at = datetime.now(UTC).isoformat()
         self._t0 = time.monotonic()
         self.steps: list[StepRecord] = []
+
+    @classmethod
+    def open(cls, path: Path, run_id: str) -> "RunLog":
+        """Continue an existing run log (each CLI step call adds its own entry)."""
+        log = cls(path, run_id)
+        if log.path.exists():
+            data = json.loads(log.path.read_text())
+            log.started_at = data.get("started_at", log.started_at)
+            log.steps = [StepRecord(**s) for s in data.get("steps", [])]
+        return log
 
     @contextmanager
     def step(self, name: str, tool: str):

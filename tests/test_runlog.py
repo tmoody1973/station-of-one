@@ -30,3 +30,12 @@ def test_runlog_repaired_status_kept(tmp_path):
         s.status = "repaired"
         s.notes.append("Retried once, then used the source's RSS feed.")
     assert json.loads((tmp_path / "run_log.json").read_text())["steps"][0]["status"] == "repaired"
+
+
+def test_runlog_appends_to_existing_file(tmp_path):  # steps run one CLI call at a time
+    with RunLog(tmp_path / "run_log.json", run_id="x").step("scrape", "Apify"):
+        pass
+    with RunLog.open(tmp_path / "run_log.json", run_id="x").step("judge", "TypeSafe Jev"):
+        pass
+    names = [s["name"] for s in json.loads((tmp_path / "run_log.json").read_text())["steps"]]
+    assert names == ["scrape", "judge"]
