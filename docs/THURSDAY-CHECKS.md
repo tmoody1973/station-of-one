@@ -265,3 +265,10 @@ Original notes:
 - Public reads keep both headers (`text/plain; charset=utf-8` + `max-age=60`; `audio/mpeg` + `public, max-age=31536000, immutable`). `curl -r 0-99` on the MP3 → **HTTP 206**, `Content-Range: bytes 0-99/1722088`.
 - Host: `https://patient-mountain-3400.t3.tigrisfiles.io` works from the Sprite but this Mac cannot connect to it (HTTP 000); `https://patient-mountain-3400.fly.storage.tigris.dev` works from both, so that is the public base in `config/preferences.json`.
 - Real run: 7 newscasts (11 am–5 pm) published; all 19 links on the public front page → 200 with the right type. iPhone 13 emulation (Playwright on the Sprite): chapter tap seeks to 108.8 s and plays, no console errors.
+
+### 9. Box archive (Nov 26, Task 15)
+
+- Connector `box` (allow_all). `GET /2.0/users/me` → 200. No Box key on the Sprite.
+- `POST /2.0/folders` → 201; same name again → **409** `item_name_in_use` with the existing id in `context_info.conflicts` (a list for folders).
+- Upload routing: `POST <box gateway>/upload/files/content`, multipart with `attributes` first → 201 (1 KB `probe.txt`, left in "Station of One archive").
+- Real run: `Station of One archive/2026-11-26/2026-11-26T17.zip` (1.7 MB: newscast.json, chapters.json, scripts.json, rundown.json, run_log.json, newscast.mp3, decisions.jsonl with 305 Jev answers) in 2.3 s. A second run got 409 (`conflicts` is one object for files) and uploaded a new version to the same file id. `GET /files/<id>/versions` returned no count, so the version history itself is unverified.
