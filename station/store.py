@@ -104,3 +104,16 @@ def record_aired(db: sqlite3.Connection, newscast_id: str, stories: Iterable[tup
     db.executemany("INSERT INTO aired VALUES (?,?,?,?,?)",
                    [(pid, newscast_id, part, score, aired_at) for pid, part, score in stories])
     db.commit()
+
+
+def post_from_row(row: tuple) -> Post:
+    (pid, source, beat, kind, author, title, url, text, posted_at, engagement_json, visibility) = row[:11]
+    return Post(pid, source, beat, kind, author, title, url, text, posted_at, json.loads(engagement_json or "{}"), visibility)
+
+
+def aired_posts_since(db: sqlite3.Connection, since_utc: datetime) -> list[Post]:
+    rows = db.execute(
+        "SELECT p.id, p.source, p.beat, p.kind, p.author, p.title, p.url, p.text, p.posted_at, p.engagement_json,"
+        " p.visibility FROM aired a JOIN posts p ON p.id = a.post_id WHERE a.aired_at >= ? ORDER BY a.aired_at",
+        (since_utc.isoformat(),)).fetchall()
+    return [post_from_row(r) for r in rows]

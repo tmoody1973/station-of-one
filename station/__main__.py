@@ -14,7 +14,7 @@ from pathlib import Path
 from station.config import load_prefs
 from station.gateway import Gateway
 from station.runlog import RunLog
-from station.runs import write_json
+from station.runs import read_json, write_json
 from station.store import open_db
 
 
@@ -33,7 +33,28 @@ def cmd_scrape(run: Path) -> None:
         rec.notes.extend(result.notes)
 
 
-COMMANDS = {"scrape": cmd_scrape}
+def load_posts(run: Path) -> list:
+    from station.store import Post
+
+    return [Post(**d) for d in read_json(run, "posts.json")]
+
+
+def cmd_dedupe(run: Path) -> None:
+    from datetime import timedelta
+
+    from station.steps.dedupe import cluster
+    from station.store import aired_posts_since
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("dedupe", "Code (link match)") as rec:  # Task 16 adds Pinecone
+        posts = load_posts(run)
+        aired = aired_posts_since(_db(), datetime.now(UTC) - timedelta(hours=24))
+        clusters, candidates = cluster(posts, aired)
+        write_json(run, "clusters.json", {"clusters": [asdict(c) for c in clusters], "candidates": candidates})
+        rec.counts.update(posts=len(posts), clusters=len(clusters), candidates=len(candidates))
+
+
+COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe}
 
 
 def main(argv: list[str] | None = None) -> int:

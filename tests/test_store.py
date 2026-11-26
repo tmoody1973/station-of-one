@@ -58,3 +58,11 @@ def test_cursor_roundtrip(db):
 def test_record_aired(db):
     record_aired(db, "2026-11-27T09", [("hn:1", "lead", 0.62)], "2026-11-27T15:00:00Z")
     assert db.execute("SELECT post_id, part FROM aired").fetchall() == [("hn:1", "lead")]
+
+
+def test_aired_posts_since(db):
+    upsert_posts(db, [post(1), post(2)])
+    record_aired(db, "2026-11-27T09", [("hn:1", "lead", 0.62)], "2026-11-27T15:00:00+00:00")
+    from station.store import aired_posts_since
+    assert [p.id for p in aired_posts_since(db, datetime(2026, 11, 27, 0, 0, tzinfo=UTC))] == ["hn:1"]
+    assert aired_posts_since(db, datetime(2026, 11, 28, 0, 0, tzinfo=UTC)) == []
