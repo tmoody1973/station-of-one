@@ -307,3 +307,6 @@ Original notes:
 
 ### T1. Threads (Nov 26)
 - 2026-11-26 (Central day): 24 threads with ≥ 6 comments, almost all Hacker News (comments capped at 40). Top by size: "Intel One Mono font", "Tell HN: Happy Thanksgiving", "1Password Security Incident", "The New York Times warns photographers not to update Photoshop over AI", "Moat: Your OpenRouter Replacement".
+
+### T2. Topic pick (Nov 26)
+- One Jev call over 24 threads, 1.8 s. Picked "Intel One Mono font" (dispute 0.65, low-stakes 0.95, hot topic 0.02). Next: NYT/Photoshop (0.71/0.67), Euro-Office (0.63/0.74). All 72 answers logged (`table_dispute`, `table_low_stakes`, `hot_topic`).
