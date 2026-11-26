@@ -25,6 +25,9 @@ ACTORS = {
 LOW_MEMORY = {"hackernews", "googlenews"}  # these default to 4 GB; start fee is charged per GB
 # HN's front page is mostly older than an hour; read the last day and let the DB drop known posts.
 HN_WINDOW = timedelta(hours=24)
+# RSS bills per feed, not per item, so every run reads the last day of each feed (Tarik, Nov 26:
+# hourly windows missed items published between runs on quiet feeds).
+FULL_WINDOW = {"hackernews": HN_WINDOW, "rss": timedelta(hours=24)}
 FIRST_RUN_WINDOW = timedelta(hours=2)
 HN_MEMORY_MB = 1024  # start fee is charged per GB of run memory (check 3, inferred)
 ACTIVE = {"READY", "RUNNING", "TIMING-OUT", "ABORTING"}
@@ -215,8 +218,8 @@ def scrape(gw, prefs: Prefs, db, now: datetime) -> ScrapeResult:
     run_ids: list[str] = []
     for source_type, refs in _beat_lookup(prefs).items():
         since = get_cursor(db, source_type) or now - FIRST_RUN_WINDOW
-        if source_type == "hackernews":
-            since = now - HN_WINDOW
+        if source_type in FULL_WINDOW:  # cheap to re-read; upsert keeps only unseen posts
+            since = now - FULL_WINDOW[source_type]
         items: list[dict] = []
         succeeded = False
         for inp in runs_for(source_type, list(refs), since):

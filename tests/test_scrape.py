@@ -172,3 +172,13 @@ def test_empty_successful_run_still_advances_cursor(tmp_path, make_db):
     db = make_db()
     scrape(FakeGateway(routes), load_prefs(), db, NOW)
     assert get_cursor(db, "rss") == NOW
+
+
+def test_rss_reads_the_last_24_hours_every_run(make_db):
+    """RSS bills per feed, not per item: read everything recent; the DB drops posts already seen."""
+    routes = _all_routes()
+    db = make_db()
+    gw = FakeGateway(routes)
+    scrape(gw, load_prefs(), db, NOW)
+    rss_start = next(c for c in gw.calls if c[0] == "POST" and ACTORS["rss"] in c[2])
+    assert rss_start[3]["filterByDate"] == "2026-11-26T14:48:00Z"
