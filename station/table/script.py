@@ -38,8 +38,9 @@ class TablePart:
 
 def _issues(data: dict) -> list[str]:
     found = []
-    if not str(data.get("intro") or "").strip() or FORBIDDEN.search(str(data.get("intro"))):
-        found.append("intro: one plain welcome sentence, no numbers or winners")
+    intro = str(data.get("intro") or "").strip()
+    if not intro or FORBIDDEN.search(intro) or "?" in intro:  # code states the question right after the intro
+        found.append("intro: one plain welcome sentence; no question, numbers or winners")
     got = {(x.get("side"), x.get("part")): str(x.get("text") or "") for x in data.get("lines") or []}
     for side in SIDES:
         for part in PARTS:

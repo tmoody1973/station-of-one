@@ -76,3 +76,11 @@ def test_cli_writes_script(tmp_path, monkeypatch):
     out = json.loads((run / "script.json").read_text())
     assert [p["kind"] for p in out["parts"]][-1] == "record" and out["fallback"] is False
     assert out["parts"][2]["turns"][1] == {"speaker": "Anchor", "text": "Jev's ruling. That claim: 79% likely true."}
+
+
+def test_intro_that_asks_the_question_is_rejected():  # real run said the question twice
+    from station.table.script import _issues
+
+    lines = json.loads(json.loads(delivered().body)["message"]["content"])["lines"]
+    assert _issues({"intro": "Welcome! Is Intel One Mono worth it?", "lines": lines})
+    assert not _issues({"intro": "Welcome to The Table.", "lines": lines})
