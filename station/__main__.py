@@ -332,10 +332,24 @@ def cmd_table_topic(run: Path) -> None:
             rec.notes.append(f"No episode today: {out['reason']}.")
 
 
+def cmd_table_argue(run: Path) -> None:
+    from station.table.argue import draft
+
+    topic = read_json(run, "topic.json")
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("argue", "Ollama Cloud") as rec:
+        if topic.get("none"):
+            rec.notes.append("No episode today.")
+            return
+        question, claims = draft(Gateway(), load_prefs().writer.model, topic["story"], topic["comments"])
+        write_json(run, "claims.json", {"question": question, "claims": [asdict(c) for c in claims]})
+        rec.counts.update(claims=len(claims), words=sum(len(c.text.split()) for c in claims))
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
             "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
-            "table-topic": cmd_table_topic}
+            "table-topic": cmd_table_topic, "table-argue": cmd_table_argue}
 
 
 def cmd_build(hour: str | None) -> None:
