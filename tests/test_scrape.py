@@ -93,8 +93,8 @@ def _all_routes():
     return routes
 
 
-def test_scrape_returns_only_new_posts_and_advances_cursor(tmp_path):
-    db = open_db(tmp_path / "s.db")
+def test_scrape_returns_only_new_posts_and_advances_cursor(tmp_path, make_db):
+    db = make_db()
     prefs = load_prefs()
     first = scrape(FakeGateway(_all_routes()), prefs, db, NOW)
     assert first.posts and first.counts["new_posts"] == len(first.posts)
@@ -105,10 +105,10 @@ def test_scrape_returns_only_new_posts_and_advances_cursor(tmp_path):
     assert second.posts == []
 
 
-def test_one_failed_source_does_not_stop_others(tmp_path):
+def test_one_failed_source_does_not_stop_others(tmp_path, make_db):
     routes = _all_routes()
     routes[("POST", "apify", f"/v2/actors/{ACTORS['subreddit']}/runs")] = [Response(403, {}, b'{"error":"nope"}')]
-    result = scrape(FakeGateway(routes), load_prefs(), open_db(tmp_path / "s.db"), NOW)
+    result = scrape(FakeGateway(routes), load_prefs(), make_db(), NOW)
     assert any(p.source == "Hacker News" for p in result.posts)
     assert not any(p.source.startswith("Reddit") for p in result.posts)
     assert any("subreddit" in n for n in result.notes)

@@ -130,3 +130,36 @@ def test_voice_cli_tolerates_failed_story(tmp_path, monkeypatch):
         {1: run_ / "a"}, {1: 3.0}, [0, 2], ["open failed"]))
     with pytest.raises(RuntimeError, match="open"):
         main(["voice", "--run", str(run)])
+
+
+def test_assemble_cli_writes_newscast_and_chapters(tmp_path, monkeypatch):
+    from station.steps import assemble as asm
+    from station.steps.rundown import Rundown
+    from tests.test_rundown import j
+    from tests.test_voice import wav_bytes
+
+    monkeypatch.setenv("STATION_DB", str(tmp_path / "s.db"))
+    run = tmp_path / "2026-11-27T09"
+    (run / "audio").mkdir(parents=True)
+    _scripts(run)
+    for i, secs in ((0, 1.0), (2, 2.0)):
+        (run / "audio" / f"ch_{i:02d}.wav").write_bytes(wav_bytes(secs))
+    (run / "voice.json").write_text(json.dumps({"paths": {"0": str(run / "audio/ch_00.wav"), "2": str(run / "audio/ch_02.wav")},
+                                                "seconds": {}, "failed": [1]}))
+    (run / "rundown.json").write_text(json.dumps(Rundown((j("hn:2", 0.5),), {"hn:2": 90}, None, (), (), True, False).to_dict()))
+    (run / "posts.json").write_text("[]")
+    (run / "clusters.json").write_text(json.dumps({"clusters": [], "candidates": []}))
+    joined = {}
+
+    def fake_audio(run_, wavs, timings, title):
+        joined.update(n=len(wavs), titles=[t["title"] for t in timings])
+        (run_ / "newscast.mp3").write_bytes(b"ID3")
+        return run_ / "newscast.mp3"
+
+    monkeypatch.setattr(asm, "assemble_audio", fake_audio)
+    assert main(["assemble", "--run", str(run)]) == 0
+    assert joined == {"n": 4, "titles": ["Open", "Sign-off"]}  # sting + 2 chapters + sting; failed story skipped
+    rec = json.loads((run / "newscast.json").read_text())
+    assert rec["id"] == "2026-11-27T09" and rec["chapters"][-1]["end_ms"] == 3000 + 2 * 2000
+    assert rec["stories"] == [] and rec["counts"]["posts_read_hour"] == 0
+    assert json.loads((run / "chapters.json").read_text()) == rec["chapters"]

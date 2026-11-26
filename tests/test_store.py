@@ -15,8 +15,8 @@ def post(i: int, posted="2026-11-27T14:00:00Z") -> Post:
 
 
 @pytest.fixture
-def db(tmp_path):
-    return open_db(tmp_path / "s.db")
+def db(make_db):
+    return make_db()
 
 
 def test_upsert_returns_only_new(db):

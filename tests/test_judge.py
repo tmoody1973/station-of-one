@@ -41,8 +41,8 @@ def test_parses_check1_fixture():
     assert j.is_reaction is False and j.part_probability("overheard") == 0.05
 
 
-def test_every_answer_logged(tmp_path):
-    db = open_db(tmp_path / "s.db")
+def test_every_answer_logged(tmp_path, make_db):
+    db = make_db()
     gw = FakeGateway({("POST", "typesafe", "/v1/systemone"): [jev(FIVE)]})
     judged = judge_all(gw, db, [post()], candidates=[])
     rows = db.execute("SELECT question_id, model FROM decisions ORDER BY question_id").fetchall()
@@ -50,19 +50,19 @@ def test_every_answer_logged(tmp_path):
     assert judged[0].input_tokens == 700
 
 
-def test_same_story_candidate_adds_question(tmp_path):
+def test_same_story_candidate_adds_question(tmp_path, make_db):
     a, b = post("hn:1"), post("reddit:2")
     answers = {**FIVE, "same_story_0": {"type": "noul", "noul": 0.9}}
     gw = FakeGateway({("POST", "typesafe", "/v1/systemone"): [jev(FIVE), jev(answers)]})
-    judged = judge_all(gw, open_db(tmp_path / "s.db"), [a, b], candidates=[("hn:1", "reddit:2")], concurrency=1)
+    judged = judge_all(gw, make_db(), [a, b], candidates=[("hn:1", "reddit:2")], concurrency=1)
     sent = [c[3] for c in gw.calls]
     assert "same_story_0" in sent[1]["questions"] and sent[1]["state"]["earlier_posts"][0]["title"] == a.title
     assert {j.post.id: j.same_as for j in judged} == {"hn:1": None, "reddit:2": "hn:1"}
 
 
-def test_failed_post_is_skipped_not_fatal(tmp_path):
+def test_failed_post_is_skipped_not_fatal(tmp_path, make_db):
     gw = FakeGateway({("POST", "typesafe", "/v1/systemone"): [Response(400, {}, b'{"error":"max_tokens_exceeded"}'), jev(FIVE)]})
-    judged = judge_all(gw, open_db(tmp_path / "s.db"), [post("hn:1"), post("hn:2")], candidates=[], concurrency=1)
+    judged = judge_all(gw, make_db(), [post("hn:1"), post("hn:2")], candidates=[], concurrency=1)
     assert [j.post.id for j in judged] == ["hn:2"]
 
 
