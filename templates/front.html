@@ -127,6 +127,14 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
       <span class="pink">{{ (n.counts.posts_read_today - n.counts.posts_not_aired_today) | thousands }} made air · {{ n.counts.posts_not_aired_today | thousands }} did not</span>
     </div>
     <div class="box"><h3>This hour</h3><p>{{ n.counts.posts_read_hour | thousands }} new posts read · {{ n.counts.stories_aired }} stor{{ 'y' if n.counts.stories_aired == 1 else 'ies' }} aired</p></div>
+    {% if n.almost %}
+    <div class="box"><h3>Almost made air</h3>
+      {% for c in n.almost[:5] %}
+      <div style="display:flex;justify-content:space-between;gap:12px;font-size:15px;border-top:1px solid #eee;padding-top:10px">
+        <a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a><span style="color:#555;font-weight:600;white-space:nowrap">{{ c.score_matter_week | pct }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </aside>
 </section>
 
