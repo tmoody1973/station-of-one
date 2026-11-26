@@ -391,7 +391,8 @@ def cmd_table_script(run: Path) -> None:
         write_json(run, "script.json", {"parts": [asdict(p) for p in ps], "fallback": fallback})
         rec.counts.update(parts=len(ps), words=sum(len(t.text.split()) for p in ps for t in p.turns))
         if fallback:
-            rec.notes.append("Writer's delivery failed checks twice; the checked claim text was used.")
+            rec.notes.append("Writer's delivery failed checks twice; the checked claim text was used: "
+                             + "; ".join(script.get("issues", [])))
 
 
 def _table_parts(run: Path) -> list:

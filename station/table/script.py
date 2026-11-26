@@ -74,7 +74,7 @@ def write_script(gw, model: str, topic: dict, question: str, claims: list[Claim]
             return {"lines": {f"{x['side']}:{x['part']}": x["text"].strip() for x in data["lines"]}}
         messages = [*messages, {"role": "assistant", "content": content},
                     {"role": "user", "content": "Fix and resend the full JSON: " + "; ".join(issues)}]
-    return {"lines": {}}  # fall back to the checked claim text
+    return {"lines": {}, "issues": issues}  # fall back to the checked claim text
 
 
 def _ruling(r: Ruling) -> Turn:
