@@ -300,3 +300,5 @@ Original notes:
 - `python -m station video --day 2026-11-26` on the Sprite: pick (top aired story with a chapter ≥ 24 s) → ffmpeg cut → Deepgram → Remotion 4.0.547 render → upload. 55 s end to end. Output 45.0 s, 1080×1920, 30 fps, H.264 + AAC, 3.1 MB, public `video/2026-11-26.mp4` → 200 `video/mp4`.
 - Frames checked (count-up, headline + highlighted captions, end card): text inside the safe area.
 - Found: count-up showed the story hour's count (909), not the day's (fixed: day's max). Story pick was national politics filed under the Milwaukee beat (Wisconsin Examiner republishes national stories) — open question for Tarik.
+- Hot-topic screen (Tarik, Nov 26: video skips elections, contested policy, religion, health): one Jev call over the top 10 candidates; AR-15 bans 0.97, veterans' abortion restrictions 0.96, birthright citizenship 0.96 skipped; deer-hunting story 0.18 used. Answers logged in `decisions` as `hot_topic`.
+- Caption box overflowed the right edge (AbsoluteFill is 100% wide); now a plain positioned box. Re-render frames at 14/26/34 s wrap inside the frame.
