@@ -282,3 +282,20 @@ def test_page_cli_control_room_reflects_saved_log(tmp_path, monkeypatch):
     assert main(["page", "--run", str(run)]) == 0
     html = (run / "site/control-room/index.html").read_text()
     assert html.count("Build the page") == 1 and "build 1:30" in html
+
+
+def test_build_cli_skips_outside_broadcast_hours(monkeypatch, capsys):
+    from datetime import datetime as real_dt
+
+    import station.__main__ as cli
+    from station import build as build_mod
+
+    class Late(real_dt):
+        @classmethod
+        def now(cls, tz=None):
+            return real_dt(2026, 11, 27, 21, 48, tzinfo=tz)  # 9:48 pm Central -> 10 pm newscast
+
+    monkeypatch.setattr(cli, "datetime", Late)
+    monkeypatch.setattr(build_mod, "build", lambda *a, **kw: (_ for _ in ()).throw(AssertionError("built")))
+    assert main(["build"]) == 0
+    assert "outside broadcast hours" in capsys.readouterr().out

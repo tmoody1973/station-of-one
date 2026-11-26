@@ -251,9 +251,18 @@ def cmd_archive(run: Path) -> None:
         rec.counts.update(bytes=(run / f"{run.name}.zip").stat().st_size, box_file_id=file_id)
 
 
+def cmd_finish(run: Path) -> None:
+    from station.steps.finish import finish
+
+    prefs = load_prefs()
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("finish", "Sprite") as rec:
+        rec.notes.extend(finish(run, prefs, Gateway()))
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive}
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish}
 
 
 def cmd_build(hour: str | None) -> None:
@@ -265,7 +274,11 @@ def cmd_build(hour: str | None) -> None:
     when = (datetime.strptime(hour, "%Y-%m-%dT%H").replace(tzinfo=ZoneInfo(tz)) if hour
             else build_mod.target_hour(datetime.now(ZoneInfo(tz))))
     from station import manager
+    from station.steps.finish import in_broadcast_hours
 
+    if not hour and not in_broadcast_hours(datetime.now(ZoneInfo(tz)), load_prefs()):
+        print(f"build {when:%Y-%m-%dT%H}: outside broadcast hours, nothing to do")
+        return
     result = build_mod.build(when, on_failure=manager.on_failure)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
 

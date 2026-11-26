@@ -1,0 +1,23 @@
+# Starts the hourly newscast build on the Sprite. Times are UTC: :48 past 12:00-00:00 UTC is
+# 6:48 am-6:48 pm Central (CST), one build for each of the 7 am-7 pm newscasts. The Sprite refuses
+# automatic builds outside broadcast hours anyway, so the daylight-saving shift is harmless.
+# The Sprites token lives only in this repo's Actions secrets (SPRITES_TOKEN).
+name: hourly build
+on:
+  schedule:
+    - cron: "48 12-23 * * *"
+    - cron: "48 0 * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Start the build on the Sprite
+        env:
+          SPRITES_TOKEN: ${{ secrets.SPRITES_TOKEN }}
+        run: |
+          curl -fsS --max-time 90 -X POST \
+            "https://api.sprites.dev/v1/sprites/brave-indigo-lion/exec?cmd=bash&cmd=/home/sprite/station/scripts/start_build.sh" \
+            -H "Authorization: Bearer ${SPRITES_TOKEN}"

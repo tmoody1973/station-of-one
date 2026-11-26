@@ -23,13 +23,14 @@ TIMEOUT_S = 60
 FALLBACKS: dict[str, list[str]] = {
     "scrape": ["retry", "skip"], "dedupe": ["retry", "skip"], "judge": ["retry"], "rundown": ["retry"],
     "write": ["retry"], "voice": ["retry"], "assemble": ["retry"], "page": ["retry", "skip"],
-    "publish": ["retry"], "archive": ["retry", "skip"],
+    "publish": ["retry"], "archive": ["retry", "skip"], "finish": ["retry", "skip"],
 }
 SKIP_MEANS = {
     "scrape": "continue with no new posts; the rundown still considers recent unaired stories",
     "dedupe": "treat every post as its own story; Jev still judges each one",
     "page": "keep the previous pages online this hour",
     "archive": "skip the Box archive this hour; the files stay on the Sprite",
+    "finish": "skip this hour's checkpoint and control-room refresh; the newscast is already public",
 }
 
 
