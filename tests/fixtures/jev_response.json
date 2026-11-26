@@ -1,0 +1,62 @@
+{
+ "model": "jev-1.14.0",
+ "answers": {
+  "matter_week": {
+   "type": "noul",
+   "noul": 0.48
+  },
+  "new_or_reaction": {
+   "type": "choice",
+   "choice": "new_information",
+   "confidence": 0.14,
+   "probabilities": {
+    "new_information": 0.57,
+    "reaction": 0.43
+   }
+  },
+  "part": {
+   "type": "choice",
+   "choice": "story",
+   "confidence": 0.83,
+   "probabilities": {
+    "lead": 0.01,
+    "story": 0.87,
+    "overheard": 0.05,
+    "none": 0.07
+   }
+  },
+  "primary_source": {
+   "type": "noul",
+   "noul": 0.61
+  },
+  "same_story": {
+   "type": "noul",
+   "noul": 0.98
+  },
+  "private_harm": {
+   "type": "noul",
+   "noul": 0.08
+  },
+  "seconds": {
+   "type": "score",
+   "score": 0.92,
+   "confidence": 0.77,
+   "legend": {
+    "0": "A one-line mention",
+    "1": "A short item with one fact",
+    "2": "A full story with context",
+    "3": "A story needing background and reaction"
+   },
+   "probabilities": {
+    "0": 0.16,
+    "1": 0.79,
+    "2": 0.03,
+    "3": 0.02
+   }
+  }
+ },
+ "usage": {
+  "input_tokens": 760,
+  "output_tokens": 163
+ }
+}

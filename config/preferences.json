@@ -1,0 +1,214 @@
+{
+  "station": {
+    "name": "Station of One",
+    "show_name": "The Hourly Scroll",
+    "call_sign": "WONE",
+    "timezone": "America/Chicago",
+    "first_newscast": "07:00",
+    "last_newscast": "19:00",
+    "frequency": "1.0 FM",
+    "id_lines": {
+      "newscast": [
+        "WONE, 1.0 FM. One station, one listener.",
+        "Listener-supported. Listener, singular."
+      ],
+      "table": [
+        "WNCL, broadcasting to a potential audience of one."
+      ],
+      "undecided": [
+        "You're listening to WYOU. Literally only you."
+      ]
+    }
+  },
+  "voices": {
+    "host": "Kore",
+    "reporter": "Charon",
+    "style": "brisk, warm, conversational news read"
+  },
+  "thresholds": {
+    "air_min_probability": 0.4,
+    "private_harm_max_probability": 0.2,
+    "min_stories": 3,
+    "max_stories": 5
+  },
+  "beats": [
+    {
+      "id": "ai-dev",
+      "name": "AI and developer tools",
+      "used_in": "newscast",
+      "color": "#1f3a5f",
+      "sources": [
+        {
+          "type": "hackernews",
+          "ref": "topstories",
+          "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "LocalLLaMA",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://simonwillison.net/atom/everything/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://openai.com/news/rss.xml",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://blog.google/innovation-and-ai/technology/ai/rss/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://huggingface.co/blog/feed.xml",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://github.blog/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://feeds.arstechnica.com/arstechnica/technology-lab",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "Media and public radio",
+      "used_in": "newscast",
+      "color": "#7a4a00",
+      "sources": [
+        {
+          "type": "rss",
+          "ref": "https://current.org/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.niemanlab.org/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.poynter.org/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://podnews.net/rss",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://radioink.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.cjr.org/feed",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://pressgazette.co.uk/feed/",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "milwaukee",
+      "name": "Milwaukee",
+      "used_in": "newscast",
+      "color": "#0f5c4a",
+      "sources": [
+        {
+          "type": "subreddit",
+          "ref": "milwaukee",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://urbanmilwaukee.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://milwaukeenns.org/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://wisconsinexaminer.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://wisconsinwatch.org/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://milwaukeerecord.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://onmilwaukee.com/rss",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "music",
+      "name": "Music",
+      "used_in": "music_picks",
+      "color": "#5b2a86",
+      "sources": [
+        {
+          "type": "bandcamp_tag",
+          "ref": "REPLACE_ME",
+          "visibility": "public"
+        },
+        {
+          "type": "youtube_channel",
+          "ref": "REPLACE_ME",
+          "visibility": "public"
+        }
+      ]
+    }
+  ],
+  "music": {
+    "enabled": true,
+    "tags": [],
+    "liked_artists_and_labels": [],
+    "leave_out": [],
+    "picks_per_day": 4
+  },
+  "table": {
+    "enabled": false,
+    "excluded_topics": [
+      "elections",
+      "contested policy",
+      "religion",
+      "health"
+    ],
+    "call_sign": "WNCL"
+  },
+  "feedback": [],
+  "writer": {
+    "model": "gemma4:31b"
+  }
+}

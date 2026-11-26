@@ -1,0 +1,65 @@
+[
+ {
+  "type": "feed_item",
+  "feed_url": "https://hnrss.org/frontpage",
+  "feed_title": "Hacker News: Front Page",
+  "feed_description": "Hacker News RSS",
+  "feed_link": "https://news.ycombinator.com/",
+  "feed_updated": "2026-11-26T16:11:29Z",
+  "feed_type": "rss",
+  "feed_generator": "hnrss v2.1.1",
+  "item_title": "Show HN: Three Linux VMs in a browser tab, each running a different browser",
+  "item_link": "https://michidk.github.io/sidebyside/",
+  "item_guid": "https://news.ycombinator.com/item?id=50656036",
+  "item_published": "2026-11-26T15:00:06Z",
+  "item_author": "user43",
+  "item_description": "\n<p>Article URL: <a href=\"https://michidk.github.io/sidebyside/\">https://michidk.github.io/sidebyside/</a></p>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=50656036\">https://news.ycombinator.com/item?id=50656036</a></p>\n<p>Points: 13</p>\n<p># Comments: 1</p>\n",
+  "item_text": "Article URL: https://michidk.github.io/sidebyside/\n\nComments URL: https://news.ycombinator.com/item?id=50656036\n\nPoints: 13\n\n# Comments: 1",
+  "scraped_at": "2026-11-26T16:14:08Z"
+ },
+ {
+  "type": "feed_item",
+  "feed_url": "https://hnrss.org/frontpage",
+  "feed_title": "Hacker News: Front Page",
+  "feed_description": "Hacker News RSS",
+  "feed_link": "https://news.ycombinator.com/",
+  "feed_updated": "2026-11-26T16:11:29Z",
+  "feed_type": "rss",
+  "feed_generator": "hnrss v2.1.1",
+  "item_title": "Tell HN: Happy Thanksgiving",
+  "item_link": "https://news.ycombinator.com/item?id=50655664",
+  "item_guid": "https://news.ycombinator.com/item?id=50655664",
+  "item_published": "2026-11-26T14:26:54Z",
+  "item_author": "user1",
+  "item_description": "\n<p>Hopefully it\u2019s a great day spent with your friends and family. And if it\u2019s not, make it a great day anyway!</p>\n<hr>\n<p>Comments URL: <a href=\"https://news.ycombinator.com/item?id=50655664\">https://news.ycombinator.com/item?id=50655664</a></p>\n<p>Points: 225</p>\n<p># Comments: 67</p>\n",
+  "item_text": "Hopefully it\u2019s a great day spent with your friends and family. And if it\u2019s not, make it a great day anyway!\n\nComments URL: https://news.ycombinator.com/item?id=50655664\n\nPoints: 225\n\n# Comments: 67",
+  "scraped_at": "2026-11-26T16:14:08Z"
+ },
+ {
+  "type": "feed_summary",
+  "feed_url": "https://hnrss.org/frontpage",
+  "feed_title": "Hacker News: Front Page",
+  "feed_type": "rss",
+  "items_count": 2,
+  "latest_item_date": "2026-11-26T15:00:06Z",
+  "oldest_item_date": "2026-11-26T14:26:54Z",
+  "status": "ok",
+  "scraped_at": "2026-11-26T16:14:08Z"
+ },
+ {
+  "type": "feed_summary",
+  "feed_url": "https://www.reddit.com/r/LocalLLaMA/new/.rss",
+  "items_count": 0,
+  "status": "http_404",
+  "error": "http status 404",
+  "scraped_at": "2026-11-26T16:14:08Z"
+ },
+ {
+  "type": "feed_summary",
+  "feed_url": "https://www.reddit.com/r/milwaukee/new/.rss",
+  "items_count": 0,
+  "status": "http_404",
+  "error": "http status 404 (first attempt: http status 429)",
+  "scraped_at": "2026-11-26T16:14:08Z"
+ }
+]
