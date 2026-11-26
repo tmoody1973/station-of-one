@@ -90,6 +90,8 @@ def _all_routes():
     routes.update(runs_routes(ACTORS["hackernews"], "ds-hn", load_fixture("apify_hn.json")))
     routes.update(runs_routes(ACTORS["subreddit"], "ds-rd", load_fixture("apify_reddit.json")))
     routes.update(runs_routes(ACTORS["rss"], "ds-rss", load_fixture("apify_rss.json")))
+    routes.update(runs_routes(ACTORS["bluesky"], "ds-bs", load_fixture("apify_bluesky.json")))
+    routes.update(runs_routes(ACTORS["googlenews"], "ds-gn", load_fixture("apify_gnews.json")))
     return routes
 
 
@@ -99,8 +101,8 @@ def test_scrape_returns_only_new_posts_and_advances_cursor(tmp_path, make_db):
     first = scrape(FakeGateway(_all_routes()), prefs, db, NOW)
     assert first.posts and first.counts["new_posts"] == len(first.posts)
     assert get_cursor(db, "rss") == NOW
-    assert first.counts["apify_usd"] == 0.036  # three runs at 0.012, read from each run object
-    assert sorted(first.counts["apify_runs"]) == ["run-ds-hn", "run-ds-rd", "run-ds-rss"]  # finish re-reads final cost
+    assert first.counts["apify_usd"] == 0.06  # five runs at 0.012, read from each run object
+    assert sorted(first.counts["apify_runs"]) == ["run-ds-bs", "run-ds-gn", "run-ds-hn", "run-ds-rd", "run-ds-rss"]
     second = scrape(FakeGateway(_all_routes()), prefs, db, NOW)
     assert second.posts == []
 
