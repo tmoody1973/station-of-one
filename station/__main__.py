@@ -302,9 +302,40 @@ def cmd_video(run: Path) -> None:
                           hot_topics_skipped=len(made["skipped"]))
 
 
+def cmd_table_topic(run: Path) -> None:
+    from station.table import topic as topic_mod
+    from station.table.threads import threads
+    from station.store import record_decision
+
+    prefs = load_prefs()
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("topic", "TypeSafe Jev") as rec:
+        with closing(_db()) as db:
+            ts = threads(db, run.name, prefs.station.timezone)
+            scored, model = topic_mod.score_threads(Gateway(), ts) if ts else ([], None)
+            asked_at = datetime.now(UTC).isoformat()
+            for s in scored:  # every Jev answer is logged with its probability
+                for key, qid in (("dispute", "table_dispute"), ("low_stakes", "table_low_stakes"), ("hot_topic", "hot_topic")):
+                    record_decision(db, s["story_id"], qid, {"type": "noul", "noul": s[key]}, model, asked_at)
+        chosen = topic_mod.pick_topic(scored)
+        if not ts:
+            out = {"none": True, "reason": "no thread with 6 or more comments"}
+        elif chosen is None:
+            out = {"none": True, "reason": "no thread was both a real dispute and low-stakes"}
+        else:
+            t = next(t for t in ts if t.story.id == chosen["story_id"])
+            out = {"story": asdict(t.story), "comments": [asdict(c) for c in t.comments], "scores": chosen,
+                   "model": model, "considered": len(scored)}
+        write_json(run, "topic.json", out)
+        rec.counts.update(threads=len(ts), scored=len(scored), picked=out.get("story", {}).get("title"))
+        if out.get("none"):
+            rec.notes.append(f"No episode today: {out['reason']}.")
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video}
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
+            "table-topic": cmd_table_topic}
 
 
 def cmd_build(hour: str | None) -> None:

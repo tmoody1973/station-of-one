@@ -8,8 +8,8 @@ from station.steps.judge import MODEL
 HOT_TOPIC_MAX = 0.5
 
 
-def hot_topic_question(i: int) -> dict:
-    return {"type": "noul", "instructions": f"Is `stories[{i}]` mainly about elections, contested public policy "
+def hot_topic_question(i: int, key: str = "stories") -> dict:
+    return {"type": "noul", "instructions": f"Is `{key}[{i}]` mainly about elections, contested public policy "
                                             "(such as guns, abortion, immigration or court rulings on them), "
                                             "religion, or health?"}
 
