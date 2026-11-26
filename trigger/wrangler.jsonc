@@ -1,0 +1,14 @@
+{
+  // Starts the hourly newscast build on the Sprite. Replaced GitHub's schedule, which skipped
+  // its 1:48 and 2:48 pm slots on Nov 26 (docs/decisions/005-cloudflare-trigger.md).
+  "name": "station-one-trigger",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,  // no public URL: the Worker only runs on its schedule
+  "triggers": {
+    // UTC. :48 past 12:00-00:00 UTC = 6:48 am-6:48 pm Central (CST), one build per 7 am-7 pm newscast.
+    // The Sprite refuses automatic builds outside broadcast hours, so the daylight-saving shift is harmless.
+    "crons": ["48 12-23 * * *", "48 0 * * *"]
+  }
+  // Secret SPRITES_TOKEN is set with `npx wrangler secret put SPRITES_TOKEN`; it is never in this repo.
+}
