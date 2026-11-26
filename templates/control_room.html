@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control room · {{ station.name }}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#f2f2f2;background:#111214}
+a{color:#f2f2f2}a:hover{color:#ff8a98}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+header{border-bottom:1px solid #2c2e33}
+header .wrap{padding-top:18px;padding-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand a{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;text-decoration:none}
+.muted{color:#b8bcc4}.mono{font-family:'JetBrains Mono',monospace}
+.badge{background:#C8102E;color:#fff;font-size:13px;font-weight:600;letter-spacing:1px;border-radius:4px;padding:6px 10px;text-transform:uppercase}
+main{padding-top:28px;padding-bottom:48px;display:flex;flex-direction:column;gap:28px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.tile{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:4px}
+.tile .l{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#b8bcc4;font-weight:600}
+.tile .v{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;line-height:1.1}
+.cols{display:flex;flex-wrap:wrap;gap:24px}
+.left{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.right{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px}
+h2{margin:0;font-size:20px}
+.panel{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;overflow:hidden}
+.step{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #2c2e33}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.dot.green{background:#3ecf8e}.dot.amber{background:#ffc857}.dot.red{background:#ff8a98}.dot.white{background:#fff}.dot.grey{background:#5a5e68}
+.step .name{font-weight:600;font-size:15px;flex:1 1 150px}
+.tool{font-size:13px;font-weight:600;border:1px solid #4a4d55;border-radius:4px;padding:3px 8px;color:#e4e6ea}
+.step .detail{font-size:14px;color:#b8bcc4;flex:2 1 200px}
+.log{background:#0b0c0e;border:1px solid #2c2e33;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;font-family:'JetBrains Mono',monospace;font-size:13px;max-height:420px;overflow-y:auto}
+.log div{display:flex;gap:10px;align-items:baseline}
+.v-AIR{color:#3ecf8e}.v-CUT{color:#b8bcc4}.v-DROP{color:#ff8a98}.v-MERGE{color:#ffc857}
+.log .verdict{font-weight:600;width:46px;flex:none}.log .score{width:38px;flex:none;color:#e4e6ea}
+.log .post{color:#b8bcc4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.card.repair{border-color:#6b4e00}.card.repair .t{color:#ffc857;font-weight:600}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><a href="/index.html">{{ station.name }}</a><span class="muted">Control room</span></div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span class="badge">Built · {{ n.hour_label }} newscast</span>
+    <span class="mono muted" style="font-size:14px">started {{ started }} · build {{ total }}</span>
+  </div>
+</div></header>
+<main class="wrap">
+<section class="tiles">
+  <div class="tile"><span class="l">Posts read this hour</span><span class="v">{{ n.counts.posts_read_hour | thousands }}</span><span class="muted">{{ n.counts.posts_read_today | thousands }} today</span></div>
+  <div class="tile"><span class="l">Jev decisions</span><span class="v">{{ decisions_count | thousands }}</span><span class="muted">5 questions per post</span></div>
+  <div class="tile"><span class="l">Cleared for air</span><span class="v">{{ n.counts.stories_aired }}</span><span class="muted">floor {{ floor }}%</span></div>
+  <div class="tile"><span class="l">Build time</span><span class="v">{{ total }}</span><span class="muted">budget 10:00</span></div>
+</section>
+<section class="cols">
+  <div class="left">
+    <h2>This run, step by step</h2>
+    <div class="panel">
+      {% for r in rows %}
+      <div class="step"><span class="dot {{ r.dot }}" aria-label="{{ r.status }}"></span><span class="name">{{ r.label }}</span>
+        <span class="tool">{{ r.tool }}</span><span class="detail">{{ r.detail }}</span><span class="mono muted" style="font-size:13px">{{ r.time }}</span></div>
+      {% endfor %}
+    </div>
+    <p class="muted" style="margin:0;font-size:13px">Green: done. Amber: repaired by the station manager. Red: failed.</p>
+  </div>
+  <div class="right">
+    <h2>Jev's decisions</h2>
+    <div class="log">
+      {% for d in decisions %}
+      <div><span class="verdict v-{{ d.verdict }}">{{ d.verdict }}</span><span class="score">{{ d.score | pct }}</span>
+        <span class="post">{% if d.title %}{{ d.title }} · {% endif %}{{ d.reason }}</span></div>
+      {% else %}
+      <div class="muted">No decisions this run.</div>
+      {% endfor %}
+    </div>
+    <h2 style="margin-top:8px">Station manager</h2>
+    {% for r in repairs %}
+    <div class="card repair"><span class="t">Repaired · {{ r.step }}</span><span>{{ r.note }}</span></div>
+    {% else %}
+    <div class="card"><span class="muted">No repairs needed this run.</span></div>
+    {% endfor %}
+    <div class="card"><span style="font-weight:600">Sprite</span><span class="muted">Build started {{ started }} and ran {{ total }}. The Sprite sleeps between newscasts.</span></div>
+  </div>
+</section>
+<p class="muted" style="margin:0;font-size:13px">Jev makes every editorial call. Code applies the thresholds. Posts dropped for privacy are never shown.</p>
+</main>
+</body>
+</html>

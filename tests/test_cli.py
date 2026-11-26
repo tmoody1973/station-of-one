@@ -252,9 +252,11 @@ def test_page_cli_writes_site(tmp_path, monkeypatch):
     from tests.test_page import newscast
 
     monkeypatch.setenv("STATION_RUNS", str(tmp_path / "runs"))
+    monkeypatch.setenv("STATION_DB", str(tmp_path / "s.db"))
     run = tmp_path / "runs" / "2026-11-26T17"
     run.mkdir(parents=True)
     (run / "newscast.json").write_text(json.dumps(newscast()))
     assert main(["page", "--run", str(run)]) == 0
     assert (run / "site/index.html").exists() and (run / "site/h/2026-11-26/1700/index.html").exists()
-    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"pages": 3}
+    assert (run / "site/settings/index.html").exists()
+    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"pages": 4}

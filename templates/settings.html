@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings · {{ station.name }}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#fff}
+a{color:#141414}a:hover{color:#C8102E}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
+.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+header{border-bottom:1px solid #e3e3e3}
+header .wrap{padding-top:18px;padding-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
+header a.brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;text-decoration:none}
+nav{display:flex;gap:22px;font-size:15px;font-weight:500}nav a{text-decoration:none}
+main{padding-top:32px;padding-bottom:56px;display:flex;flex-direction:column;gap:32px}
+h1{margin:0;font-size:44px}.lede{margin:8px 0 0;font-size:17px;color:#555}
+h2{margin:0;font-size:24px}
+table{width:100%;border-collapse:collapse;border:1px solid #e3e3e3;border-radius:10px;overflow:hidden;font-size:15px}
+th{background:#f6f6f6;text-align:left;padding:12px 14px;font-weight:600}td{padding:12px 14px;border-top:1px solid #e3e3e3}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.card{border:1px solid #e3e3e3;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:10px}
+.card h3{margin:0;font-size:22px}.k{font-weight:600;font-size:15px}.v{font-size:15px;color:#333}
+.conn{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.conn div{border:1px solid #e3e3e3;border-radius:10px;padding:14px;font-size:15px}
+.conn span{display:block;color:#555;font-size:14px}
+.note{font-size:14px;color:#555;margin:0}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="brand" href="/index.html">{{ station.name }}</a>
+  <nav><a href="/index.html">Front page</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav></div></header>
+<main class="wrap">
+<div><h1>Settings</h1><p class="lede">Everything here is one preferences file on the Sprite. The agent reads it at the start of every run. This page is read-only.</p></div>
+<section style="display:flex;flex-direction:column;gap:14px">
+  <h2>Beats and sources</h2>
+  <table>
+    <tr><th>Beat</th><th>Sources</th><th>Posts yesterday</th><th>Aired</th><th>Used in</th></tr>
+    {% for b in prefs.beats %}
+    <tr><td><span class="dot" style="background:{{ b.color }}"></span>{{ b.name }}</td><td>{{ b.sources | length }} sources</td>
+      <td>{{ beat_counts.get(b.id, (0, 0))[0] | thousands }}</td><td>{{ beat_counts.get(b.id, (0, 0))[1] }}</td>
+      <td>{{ "Newscast" if b.used_in == "newscast" else "Music picks" }}</td></tr>
+    {% endfor %}
+  </table>
+</section>
+<section class="cards">
+  <div class="card"><h3>Broadcast</h3>
+    <span class="k">First newscast</span><span class="v">{{ station.first_newscast }}</span>
+    <span class="k">Last newscast</span><span class="v">{{ station.last_newscast }}</span>
+    <span class="k">Show name</span><span class="v">{{ station.show_name }}</span>
+    <span class="k">Voices</span><span class="v">Host and reporter · Gemini TTS · synthetic</span></div>
+  <div class="card"><h3>Editorial rules</h3>
+    <span class="k">Airs if likely to matter in a week</span><span class="v">The best story from each beat, then the top scores: top five at {{ floor }}% or higher</span>
+    <span class="k">Dropped if it may harm a private person</span><span class="v">{{ harm }}% or higher</span>
+    <p class="note">Jev makes every call. These thresholds are applied in code.</p></div>
+</section>
+<section style="display:flex;flex-direction:column;gap:14px">
+  <h2>Connections</h2>
+  <div class="conn">
+    <div>Apify<span>Scrapes every source</span></div><div>TypeSafe Jev<span>Scores and selects</span></div>
+    <div>Ollama Cloud<span>Writes scripts</span></div><div>Google Gemini<span>Voices</span></div>
+    <div>Pinecone<span>Duplicates and memory</span></div><div>Box<span>Archive</span></div>
+    <div>Tigris<span>Public hosting</span></div><div>Anthropic<span>Station manager</span></div>
+  </div>
+  <p class="note">Keys are held by the Fly.io connector gateway and never stored on the Sprite.</p>
+</section>
+</main>
+</body>
+</html>

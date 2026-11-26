@@ -142,3 +142,13 @@ def recent_unaired_judged(db: sqlite3.Connection, since_utc: datetime) -> list[t
         if row:
             out.append((post_from_row(row), answers[post_id], models[post_id]))
     return out
+
+
+def counts_by_beat(db: sqlite3.Connection, start_utc: datetime, end_utc: datetime) -> dict[str, tuple[int, int]]:
+    """{beat: (posts scraped, stories aired)} in [start, end)."""
+    s, e = start_utc.isoformat(), end_utc.isoformat()
+    posts = dict(db.execute("SELECT beat, COUNT(*) FROM posts WHERE scraped_at >= ? AND scraped_at < ? GROUP BY beat",
+                            (s, e)).fetchall())
+    aired = dict(db.execute("SELECT p.beat, COUNT(*) FROM aired a JOIN posts p ON p.id = a.post_id"
+                            " WHERE a.aired_at >= ? AND a.aired_at < ? GROUP BY p.beat", (s, e)).fetchall())
+    return {b: (posts.get(b, 0), aired.get(b, 0)) for b in sorted(set(posts) | set(aired))}

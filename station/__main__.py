@@ -212,10 +212,18 @@ def cmd_assemble(run: Path) -> None:
 def cmd_page(run: Path) -> None:
     from station.steps.page import page
 
+    from datetime import timedelta
+
+    from station.store import counts_by_beat, local_midnight_utc
+
     log = RunLog.open(run / "run_log.json", run_id=run.name)
     with log.step("page", "Code") as rec:
+        prefs = load_prefs()
         runs_root = Path(os.environ.get("STATION_RUNS", str(run.parent)))
-        written = page(run, load_prefs(), runs_root=runs_root)
+        today = local_midnight_utc(datetime.now(UTC), prefs.station.timezone)
+        with closing(_db()) as db:
+            yesterday = counts_by_beat(db, today - timedelta(days=1), today)
+        written = page(run, prefs, runs_root=runs_root, beat_counts=yesterday)
         rec.counts.update(pages=len(written))
 
 
