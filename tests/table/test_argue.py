@@ -16,6 +16,8 @@ def reply(override=None):
     for (side, part), text in (override or {}).items():
         next(c for c in claims if c["side"] == side and c["part"] == part)["text"] = text
     return ok({"message": {"content": "Here you go:\n" + json.dumps({"question": "Is Intel One Mono worth switching to?",
+                                                                     "anchor_position": "Yes, it reads better.",
+                                                                     "uncle_position": "No, it changes nothing.",
                                                                      "claims": claims})}})
 
 
@@ -24,7 +26,8 @@ def chat(*replies):
 
 
 def test_parses_eight_claims():
-    question, claims = draft(chat(reply()), "m", STORY, COMMENTS)
+    question, claims, positions = draft(chat(reply()), "m", STORY, COMMENTS)
+    assert positions == ("Yes, it reads better.", "No, it changes nothing.")
     assert question == "Is Intel One Mono worth switching to?" and len(claims) == 8
     assert {(c.side, c.part) for c in claims} == {(s, p) for s in ("anchor", "uncle") for p in PARTS}
     assert claims[0].source_ids == ("hn:12",)
@@ -38,7 +41,7 @@ def test_unknown_source_id_rejected():
 
 def test_author_name_rejected_then_retry_succeeds():  # Review Focus 2
     gw = chat(reply({("uncle", "round1"): "Some posters, like fontnerd42, say ligatures are a crutch."}), reply())
-    _, claims = draft(gw, "m", STORY, COMMENTS)
+    _, claims, _ = draft(gw, "m", STORY, COMMENTS)
     assert len(claims) == 8 and len(gw.calls) == 2
     assert "fontnerd42" in gw.calls[1][3]["messages"][-1]["content"]  # the retry is told what was wrong
 
@@ -65,8 +68,16 @@ def test_cli_writes_claims_and_skips_quiet_day(tmp_path, monkeypatch):
     (run / "topic.json").write_text(json.dumps({"story": STORY, "comments": COMMENTS, "scores": {}}))
     assert main(["table-argue", "--run", str(run)]) == 0
     out = json.loads((run / "claims.json").read_text())
-    assert out["question"].startswith("Is Intel") and len(out["claims"]) == 8 and out["claims"][0]["source_ids"] == ["hn:12"]
+    assert out["question"].startswith("Is Intel") and len(out["claims"]) == 8 and out["positions"]["uncle"] and out["claims"][0]["source_ids"] == ["hn:12"]
     quiet = tmp_path / "2026-11-27"
     quiet.mkdir()
     (quiet / "topic.json").write_text(json.dumps({"none": True, "reason": "x"}))
     assert main(["table-argue", "--run", str(quiet)]) == 0 and not (quiet / "claims.json").exists()
+
+
+def test_each_side_must_state_one_position():  # the first real draft had the Anchor switch sides
+    data = json.loads(json.loads(reply().body)["message"]["content"].split("\n", 1)[1])
+    del data["uncle_position"]
+    assert any("position" in p for p in problems(data, COMMENTS))
+    data["uncle_position"] = data["anchor_position"]
+    assert any("position" in p for p in problems(data, COMMENTS))

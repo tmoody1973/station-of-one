@@ -341,8 +341,9 @@ def cmd_table_argue(run: Path) -> None:
         if topic.get("none"):
             rec.notes.append("No episode today.")
             return
-        question, claims = draft(Gateway(), load_prefs().writer.model, topic["story"], topic["comments"])
-        write_json(run, "claims.json", {"question": question, "claims": [asdict(c) for c in claims]})
+        question, claims, (pa, pu) = draft(Gateway(), load_prefs().writer.model, topic["story"], topic["comments"])
+        write_json(run, "claims.json", {"question": question, "positions": {"anchor": pa, "uncle": pu},
+                                        "claims": [asdict(c) for c in claims]})
         rec.counts.update(claims=len(claims), words=sum(len(c.text.split()) for c in claims))
 
 

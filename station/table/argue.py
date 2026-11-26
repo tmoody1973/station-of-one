@@ -26,9 +26,13 @@ Rules:
 - Never name or quote a username or handle. Never voice or impersonate a real person.
 - Each claim is one or two spoken sentences, at most 60 words.
 - Each claim lists the comment ids it draws on in "sources". The Anchor always cites at least one.
+- Each character holds ONE position for the whole debate: the Anchor answers the question one way, the Uncle
+  the other way. Every Anchor claim supports anchor_position; every Uncle claim supports uncle_position.
 - Do not say who wins or how strong a claim is. A referee scores the claims later.
 Reply with JSON only:
 {"question": "<the dispute as one short yes-or-no question>",
+ "anchor_position": "<Yes or No, and why, in one sentence>",
+ "uncle_position": "<the opposite answer, in one sentence>",
  "claims": [{"side": "anchor"|"uncle", "part": "opening"|"round1"|"round2"|"round3", "text": "...", "sources": ["<comment id>"]}]}
 Exactly one claim per side per part: 8 claims."""
 
@@ -50,6 +54,9 @@ def problems(data: dict, comments: list[dict]) -> list[str]:
     claims = data.get("claims") or []
     if not str(data.get("question") or "").strip():
         found.append("missing question")
+    pa, pu = (str(data.get(k) or "").strip() for k in ("anchor_position", "uncle_position"))
+    if not pa or not pu or pa.lower() == pu.lower():
+        found.append("state anchor_position and uncle_position: opposite answers to the question")
     if sorted((c.get("side"), c.get("part")) for c in claims) != sorted((s, p) for s in SIDES for p in PARTS):
         found.append("need exactly one claim per side for opening, round1, round2, round3")
     ids, names = {c["id"] for c in comments}, _names(comments)
@@ -78,7 +85,8 @@ def _messages(story: dict, comments: list[dict]) -> list[dict]:
             {"role": "user", "content": f"Thread: {story['title']} ({story['source']})\n\nComments:\n{thread}"}]
 
 
-def draft(gw, model: str, story: dict, comments: list[dict]) -> tuple[str, list[Claim]]:
+def draft(gw, model: str, story: dict, comments: list[dict]) -> tuple[str, list[Claim], tuple[str, str]]:
+    """Returns (question, 8 claims in broadcast order, (anchor_position, uncle_position))."""
     messages, last = _messages(story, comments), "no reply"
     for _ in range(2):
         try:
@@ -94,7 +102,7 @@ def draft(gw, model: str, story: dict, comments: list[dict]) -> tuple[str, list[
             order = {(s, p): i for i, (p, s) in enumerate((p, s) for p in PARTS for s in SIDES)}
             claims = sorted((Claim(c["side"], c["part"], c["text"].strip(), tuple(c.get("sources") or ()))
                              for c in data["claims"]), key=lambda c: order[(c.side, c.part)])
-            return data["question"].strip(), claims
+            return data["question"].strip(), claims, (data["anchor_position"].strip(), data["uncle_position"].strip())
         last = "; ".join(issues)
         messages = [*messages, {"role": "assistant", "content": content},
                     {"role": "user", "content": f"Fix these problems and reply with the full JSON again: {last}"}]
