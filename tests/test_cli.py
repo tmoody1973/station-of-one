@@ -260,3 +260,22 @@ def test_page_cli_writes_site(tmp_path, monkeypatch):
     assert (run / "site/index.html").exists() and (run / "site/h/2026-11-26/1700/index.html").exists()
     assert (run / "site/settings/index.html").exists()
     assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"pages": 4}
+
+
+def test_page_cli_control_room_reflects_saved_log(tmp_path, monkeypatch):
+    """Control room is rendered after the page step's own log entry is saved (it showed 0:00 / stale rows)."""
+    from station.steps.rundown import Rundown
+    from tests.test_page import newscast
+    from tests.test_rundown import j
+
+    monkeypatch.setenv("STATION_RUNS", str(tmp_path / "runs"))
+    monkeypatch.setenv("STATION_DB", str(tmp_path / "s.db"))
+    run = tmp_path / "runs" / "2026-11-26T17"
+    run.mkdir(parents=True)
+    (run / "newscast.json").write_text(json.dumps(newscast()))
+    (run / "rundown.json").write_text(json.dumps(Rundown((j("a", 0.6),), {"a": 90}, None, (), (), True, False).to_dict()))
+    (run / "run_log.json").write_text(json.dumps({"run_id": "x", "started_at": "2026-11-26T22:48:02+00:00", "total_seconds": 0,
+        "steps": [{"name": "scrape", "tool": "Apify", "status": "done", "seconds": 90.0, "counts": {}, "notes": []}]}))
+    assert main(["page", "--run", str(run)]) == 0
+    html = (run / "site/control-room/index.html").read_text()
+    assert html.count("Build the page") == 1 and "build 1:30" in html

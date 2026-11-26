@@ -177,7 +177,8 @@ def todays_newscasts(run: Path, runs_root: Path = RUNS_ROOT) -> list[dict]:
     return out
 
 
-def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict | None = None) -> list[Path]:
+def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict | None = None,
+         control_room: bool = True) -> list[Path]:
     current = json.loads((run / "newscast.json").read_text())
     today = todays_newscasts(run, runs_root) or [current]
     site = run / "site"
@@ -189,7 +190,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())
     written = [front, hour, player]
-    if (run / "run_log.json").exists() and (run / "rundown.json").exists():
+    if control_room and (run / "run_log.json").exists() and (run / "rundown.json").exists():
         written += write_control_room(run, prefs, current)
     if beat_counts is not None:
         settings = site / "settings" / "index.html"

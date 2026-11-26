@@ -210,9 +210,9 @@ def cmd_assemble(run: Path) -> None:
 
 
 def cmd_page(run: Path) -> None:
-    from station.steps.page import page
-
     from datetime import timedelta
+
+    from station.steps.page import page
 
     from station.store import counts_by_beat, local_midnight_utc
 
@@ -223,8 +223,13 @@ def cmd_page(run: Path) -> None:
         today = local_midnight_utc(datetime.now(UTC), prefs.station.timezone)
         with closing(_db()) as db:
             yesterday = counts_by_beat(db, today - timedelta(days=1), today)
-        written = page(run, prefs, runs_root=runs_root, beat_counts=yesterday)
-        rec.counts.update(pages=len(written))
+        written = page(run, prefs, runs_root=runs_root, beat_counts=yesterday, control_room=False)
+        rec.counts.update(pages=len(written) + (run / "rundown.json").exists())
+    # After the step's log entry is saved, so the control room shows this step and the full build time.
+    from station.steps.page import write_control_room
+
+    if (run / "rundown.json").exists():
+        write_control_room(run, prefs, read_json(run, "newscast.json"))
 
 
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
