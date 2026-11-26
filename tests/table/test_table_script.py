@@ -82,3 +82,12 @@ def test_welcome_is_code_written_and_question_said_once():  # real run said the 
     ps, _ = built(delivered())
     first = ps[0].turns[0].text
     assert first.startswith("Welcome to The Table") and first.count("Is it worth switching?") == 1
+
+
+def test_ordinary_win_allowed_but_declaring_a_winner_is_not():  # real run: "details win people over" was rejected
+    from station.table.script import FORBIDDEN
+
+    assert not FORBIDDEN.search("Here's my theory: details win people over, some posters say.")
+    for bad in ("And the Uncle wins this one.", "I win, some posters say.", "The winner is clear.",
+                "That wins the debate.", "It's 80% true.", "Jev's verdict is in.", "Ask @mallory."):
+        assert FORBIDDEN.search(bad), bad
