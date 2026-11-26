@@ -257,3 +257,11 @@ Original notes:
      **402 `{"error":"Add usage credits or subscribe and save up to 66%: https://ollama.com/plans"}`**.
      The gateway forwards correctly; the Ollama account has no credits. No free cloud usage.
    - After Tarik added credits: same request → **200 in 0.6 s**, `{"model":"gemma4:31b","message":{"role":"assistant","content":"..."},"done":true,"done_reason":"stop","total_duration":250502667,"prompt_eval_count":24,"eval_count":30}`. **PASS.**
+
+### 8. Tigris publishing (Nov 26, Task 14)
+
+- Connector: `PUT <tigris gateway>/<bucket>/<key>` with `Content-Type` and `Cache-Control` → HTTP 200; `/_sprites/verify` → `credential_verified: true`. No Tigris key on the Sprite.
+- Bucket `patient-mountain-3400` was private (public GET 403, per-object `x-amz-acl: public-read` ignored); Tarik made it public.
+- Public reads keep both headers (`text/plain; charset=utf-8` + `max-age=60`; `audio/mpeg` + `public, max-age=31536000, immutable`). `curl -r 0-99` on the MP3 → **HTTP 206**, `Content-Range: bytes 0-99/1722088`.
+- Host: `https://patient-mountain-3400.t3.tigrisfiles.io` works from the Sprite but this Mac cannot connect to it (HTTP 000); `https://patient-mountain-3400.fly.storage.tigris.dev` works from both, so that is the public base in `config/preferences.json`.
+- Real run: 7 newscasts (11 am–5 pm) published; all 19 links on the public front page → 200 with the right type. iPhone 13 emulation (Playwright on the Sprite): chapter tap seeks to 108.8 s and plays, no console errors.
