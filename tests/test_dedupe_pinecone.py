@@ -60,3 +60,12 @@ def test_judge_asks_about_earlier_hour_post(make_db):
     gw = FakeGateway({("POST", "typesafe", "/v1/systemone"): [jev(answers)]})
     (j,) = judge_all(gw, make_db(), [new], candidates=[("old:1", "new:2")], known=[old])
     assert gw.calls[0][3]["state"]["earlier_posts"][0]["title"] == old.title and j.same_as == "old:1"
+
+
+def test_posts_with_no_text_are_skipped():  # Pinecone rejects a whole batch with one empty record
+    empty = Post("e:1", "S", "ai-dev", "story", None, "", "https://ex.com/e", "", "2026-11-26T22:00:00Z", {}, "public")
+    gw = PineFake()
+    pairs, notes = pinecone_pairs(gw, [empty, story("new:2", "Real title")])
+    assert notes == [] and len([c for c in gw.calls if c[2].endswith("/search")]) == 1
+    upserted = [json.loads(x)["_id"] for c in gw.calls if c[2].endswith("/upsert") for x in c[3].decode().splitlines()]
+    assert upserted == ["new:2"]

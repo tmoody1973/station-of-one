@@ -118,6 +118,7 @@ def embed_text(p: Post) -> str:
 
 
 def upsert_texts(gw, index: str, namespace: str, items: list[tuple[str, str]]) -> None:
+    items = [(pid, text) for pid, text in items if text.strip()]
     for i in range(0, len(items), 96):  # Pinecone's batch limit
         lines = "\n".join(json.dumps({"_id": pid, "text": text}) for pid, text in items[i:i + 96])
         _pine(gw, "POST", f"/indexes/{index}/records/namespaces/{namespace}/upsert", lines.encode(),
@@ -133,6 +134,7 @@ def similar(gw, index: str, namespace: str, text: str, top_k: int = 5) -> list[t
 def pinecone_pairs(gw, stories: list[Post]) -> tuple[list[tuple[str, str]], list[str]]:
     """Search earlier posts for each new story, then store the new stories. Returns (pairs, notes).
     ponytail: searches before storing, so same-run semantic pairs are left to the title check."""
+    stories = [p for p in stories if embed_text(p)]  # Pinecone rejects a batch holding one empty text
     try:
         with ThreadPoolExecutor(max_workers=8) as pool:
             hits = list(pool.map(lambda p: similar(gw, INDEX, NAMESPACE, embed_text(p)), stories))
