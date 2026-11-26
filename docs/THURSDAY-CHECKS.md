@@ -317,3 +317,6 @@ Original notes:
 
 ### T4. Referee (Nov 26)
 - One Jev call, 1.0 s, 12 answers logged (`table_true`, `table_answered`). Round claims scored 0.68–0.80 true; answered 0.47–0.58. Verdict (code): Anchor 2.87, Uncle 2.67, Anchor wins. `table_episodes` row written; season record Anchor 1–0.
+
+### T5. Script (Nov 26)
+- Writer passes the delivery checks first try (1.7 s). Rulings, totals, winner, record, welcome and WNCL ID are code-written. Fixed: the writer's welcome repeated the question (now a code line). 381 words ≈ 2½–3 min, short of the spec's "about six minutes" — flagged to Tarik, not padded.
