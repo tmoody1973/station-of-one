@@ -71,6 +71,7 @@ def test_props_contain_captions_and_end_card_url():
     assert p["url"].endswith("/index.html") and not p["url"].startswith("http")
     assert p["durationMs"] == p["introMs"] + p["clipMs"] + p["endMs"] and p["beatColor"].startswith("#")
     assert p["postsRead"] == n["counts"]["posts_read_today"]
+    assert p["score"] == 0.7  # Jev's "likely to matter in a week", for the animated dial
 
 
 def test_video_cache_is_short():  # a re-render must not be hidden by a year-long cache
@@ -91,3 +92,18 @@ def test_footer_links_todays_video():
     n = newscast()
     assert 'href="/video/2026-11-26.mp4"' in render_front(n, [n], PREFS, video_url="/video/2026-11-26.mp4")
     assert "/video/" not in render_front(n, [n], PREFS)
+
+
+def test_story_clip_also_writes_wav_for_audio_bars(tmp_path):
+    from tests.conftest import ffmpeg_works
+    if not ffmpeg_works():
+        import pytest
+        pytest.skip("ffmpeg unavailable")
+    import subprocess
+
+    from station.steps.video import story_clip
+
+    src = tmp_path / "n.mp3"
+    subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=f=440:d=3", str(src)], check=True)
+    out = story_clip(src, 500, 2500, tmp_path / "public" / "clip.mp3")
+    assert out.exists() and (tmp_path / "public" / "clip.wav").exists()

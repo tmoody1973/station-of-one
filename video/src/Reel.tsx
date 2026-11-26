@@ -3,7 +3,10 @@ import type { Caption } from "@remotion/captions";
 import { loadFont } from "@remotion/google-fonts/SpaceGrotesk";
 import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { AbsoluteFill, Easing, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AudioBars } from "./AudioBars";
 import { Captions } from "./Captions";
+import { Dial } from "./Dial";
+import { ScoreDial } from "./ScoreDial";
 
 const { fontFamily } = loadFont("normal", { weights: ["500", "700"], subsets: ["latin"] });
 const { fontFamily: mono } = loadMono("normal", { weights: ["500"], subsets: ["latin"] });
@@ -12,6 +15,7 @@ export type ReelProps = {
   headline: string;
   beat: string;
   beatColor: string;
+  score: number;
   postsRead: number;
   captions: Caption[];
   clipMs: number;
@@ -25,48 +29,101 @@ export type ReelProps = {
 
 const BG = "#111214";
 const MUTED = "#b8bcc4";
+const OUT = Easing.bezier(0.16, 1, 0.3, 1);
+const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 // Safe area: text stays between 250 px from the top and 400 px from the bottom.
+
+const sweep = (frame: number, fps: number, delay = 0) =>
+  interpolate(frame, [delay, delay + 0.9 * fps], [-70, -28], { ...clamp, easing: Easing.spring({ damping: 12 }) });
+
+const DotField: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
+  const lit = interpolate(frame, [0.2 * fps, 1.8 * fps], [0, 1], clamp);
+  return (
+    <div style={{ position: "absolute", top: 300, left: 90, right: 90, display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 22, opacity: 0.55 }}>
+      {Array.from({ length: 96 }, (_, i) => {
+        const on = ((i * 37) % 96) / 96 < lit;  // scattered order, lighting up as the count climbs
+        return <div key={i} style={{ aspectRatio: "1", borderRadius: "50%", background: on ? (i % 7 === 0 ? "#C8102E" : "#3a3d44") : "#1b1d21" }} />;
+      })}
+    </div>
+  );
+};
 
 const Intro: React.FC<{ postsRead: number; station: string }> = ({ postsRead, station }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const n = Math.round(interpolate(frame, [0, 1.8 * fps], [0, postsRead], {
-    extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) }));
+  const n = Math.round(interpolate(frame, [0.2 * fps, 1.8 * fps], [0, postsRead], { ...clamp, easing: OUT }));
   return (
-    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 20 }}>
-      <div style={{ fontFamily: mono, fontSize: 200, color: "#f2f2f2" }}>{n.toLocaleString("en-US")}</div>
-      <div style={{ fontFamily, fontSize: 60, color: MUTED }}>posts read today</div>
-      <div style={{ fontFamily: mono, fontSize: 44, color: "#ff8a98", marginTop: 40 }}>{station}</div>
+    <AbsoluteFill>
+      <DotField frame={frame} fps={fps} />
+      <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 18 }}>
+        <div style={{ scale: String(interpolate(frame, [0, 0.4 * fps], [0.6, 1], { ...clamp, easing: OUT })) }}>
+          <Dial size={200} needleDeg={sweep(frame, fps)} />
+        </div>
+        <div style={{ fontFamily: mono, fontSize: 210, color: "#f2f2f2", lineHeight: 1 }}>{n.toLocaleString("en-US")}</div>
+        <div style={{ fontFamily, fontSize: 62, color: MUTED, translate: `0px ${interpolate(frame, [0.3 * fps, 0.8 * fps], [40, 0], { ...clamp, easing: OUT })}px`,
+                      opacity: interpolate(frame, [0.3 * fps, 0.8 * fps], [0, 1], clamp) }}>posts read today</div>
+        <div style={{ fontFamily: mono, fontSize: 44, color: "#ff8a98", opacity: interpolate(frame, [0.8 * fps, 1.2 * fps], [0, 1], clamp) }}>{station}</div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
 
-const Story: React.FC<ReelProps> = (p) => (
-  <AbsoluteFill>
-    <div style={{ position: "absolute", top: 250, left: 80, right: 80, display: "flex", flexDirection: "column", gap: 28 }}>
-      <div style={{ fontFamily, fontSize: 40, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: p.beatColor === "#C8102E" ? "#ff8a98" : "#f2f2f2", display: "flex", alignItems: "center", gap: 18 }}>
-        <span style={{ width: 28, height: 28, borderRadius: 14, background: p.beatColor, display: "inline-block" }} />
-        {p.beat}
+const Headline: React.FC<{ frame: number; fps: number; p: ReelProps }> = ({ frame, fps, p }) => {
+  const words = p.headline.split(" ");
+  const wipe = interpolate(frame, [0, 0.35 * fps], [0, 100], { ...clamp, easing: OUT });
+  return (
+    <div style={{ position: "absolute", top: 250, left: 80, right: 80, display: "flex", flexDirection: "column", gap: 26 }}>
+      <div style={{ alignSelf: "flex-start", background: p.beatColor, clipPath: `inset(0 ${100 - wipe}% 0 0)`, padding: "10px 20px", borderRadius: 6,
+                    fontFamily, fontSize: 36, fontWeight: 700, letterSpacing: 3, textTransform: "uppercase", color: "#fff" }}>{p.beat}</div>
+      <div style={{ fontFamily, fontSize: 70, fontWeight: 700, lineHeight: 1.1, color: "#f2f2f2" }}>
+        {words.map((w, i) => {
+          const start = 0.2 * fps + i * 2;  // each word two frames after the last
+          return (
+            <span key={i} style={{ display: "inline-block", whiteSpace: "pre",
+                                   opacity: interpolate(frame, [start, start + 6], [0, 1], clamp),
+                                   translate: `0px ${interpolate(frame, [start, start + 12], [50, 0], { ...clamp, easing: OUT })}px` }}>
+              {w}{i < words.length - 1 ? " " : ""}
+            </span>
+          );
+        })}
       </div>
-      <div style={{ fontFamily, fontSize: 68, fontWeight: 700, lineHeight: 1.1, color: "#f2f2f2" }}>{p.headline}</div>
-      <div style={{ height: 8, width: 160, background: "#C8102E" }} />
     </div>
-    <Captions captions={p.captions} fontFamily={fontFamily} />
-    <div style={{ position: "absolute", bottom: 400, left: 80, right: 80, fontFamily, fontSize: 34, color: MUTED }}>
-      Synthetic voices · machine-edited · {p.show}
-    </div>
-  </AbsoluteFill>
-);
+  );
+};
 
-const EndCard: React.FC<ReelProps> = (p) => (
-  <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 26, padding: "250px 80px 400px" }}>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="220" height="220" role="img" aria-label="WONE 1.0 FM"><circle cx="32" cy="34" r="27" fill="none" stroke="#f2f2f2" strokeWidth="5"/><g stroke="#f2f2f2" strokeWidth="2.5" strokeLinecap="round"><line x1="17.9" y1="28.9" x2="13.2" y2="27.2"/><line x1="17.5" y1="24.2" x2="15.4" y2="22.8"/><line x1="20.3" y1="21.0" x2="18.6" y2="19.1"/><line x1="23.8" y1="18.5" x2="22.6" y2="16.3"/><line x1="27.8" y1="17.0" x2="27.2" y2="14.6"/><line x1="32.0" y1="19.0" x2="32.0" y2="14.0"/><line x1="36.2" y1="17.0" x2="36.8" y2="14.6"/><line x1="40.2" y1="18.5" x2="41.4" y2="16.3"/><line x1="43.7" y1="21.0" x2="45.4" y2="19.1"/><line x1="46.5" y1="24.2" x2="48.6" y2="22.8"/><line x1="46.1" y1="28.9" x2="50.8" y2="27.2"/></g><line x1="32" y1="34" x2="23.5" y2="18.1" stroke="#C8102E" strokeWidth="5" strokeLinecap="round"/><circle cx="32" cy="34" r="5" fill="#f2f2f2"/></svg>
-    <div style={{ fontFamily, fontSize: 96, fontWeight: 700, color: "#f2f2f2", textAlign: "center" }}>{p.show}</div>
-    <div style={{ fontFamily: mono, fontSize: 48, color: "#ff8a98" }}>{p.station}</div>
-    <div style={{ fontFamily: mono, fontSize: 34, color: "#f2f2f2", textAlign: "center", wordBreak: "break-all", marginTop: 30 }}>{p.url}</div>
-    <div style={{ fontFamily, fontSize: 36, color: MUTED, marginTop: 30 }}>Every hour. Runs on a Fly.io Sprite.</div>
-  </AbsoluteFill>
-);
+const Story: React.FC<ReelProps> = (p) => {
+  const frame = useCurrentFrame();
+  const { fps, width } = useVideoConfig();
+  const progress = frame / ((p.clipMs / 1000) * fps);
+  return (
+    <AbsoluteFill>
+      <Headline frame={frame} fps={fps} p={p} />
+      <ScoreDial frame={frame} fps={fps} score={p.score} fontFamily={fontFamily} mono={mono} />
+      <AudioBars frame={frame} fps={fps} color={p.beatColor} />
+      <Captions captions={p.captions} fontFamily={fontFamily} />
+      <div style={{ position: "absolute", bottom: 440, left: 80, right: 80, fontFamily, fontSize: 32, color: MUTED }}>
+        Synthetic voices · machine-edited · {p.show}
+      </div>
+      <div style={{ position: "absolute", bottom: 404, left: 0, height: 10, width: width * progress, background: "#C8102E" }} />
+    </AbsoluteFill>
+  );
+};
+
+const EndCard: React.FC<ReelProps> = (p) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const rise = (delay: number) => ({ opacity: interpolate(frame, [delay, delay + 8], [0, 1], clamp),
+                                     translate: `0px ${interpolate(frame, [delay, delay + 14], [40, 0], { ...clamp, easing: OUT })}px` });
+  return (
+    <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 26, padding: "250px 80px 400px" }}>
+      <Dial size={220} needleDeg={sweep(frame, fps)} />
+      <div style={{ fontFamily, fontSize: 96, fontWeight: 700, color: "#f2f2f2", textAlign: "center", ...rise(6) }}>{p.show}</div>
+      <div style={{ fontFamily: mono, fontSize: 48, color: "#ff8a98", ...rise(12) }}>{p.station}</div>
+      <div style={{ fontFamily: mono, fontSize: 34, color: "#f2f2f2", textAlign: "center", wordBreak: "break-all", marginTop: 30, ...rise(18) }}>{p.url}</div>
+      <div style={{ fontFamily, fontSize: 36, color: MUTED, marginTop: 30, ...rise(24) }}>Every hour. Runs on a Fly.io Sprite.</div>
+    </AbsoluteFill>
+  );
+};
 
 export const Reel: React.FC<ReelProps> = (p) => {
   const { fps } = useVideoConfig();

@@ -44,6 +44,7 @@ def props(newscast: dict, story: dict, captions: list[dict], clip_ms: int, prefs
     beat = next((b for b in prefs.beats if b.id == story.get("beat_id")), None)
     host = prefs.hosting.public_base.removeprefix("https://").removeprefix("http://")
     return {"headline": story["headline"], "beat": beat.name if beat else "", "beatColor": beat.color if beat else "#C8102E",
+            "score": story["score_matter_week"],
             "postsRead": posts_read if posts_read is not None else newscast["counts"]["posts_read_today"],
             "captions": captions, "clipMs": clip_ms,
             "introMs": INTRO_MS, "endMs": END_MS, "durationMs": INTRO_MS + clip_ms + END_MS,
@@ -55,6 +56,9 @@ def story_clip(mp3: Path, start_ms: int, end_ms: int, out: Path) -> Path:
     out.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{start_ms}ms", "-to", f"{end_ms}ms", "-i", str(mp3),
                     "-c:a", "libmp3lame", "-b:a", "128k", str(out)], check=True)
+    # The audio-reactive bars read samples from a WAV (useWindowedAudioData); the MP3 goes to Deepgram.
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(out), "-ar", "44100", "-ac", "1", str(out.with_suffix(".wav"))],
+                   check=True)
     return out
 
 

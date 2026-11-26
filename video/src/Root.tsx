@@ -8,6 +8,7 @@ const defaultProps: ReelProps = {
   headline: "A headline from today's newscast",
   beat: "Arts and culture",
   beatColor: "#2e6f73",
+  score: 0.62,
   postsRead: 1073,
   captions: [{ text: "Captions", startMs: 0, endMs: 600, timestampMs: 300, confidence: null }],
   clipMs: 24000,
