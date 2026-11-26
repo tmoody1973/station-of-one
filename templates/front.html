@@ -129,7 +129,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
     <div class="box"><h3>This hour</h3><p>{{ n.counts.posts_read_hour | thousands }} new posts read · {{ n.counts.stories_aired }} stor{{ 'y' if n.counts.stories_aired == 1 else 'ies' }} aired</p></div>
     {% if corrections and corrections.called %}
     <div class="box"><h3>Corrections</h3>
-      <p style="margin:0;font-size:15px;line-height:1.5;color:#333">A week ago this station called {{ corrections.called }} stor{{ 'y' if corrections.called == 1 else 'ies' }} likely to matter a week later. {{ corrections.held }} {{ 'was' if corrections.held == 1 else 'were' }} still being discussed in the feeds we read; {{ corrections.faded }} {{ 'was' if corrections.faded == 1 else 'were' }} not.</p>
+      <p style="margin:0;font-size:15px;line-height:1.5;color:#333">A week ago this station called {{ corrections.called }} stor{{ 'y' if corrections.called == 1 else 'ies' }} likely to matter a week later. {{ corrections.held }} {{ 'was' if corrections.held == 1 else 'were' }} still being discussed in the last two days of feeds we read; {{ corrections.faded }} {{ 'was' if corrections.faded == 1 else 'were' }} not.</p>
       {% for c in corrections['items'] %}
       <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;border-top:1px solid #eee;padding-top:8px">
         <a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a>

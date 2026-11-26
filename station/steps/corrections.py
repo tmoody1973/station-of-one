@@ -84,7 +84,7 @@ def _was(n: int) -> str:
 def corrections_chapter(report: dict) -> Chapter:
     n, held, faded = report["called"], report["held"], report["faded"]
     text = (f"Corrections. A week ago, this station called {n} stor{'y' if n == 1 else 'ies'} likely to matter a week later; "
-            f"in the feeds we read this week, {_was(held)} still being discussed, and {faded} {'was' if faded == 1 else 'were'} not.")
+            f"in the last two days of feeds we read, {_was(held)} still being discussed, and {faded} {'was' if faded == 1 else 'were'} not.")
     missed = sorted((i for i in report["items"] if not i["held_up"]), key=lambda i: -i["said"])
     if missed:
         m = missed[0]

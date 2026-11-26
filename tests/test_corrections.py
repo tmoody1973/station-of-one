@@ -65,7 +65,7 @@ def test_chapter_is_code_written_with_numbers_and_backfill_note():
     assert ch.kind == "corrections" and ch.turns[0].speaker == "host"
     assert "3 stories" in text and "1 was still being discussed" in text and "2 were not" in text
     assert "62 percent" in text and "Carbon emissions of US data centers" in text  # the strongest call that faded
-    assert "last week's posts" in text and "in the feeds we read" in text and len(text.split()) <= 85
+    assert "last week's posts" in text and "in the last two days of feeds we read" in text and len(text.split()) <= 85
 
 
 def test_lead_is_60_seconds_on_corrections_days():
@@ -83,6 +83,7 @@ def test_front_box_shows_summary_and_safe_links():
     n = newscast()
     html = render_front(n, [n], PREFS, corrections=report())
     assert "Corrections" in html and "called 3 stories" in html and "1 was still being discussed" in html
+    assert "last two days of feeds we read" in html  # the window the code actually searched
     assert 'href="https://ex.com/a"' in html and "javascript:" not in html and "backfill" in html.lower()
 
 
