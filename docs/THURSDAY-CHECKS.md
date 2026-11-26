@@ -314,3 +314,6 @@ Original notes:
 ### T3. Claims (Nov 26)
 - Ollama `deepseek-v4.1-flash`, first try both times (2.8 s, 2.6 s), 8 claims, ~230 words, every source id from the thread, no usernames.
 - Draft 1 had the Anchor switch sides between claims; fixed by requiring `anchor_position`/`uncle_position` up front. Draft 2: Anchor "No (taste; Iosevka/JetBrains Mono legible)", Uncle "Yes (readable a size smaller)"; every claim stays on its side (read by Claude).
+
+### T4. Referee (Nov 26)
+- One Jev call, 1.0 s, 12 answers logged (`table_true`, `table_answered`). Round claims scored 0.68–0.80 true; answered 0.47–0.58. Verdict (code): Anchor 2.87, Uncle 2.67, Anchor wins. `table_episodes` row written; season record Anchor 1–0.
