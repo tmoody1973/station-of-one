@@ -144,13 +144,31 @@ def _rss(item: dict, beat: str) -> list[Post]:
                  posted_at=item.get("item_published") or "", engagement={}, visibility="public")]
 
 
+def _outbound_link(item: dict) -> tuple[str, str, str]:
+    """(url, title, description) of the article a Bluesky post points to, or empty strings."""
+    card = item.get("externalLink") or {}
+    if card.get("url"):
+        return card["url"], card.get("title") or "", card.get("description") or ""
+    for link in item.get("links") or []:
+        if "bsky.app" not in link:
+            return link, "", ""
+    return "", "", ""
+
+
 def _bluesky(item: dict, beat: str) -> list[Post]:
+    """A post that links an article becomes a story pointing at that article; a post with no
+    outbound link can only be a quotable comment (Overheard), never a story (Tarik, Nov 26)."""
     if item.get("isRepost") or item.get("type", "post") != "post":
         return []
     text = item.get("text") or ""
+    url, title, description = _outbound_link(item)
+    is_story = bool(url) and not item.get("isReply")
+    body = f"{text}\n\nLinked article: {title}. {description}".strip() if url else text
     return [Post(id=f"bsky:{item['id']}", source=f"Bluesky @{item.get('handle')}", beat=beat,
-                 kind="comment" if item.get("isReply") else "story", author=item.get("handle"),
-                 title=text[:100], url=item.get("url") or "", text=text[:TEXT_LIMIT], posted_at=item.get("createdAt") or "",
+                 kind="story" if is_story else "comment", author=item.get("handle"),
+                 title=(title or text[:100]) if is_story else text[:100],
+                 url=url if is_story else item.get("url") or "", text=body[:TEXT_LIMIT],
+                 posted_at=item.get("createdAt") or "",
                  engagement={"points": item.get("likeCount"), "comments": item.get("replyCount"),
                              "reposts": item.get("repostCount")}, visibility="public")]
 

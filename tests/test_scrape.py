@@ -116,12 +116,26 @@ def test_one_failed_source_does_not_stop_others(tmp_path, make_db):
     assert any("subreddit" in n for n in result.notes)
 
 
-def test_normalize_bluesky_post():
-    item = next(i for i in load_fixture("apify_bluesky.json") if not i.get("isReply"))
+def test_normalize_bluesky_links_to_the_article():  # Tarik: stories must link to the real article
+    item = next(i for i in load_fixture("apify_bluesky.json") if i.get("externalLink") and not i.get("isReply"))
     p = normalize("bluesky", item, "ai-dev")[0]
+    link = item["externalLink"]
     assert p.id == f"bsky:{item['id']}" and p.source == f"Bluesky @{item['handle']}" and p.kind == "story"
-    assert p.url == item["url"] and p.text == item["text"]
+    assert p.url == link["url"] and p.title == link["title"]
+    assert item["text"] in p.text and (link.get("description") or "") in p.text
     assert p.engagement == {"points": item["likeCount"], "comments": item["replyCount"], "reposts": item["repostCount"]}
+
+
+def test_normalize_bluesky_uses_links_when_no_card():
+    item = {**load_fixture("apify_bluesky.json")[0], "externalLink": None, "isReply": False,
+            "links": ["https://bsky.app/profile/x/post/1", "https://example.com/article"]}
+    assert normalize("bluesky", item, "ai-dev")[0].url == "https://example.com/article"
+
+
+def test_normalize_bluesky_without_outbound_link_is_never_a_story():
+    item = {**load_fixture("apify_bluesky.json")[0], "externalLink": None, "links": [], "isReply": False}
+    p = normalize("bluesky", item, "ai-dev")[0]
+    assert p.kind == "comment" and p.url == item["url"]
 
 
 def test_normalize_bluesky_skips_reposts():
