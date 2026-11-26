@@ -214,9 +214,9 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
     feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0))
-    cover = site / "cover.png"
-    if (TEMPLATES.parent / "assets" / "cover.png").exists():
-        cover.write_bytes((TEMPLATES.parent / "assets" / "cover.png").read_bytes())
+    for asset in ("cover-dial.png", "logo.svg"):  # a changed asset gets a new name: images are cached long
+        if (TEMPLATES.parent / "assets" / asset).exists():
+            (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
     written = [front, hour, player, feed]
     if control_room and (run / "run_log.json").exists() and (run / "rundown.json").exists():
         written += write_control_room(run, prefs, current)

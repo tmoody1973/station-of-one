@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
 <title>{% if mode == "hour" %}{{ n.hour_label }} newscast · {% endif %}{{ station.show_name }} · {{ station.name }}</title>
 <meta name="description" content="A five-minute newscast for an audience of one, machine-edited from public posts. Voices are synthetic.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -73,13 +74,14 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
   body{padding-bottom:150px}
   .lead h1{font-size:30px}.art{height:180px}
 }
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap}.logo b{font-weight:700;letter-spacing:1px}
 </style>
 <link rel="alternate" type="application/rss+xml" title="{{ station.show_name }} podcast feed" href="/feed.xml">
 </head>
 <body>
 <header class="site"><div class="wrap">
-  <div class="brand"><a href="/index.html">{{ station.name }}</a>
-    <span>{{ station.call_sign }} {{ station.frequency }} · {{ station.show_name }} · {{ date_label }}</span></div>
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo_mark.svg" %}<span class="lockup"><b>{{ station.call_sign }}</b> {{ station.frequency }}</span></a>
+    <span>{{ station.name }} · {{ station.show_name }} · {{ date_label }}</span></div>
   <nav><a href="/index.html#newscasts">Newscasts</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav>
 </div></header>
 

@@ -14,7 +14,7 @@ from station.gateway import GatewayError
 
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".mp3": "audio/mpeg", ".json": "application/json",
                  ".js": "text/javascript", ".mp4": "video/mp4", ".png": "image/png",
-                 ".xml": "application/rss+xml; charset=utf-8"}
+                 ".xml": "application/rss+xml; charset=utf-8", ".svg": "image/svg+xml"}
 IMMUTABLE = {".mp3", ".png"}  # MP3 keys carry a content fingerprint; the cover never changes
 
 

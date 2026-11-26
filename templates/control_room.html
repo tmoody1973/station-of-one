@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
 <title>Control room · {{ station.name }}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -40,11 +41,12 @@ h2{margin:0;font-size:20px}
 .log .post{color:#b8bcc4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
 .card.repair{border-color:#6b4e00}.card.repair .t{color:#ffc857;font-weight:600}
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap}.logo b{font-weight:700;letter-spacing:1px}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <div class="brand"><a href="/index.html">{{ station.name }}</a><span class="muted">Control room</span></div>
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo_mark.svg" %}<span class="lockup"><b>{{ station.call_sign }}</b> {{ station.frequency }}</span></a><span class="muted">Control room</span></div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span class="badge">Built · {{ n.hour_label }} newscast</span>
     <span class="mono muted" style="font-size:14px">started {{ started }} · build {{ total }}</span>

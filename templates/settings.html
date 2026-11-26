@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
 <title>Settings · {{ station.name }}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
 <style>
@@ -28,10 +29,11 @@ th{background:#f6f6f6;text-align:left;padding:12px 14px;font-weight:600}td{paddi
 .conn div{border:1px solid #e3e3e3;border-radius:10px;padding:14px;font-size:15px}
 .conn span{display:block;color:#555;font-size:14px}
 .note{font-size:14px;color:#555;margin:0}
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap}.logo b{font-weight:700;letter-spacing:1px}
 </style>
 </head>
 <body>
-<header><div class="wrap"><a class="brand" href="/index.html">{{ station.name }}</a>
+<header><div class="wrap"><a class="logo" href="/index.html">{% include "_logo_mark.svg" %}<span class="lockup"><b>{{ station.call_sign }}</b> {{ station.frequency }}</span></a>
   <nav><a href="/index.html">Front page</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav></div></header>
 <main class="wrap">
 <div><h1>Settings</h1><p class="lede">Everything here is one preferences file on the Sprite. The agent reads it at the start of every run. This page is read-only.</p></div>

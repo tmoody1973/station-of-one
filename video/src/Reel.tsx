@@ -60,6 +60,7 @@ const Story: React.FC<ReelProps> = (p) => (
 
 const EndCard: React.FC<ReelProps> = (p) => (
   <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 26, padding: "250px 80px 400px" }}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="220" height="220" role="img" aria-label="WONE 1.0 FM"><circle cx="32" cy="34" r="27" fill="none" stroke="#f2f2f2" strokeWidth="5"/><g stroke="#f2f2f2" strokeWidth="2.5" strokeLinecap="round"><line x1="17.9" y1="28.9" x2="13.2" y2="27.2"/><line x1="17.5" y1="24.2" x2="15.4" y2="22.8"/><line x1="20.3" y1="21.0" x2="18.6" y2="19.1"/><line x1="23.8" y1="18.5" x2="22.6" y2="16.3"/><line x1="27.8" y1="17.0" x2="27.2" y2="14.6"/><line x1="32.0" y1="19.0" x2="32.0" y2="14.0"/><line x1="36.2" y1="17.0" x2="36.8" y2="14.6"/><line x1="40.2" y1="18.5" x2="41.4" y2="16.3"/><line x1="43.7" y1="21.0" x2="45.4" y2="19.1"/><line x1="46.5" y1="24.2" x2="48.6" y2="22.8"/><line x1="46.1" y1="28.9" x2="50.8" y2="27.2"/></g><line x1="32" y1="34" x2="23.5" y2="18.1" stroke="#C8102E" strokeWidth="5" strokeLinecap="round"/><circle cx="32" cy="34" r="5" fill="#f2f2f2"/></svg>
     <div style={{ fontFamily, fontSize: 96, fontWeight: 700, color: "#f2f2f2", textAlign: "center" }}>{p.show}</div>
     <div style={{ fontFamily: mono, fontSize: 48, color: "#ff8a98" }}>{p.station}</div>
     <div style={{ fontFamily: mono, fontSize: 34, color: "#f2f2f2", textAlign: "center", wordBreak: "break-all", marginTop: 30 }}>{p.url}</div>
