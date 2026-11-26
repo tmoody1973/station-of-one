@@ -247,3 +247,12 @@ Original notes:
   connector's detail page.
 - Gemini TTS price. A third-party summary says $9 per million audio tokens through
   Dec 31, 2026, at 25 tokens per second. Another says free through year end.
+
+## Friday checks (during the build)
+
+7. **Ollama Cloud through the gateway** (plan Task 8, step 1), Nov 26 17:4x UTC.
+   - Connector snippet lists `POST <gateway>/api/chat`, `POST <gateway>/v1/chat/completions`,
+     `GET <gateway>/api/tags`; example model `gpt-oss:120b`, `"stream": false`.
+   - `POST /api/chat` with `{"model":"gemma4:31b","messages":[...],"stream":false,"think":false}` →
+     **402 `{"error":"Add usage credits or subscribe and save up to 66%: https://ollama.com/plans"}`**.
+     The gateway forwards correctly; the Ollama account has no credits. No free cloud usage.
