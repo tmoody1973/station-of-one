@@ -58,7 +58,7 @@ def test_actor_input_shapes():
     assert red["includeNsfw"] is False and red["sort"] == "new"
     hn = actor_input("hackernews", ["topstories"], since)
     assert hn["mode"] == "topstories" and hn["dateFromUnix"] == int(since.timestamp())
-    assert hn["includeComments"] is False  # 735 comments for 20 stories on Nov 26; Overheard uses Reddit
+    assert hn["includeComments"] is True and hn["maxCommentDepth"] == 1  # Tarik, Nov 26: volume + Overheard
 
 
 def runs_routes(actor_id: str, ds: str, items: list, extra_status=("RUNNING",)):

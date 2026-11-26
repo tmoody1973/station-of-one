@@ -61,8 +61,9 @@ def _iso_z(when: datetime) -> str:
 
 def actor_input(source_type: str, refs: list[str], since: datetime) -> dict:
     if source_type == "hackernews":
-        # Comments off: the Actor has no per-story cap (735 comments for 20 stories on Nov 26).
-        return {"mode": refs[0], "maxItems": 20, "includeComments": False, "dateFromUnix": int(since.timestamp())}
+        # Comments on (Tarik, Nov 26): ~700 top-level comments per run feed "posts read" and Overheard.
+        return {"mode": refs[0], "maxItems": 20, "includeComments": True, "maxCommentDepth": 1,
+                "dateFromUnix": int(since.timestamp())}
     if source_type == "subreddit":
         return {"urls": [f"https://www.reddit.com/r/{r}/" for r in refs], "sort": "new",
                 "postedAfter": _iso_z(since), "maxPostsPerSource": 25, "includeComments": True,
