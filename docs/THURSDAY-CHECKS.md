@@ -310,3 +310,7 @@ Original notes:
 
 ### T2. Topic pick (Nov 26)
 - One Jev call over 24 threads, 1.8 s. Picked "Intel One Mono font" (dispute 0.65, low-stakes 0.95, hot topic 0.02). Next: NYT/Photoshop (0.71/0.67), Euro-Office (0.63/0.74). All 72 answers logged (`table_dispute`, `table_low_stakes`, `hot_topic`).
+
+### T3. Claims (Nov 26)
+- Ollama `deepseek-v4.1-flash`, first try both times (2.8 s, 2.6 s), 8 claims, ~230 words, every source id from the thread, no usernames.
+- Draft 1 had the Anchor switch sides between claims; fixed by requiring `anchor_position`/`uncle_position` up front. Draft 2: Anchor "No (taste; Iosevka/JetBrains Mono legible)", Uncle "Yes (readable a size smaller)"; every claim stays on its side (read by Claude).
