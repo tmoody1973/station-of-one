@@ -63,3 +63,8 @@ def test_counts_by_beat(make_db):
     record_aired(db, "n", [("x:1", "lead", 0.6)], datetime.now(UTC).isoformat())
     got = counts_by_beat(db, datetime(2000, 1, 1, tzinfo=UTC), datetime(2999, 1, 1, tzinfo=UTC))
     assert got == {"ai-dev": (2, 1), "milwaukee": (1, 0)}
+
+
+def test_settings_shows_friendly_times():
+    html = render_settings(PREFS, {})
+    assert "7:00 am" in html and "7:00 pm" in html and "19:00" not in html

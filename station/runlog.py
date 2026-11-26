@@ -42,6 +42,7 @@ class RunLog:
     @contextmanager
     def step(self, name: str, tool: str):
         rec = StepRecord(name, tool)
+        self.steps = [s for s in self.steps if s.name != name]  # a re-run replaces its earlier entry
         self.steps.append(rec)
         t = time.monotonic()
         try:
@@ -60,6 +61,6 @@ class RunLog:
         write_json(self.path.parent, self.path.name, {
             "run_id": self.run_id,
             "started_at": self.started_at,
-            "total_seconds": round(time.monotonic() - self._t0, 2),
+            "total_seconds": round(sum(s.seconds for s in self.steps), 2),  # steps may run in separate processes
             "steps": [vars(s) for s in self.steps],
         })

@@ -25,7 +25,14 @@ def env() -> Environment:
     e.filters["pct"] = lambda p: f"{round(float(p) * 100)}%"
     e.filters["thousands"] = lambda n: f"{int(n):,}"
     e.filters["safe_url"] = safe_url
+    e.filters["clock"] = _clock
     return e
+
+
+def _clock(hhmm: str) -> str:
+    """'19:00' -> '7:00 pm'."""
+    h, m = (int(x) for x in hhmm.split(":"))
+    return f"{h % 12 or 12}:{m:02d} {'am' if h < 12 else 'pm'}"
 
 
 def safe_url(url: str | None) -> str:

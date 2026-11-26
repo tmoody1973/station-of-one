@@ -39,3 +39,20 @@ def test_runlog_appends_to_existing_file(tmp_path):  # steps run one CLI call at
         pass
     names = [s["name"] for s in json.loads((tmp_path / "run_log.json").read_text())["steps"]]
     assert names == ["scrape", "judge"]
+
+
+def test_rerun_step_replaces_its_entry(tmp_path):  # control room showed "Build the page" twice
+    with RunLog(tmp_path / "run_log.json", run_id="x").step("page", "Code"):
+        pass
+    with RunLog.open(tmp_path / "run_log.json", run_id="x").step("page", "Code"):
+        pass
+    assert [s["name"] for s in json.loads((tmp_path / "run_log.json").read_text())["steps"]] == ["page"]
+
+
+def test_total_seconds_is_sum_of_steps(tmp_path):  # control room showed build time 0:00
+    log = RunLog(tmp_path / "run_log.json", run_id="x")
+    log.steps = []
+    from station.runlog import StepRecord
+    log.steps += [StepRecord("scrape", "Apify", "done", 90.0), StepRecord("voice", "Gemini TTS", "done", 22.5)]
+    log.save()
+    assert json.loads((tmp_path / "run_log.json").read_text())["total_seconds"] == 112.5

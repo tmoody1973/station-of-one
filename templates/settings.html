@@ -48,8 +48,8 @@ th{background:#f6f6f6;text-align:left;padding:12px 14px;font-weight:600}td{paddi
 </section>
 <section class="cards">
   <div class="card"><h3>Broadcast</h3>
-    <span class="k">First newscast</span><span class="v">{{ station.first_newscast }}</span>
-    <span class="k">Last newscast</span><span class="v">{{ station.last_newscast }}</span>
+    <span class="k">First newscast</span><span class="v">{{ station.first_newscast | clock }}</span>
+    <span class="k">Last newscast</span><span class="v">{{ station.last_newscast | clock }}</span>
     <span class="k">Show name</span><span class="v">{{ station.show_name }}</span>
     <span class="k">Voices</span><span class="v">Host and reporter · Gemini TTS · synthetic</span></div>
   <div class="card"><h3>Editorial rules</h3>
