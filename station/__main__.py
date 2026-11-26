@@ -190,11 +190,29 @@ COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "run
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble}
 
 
+def cmd_build(hour: str | None) -> None:
+    from zoneinfo import ZoneInfo
+
+    from station import build as build_mod
+
+    tz = load_prefs().station.timezone
+    when = (datetime.strptime(hour, "%Y-%m-%dT%H").replace(tzinfo=ZoneInfo(tz)) if hour
+            else build_mod.target_hour(datetime.now(ZoneInfo(tz))))
+    result = build_mod.build(when)
+    print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="station")
-    parser.add_argument("step", choices=sorted(COMMANDS))
-    parser.add_argument("--run", required=True, type=Path, help="run folder, e.g. data/runs/2026-11-27T09")
+    parser.add_argument("step", choices=sorted([*COMMANDS, "build"]))
+    parser.add_argument("--run", type=Path, help="run folder for one step, e.g. data/runs/2026-11-27T09")
+    parser.add_argument("--hour", help="build: newscast hour YYYY-MM-DDTHH (local); default = next top of the hour")
     args = parser.parse_args(argv)
+    if args.step == "build":
+        cmd_build(args.hour)
+        return 0
+    if args.run is None:
+        parser.error(f"{args.step} needs --run")
     args.run.mkdir(parents=True, exist_ok=True)
     COMMANDS[args.step](args.run)
     return 0

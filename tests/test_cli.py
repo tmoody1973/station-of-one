@@ -163,3 +163,21 @@ def test_assemble_cli_writes_newscast_and_chapters(tmp_path, monkeypatch):
     assert rec["id"] == "2026-11-27T09" and rec["chapters"][-1]["end_ms"] == 3000 + 2 * 2000
     assert rec["stories"] == [] and rec["counts"]["posts_read_hour"] == 0
     assert json.loads((run / "chapters.json").read_text()) == rec["chapters"]
+
+
+def test_build_cli_passes_hour(monkeypatch):
+    from datetime import datetime
+
+    from station import build as build_mod
+
+    got = {}
+    monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.setdefault("hour", hour))
+    assert main(["build", "--hour", "2026-11-27T09"]) == 0
+    assert got["hour"].strftime("%Y-%m-%dT%H %Z") == "2026-11-27T09 CST"
+
+
+def test_step_without_run_is_an_error():
+    import pytest
+
+    with pytest.raises(SystemExit):
+        main(["scrape"])
