@@ -51,3 +51,16 @@ def test_comments_pass_through_as_singletons():
     c = p("reddit:c1", "https://www.reddit.com/r/x/comments/1/comment/c1/", kind="comment")
     clusters, pairs = cluster([c], [])
     assert clusters == [Cluster("reddit:c1", ("reddit:c1",))] and pairs == []
+
+
+def test_titles_sharing_most_words_become_candidates():  # Venice Biennale aired twice, Nov 26 5 pm
+    a = p("rss:artnews", "https://artnews.com/x", title="Hoor Al Qasimi Named Curator of 2028 Venice Biennale")
+    b = p("rss:tan", "https://theartnewspaper.com/y", title="Hoor Al Qasimi to curate 2028 Venice Biennale")
+    _, pairs = cluster([a, b], [])
+    assert pairs == [("rss:artnews", "rss:tan")]
+
+
+def test_unrelated_titles_are_not_candidates():
+    a = p("rss:1", "https://a.com/1", title="City backs Metcalfe Lofts housing project")
+    b = p("rss:2", "https://b.com/2", title="Music groups back charter on dementia access")
+    assert cluster([a, b], [])[1] == []

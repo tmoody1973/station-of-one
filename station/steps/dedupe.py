@@ -66,11 +66,19 @@ def cluster(posts: list[Post], recent_aired: list[Post]) -> tuple[list[Cluster],
             primaries.append(primary)
 
     pairs: list[tuple[str, str]] = []
-    seen: dict[str, Post] = {}
-    for p in primaries:
-        k = title_key(p.title)
-        if k and k in seen:
-            pairs.append((seen[k].id, p.id))
-        else:
-            seen.setdefault(k, p)
+    for i, first in enumerate(primaries):
+        for second in primaries[i + 1:]:
+            if _similar_titles(first.title, second.title):
+                pairs.append((first.id, second.id))
     return clusters, pairs
+
+
+def _similar_titles(a: str, b: str) -> bool:
+    """Same normalized title, or at least 3 shared words covering half of the shorter title.
+    Only proposes a pair: Jev's same-story question decides the merge."""
+    ka, kb = title_key(a), title_key(b)
+    if ka and ka == kb:
+        return True
+    wa, wb = set(ka.split()), set(kb.split())
+    shared = wa & wb
+    return len(shared) >= 3 and len(shared) >= 0.5 * min(len(wa), len(wb))
