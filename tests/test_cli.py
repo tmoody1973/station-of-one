@@ -28,3 +28,31 @@ def test_dedupe_cli_writes_clusters(tmp_path, monkeypatch):
     out = json.loads((run / "clusters.json").read_text())
     assert out["clusters"] == [{"primary_id": "hn:1", "member_ids": ["hn:1", "rss:1"]}] and out["candidates"] == []
     assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"posts": 2, "clusters": 1, "candidates": 0}
+
+
+def test_judge_cli_judges_cluster_primaries_only(tmp_path, monkeypatch):
+    from station.steps import judge as judge_mod
+
+    monkeypatch.setenv("STATION_DB", str(tmp_path / "s.db"))
+    run = tmp_path / "run"
+    run.mkdir()
+    base = {"source": "HN", "beat": "ai-dev", "kind": "story", "author": "u", "title": "T", "text": "",
+            "posted_at": "2026-11-27T14:00:00Z", "engagement": {}, "visibility": "public"}
+    (run / "posts.json").write_text(json.dumps([{**base, "id": "hn:1", "url": "https://a"},
+                                                {**base, "id": "rss:1", "url": "https://a"},
+                                                {**base, "id": "rss:2", "url": "https://b"}]))
+    (run / "clusters.json").write_text(json.dumps({"clusters": [
+        {"primary_id": "hn:1", "member_ids": ["hn:1", "rss:1"]},
+        {"primary_id": "hn:old", "member_ids": ["hn:old", "rss:2"]}], "candidates": []}))
+    seen = []
+
+    def fake_judge_all(gw, db, posts, candidates, concurrency=8):
+        seen.extend(p.id for p in posts)
+        return [judge_mod.Judged(posts[0], {"matter_week": {"type": "noul", "noul": 0.5}}, "jev-1.14.0", (), 600)]
+
+    monkeypatch.setattr(judge_mod, "judge_all", fake_judge_all)
+    assert main(["judge", "--run", str(run)]) == 0
+    assert seen == ["hn:1"]  # rss:1 is merged; hn:old already aired
+    assert json.loads((run / "judged.json").read_text())[0]["post"]["id"] == "hn:1"
+    counts = json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"]
+    assert counts == {"posts_judged": 1, "decisions": 1, "input_tokens": 600, "skipped_aired": 1}

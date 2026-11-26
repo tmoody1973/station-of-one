@@ -54,7 +54,24 @@ def cmd_dedupe(run: Path) -> None:
         rec.counts.update(posts=len(posts), clusters=len(clusters), candidates=len(candidates))
 
 
-COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe}
+def cmd_judge(run: Path) -> None:
+    from station.steps import judge as judge_mod
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("judge", "TypeSafe Jev") as rec:
+        by_id = {p.id: p for p in load_posts(run)}
+        clusters = read_json(run, "clusters.json")
+        to_judge = [by_id[c["primary_id"]] for c in clusters["clusters"] if c["primary_id"] in by_id]
+        skipped = len(clusters["clusters"]) - len(to_judge)
+        judged = judge_mod.judge_all(Gateway(), _db(), to_judge, [tuple(c) for c in clusters["candidates"]])
+        write_json(run, "judged.json", [j.to_dict() for j in judged])
+        rec.counts.update(posts_judged=len(judged), decisions=sum(len(j.answers) for j in judged),
+                          input_tokens=sum(j.input_tokens for j in judged), skipped_aired=skipped)
+        if len(judged) < len(to_judge):
+            rec.notes.append(f"{len(to_judge) - len(judged)} posts failed at Jev and were skipped")
+
+
+COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge}
 
 
 def main(argv: list[str] | None = None) -> int:
