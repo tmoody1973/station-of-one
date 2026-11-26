@@ -35,7 +35,9 @@ nav a{text-decoration:none}
 main{padding-top:32px;padding-bottom:56px;display:flex;flex-direction:column;gap:44px}
 .top{display:flex;flex-wrap:wrap;gap:32px}
 .lead{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
-.art{height:320px;border-radius:10px;display:flex;align-items:flex-end;padding:20px}
+.art{height:320px;border-radius:10px;display:flex;align-items:flex-end;padding:20px;position:relative;overflow:hidden}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.credit{font-size:12px;color:#666;margin-top:-8px}.credit a{color:#666}
 .art span,.tag{font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
 .art span{color:#fff}
 .kicker{color:var(--accent)}
@@ -95,7 +97,10 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
 <section class="top">
   {% if lead %}
   <article class="lead">
-    <div class="art" style="background:{{ beats[lead.beat_id].color if lead.beat_id in beats else '#1f3a5f' }}"><span>{{ beats[lead.beat_id].name if lead.beat_id in beats else lead.beat_id }}</span></div>
+    {% set img = lead.image | safe_url if lead.image else '#' %}
+    <div class="art" style="background:{{ beats[lead.beat_id].color if lead.beat_id in beats else '#1f3a5f' }}"><span>{{ beats[lead.beat_id].name if lead.beat_id in beats else lead.beat_id }}</span>
+      {% if img != '#' %}<img src="{{ img }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</div>
+    {% if img != '#' %}<span class="credit">Image: <a href="{{ lead.sources[0].url | safe_url if lead.sources else '#' }}" rel="noopener" target="_blank">{{ lead.sources[0].source_name if lead.sources else 'source' }}</a>, shown from the original</span>{% endif %}
     <span class="tag kicker">Lead story · {{ beats[lead.beat_id].name if lead.beat_id in beats else lead.beat_id }}</span>
     <h1>{{ lead.headline }}</h1>
     <p>{{ lead.summary }}</p>

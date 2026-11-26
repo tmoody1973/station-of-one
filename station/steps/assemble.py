@@ -96,7 +96,7 @@ def newscast_record(run_id: str, hour_local: datetime, prefs: Prefs, chapters: l
             continue
         s = judged[c.story_id]
         stories.append({"id": s.post.id, "beat_id": s.post.beat, "part": c.kind, "headline": c.headline,
-                        "summary": c.summary, "score_matter_week": s.matter_week,
+                        "summary": c.summary, "score_matter_week": s.matter_week, "image": s.post.image,
                         "seconds": rundown.seconds.get(s.post.id), "chapter_start_ms": starts.get(s.post.id, 0),
                         "sources": [_source(p) for p in sources.get(s.post.id, [s.post])]})
     overheard = None

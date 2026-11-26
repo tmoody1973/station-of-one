@@ -38,12 +38,16 @@ class Post:
     posted_at: str
     engagement: dict
     visibility: str
+    image: str | None = None  # publisher's image URL; shown linked, never copied (decision 004)
 
 
 def open_db(path: Path = DEFAULT_DB) -> sqlite3.Connection:
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(path, check_same_thread=False)
     db.executescript(SCHEMA)
+    if "image" not in {r[1] for r in db.execute("PRAGMA table_info(posts)")}:
+        db.execute("ALTER TABLE posts ADD COLUMN image TEXT")  # databases from before Nov 26 images
+        db.commit()
     return db
 
 
@@ -56,9 +60,10 @@ def upsert_posts(db: sqlite3.Connection, posts: Iterable[Post]) -> list[Post]:
     new: list[Post] = []
     for p in posts:
         cur = db.execute(
-            "INSERT OR IGNORE INTO posts VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR IGNORE INTO posts (id, source, beat, kind, author, title, url, text, posted_at,"
+            " engagement_json, visibility, scraped_at, image) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (p.id, p.source, p.beat, p.kind, p.author, p.title, p.url, p.text, p.posted_at,
-             json.dumps(p.engagement), p.visibility, _now()))
+             json.dumps(p.engagement), p.visibility, _now(), p.image))
         if cur.rowcount:
             new.append(p)
     db.commit()
@@ -108,14 +113,16 @@ def record_aired(db: sqlite3.Connection, newscast_id: str, stories: Iterable[tup
 
 
 def post_from_row(row: tuple) -> Post:
+    """Row from an explicit column list: the 11 post fields, optionally image as the 12th (not SELECT *)."""
     (pid, source, beat, kind, author, title, url, text, posted_at, engagement_json, visibility) = row[:11]
-    return Post(pid, source, beat, kind, author, title, url, text, posted_at, json.loads(engagement_json or "{}"), visibility)
+    return Post(pid, source, beat, kind, author, title, url, text, posted_at, json.loads(engagement_json or "{}"),
+                visibility, row[11] if len(row) > 11 else None)
 
 
 def aired_posts_since(db: sqlite3.Connection, since_utc: datetime) -> list[Post]:
     rows = db.execute(
         "SELECT p.id, p.source, p.beat, p.kind, p.author, p.title, p.url, p.text, p.posted_at, p.engagement_json,"
-        " p.visibility FROM aired a JOIN posts p ON p.id = a.post_id WHERE a.aired_at >= ? ORDER BY a.aired_at",
+        " p.visibility, p.image FROM aired a JOIN posts p ON p.id = a.post_id WHERE a.aired_at >= ? ORDER BY a.aired_at",
         (since_utc.isoformat(),)).fetchall()
     return [post_from_row(r) for r in rows]
 
@@ -137,8 +144,8 @@ def recent_unaired_judged(db: sqlite3.Connection, since_utc: datetime) -> list[t
         models[post_id] = model
     out = []
     for post_id in sorted(answers):
-        row = db.execute("SELECT id, source, beat, kind, author, title, url, text, posted_at, engagement_json, visibility"
-                         " FROM posts WHERE id = ?", (post_id,)).fetchone()
+        row = db.execute("SELECT id, source, beat, kind, author, title, url, text, posted_at, engagement_json, visibility,"
+                         " image FROM posts WHERE id = ?", (post_id,)).fetchone()
         if row:
             out.append((post_from_row(row), answers[post_id], models[post_id]))
     return out

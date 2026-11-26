@@ -145,7 +145,9 @@ preview image for link unfurls, RSS link.
 Nice to have: generated graphics per story (plain beat-colored cards are fine), music
 picks section with Bandcamp and YouTube embeds that load on tap.
 
-Images: only when rights are clear. Never copy a source's photo; link to it.
+Images: never copy a source's photo. The lead shows the publisher's own preview image straight from its
+address (linked, not re-hosted), credited and linked to the story, when the scrape supplies one; otherwise
+the beat-colored card. (Decided Nov 26, docs/decisions/004.)
 
 ## 8. Control room page
 

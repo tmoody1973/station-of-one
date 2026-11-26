@@ -135,7 +135,13 @@ def _reddit(item: dict, beat: str) -> list[Post]:
     return [Post(id=f"reddit:{item['id']}", source=f"Reddit r/{sub}", beat=beat, kind="story",
                  author=item.get("author"), title=item.get("title") or "", url=item.get("url") or item.get("permalink") or "",
                  text=plain(item.get("selfText")), posted_at=item.get("createdAt") or "",
-                 engagement={"points": item.get("score"), "comments": item.get("numComments")}, visibility="public")]
+                 engagement={"points": item.get("score"), "comments": item.get("numComments")}, visibility="public",
+                 image=_reddit_image(item))]
+
+
+def _reddit_image(item: dict) -> str | None:
+    thumb = item.get("thumbnail") or ""
+    return thumb if thumb.startswith("http") else next(iter(item.get("imageUrls") or []), None)
 
 
 def _rss(item: dict, beat: str) -> list[Post]:
@@ -173,13 +179,15 @@ def _bluesky(item: dict, beat: str) -> list[Post]:
                  url=url if is_story else item.get("url") or "", text=body[:TEXT_LIMIT],
                  posted_at=item.get("createdAt") or "",
                  engagement={"points": item.get("likeCount"), "comments": item.get("replyCount"),
-                             "reposts": item.get("repostCount")}, visibility="public")]
+                             "reposts": item.get("repostCount")}, visibility="public",
+                 image=(item.get("externalLink") or {}).get("thumbnail") if is_story else None)]
 
 
 def _gnews(item: dict, beat: str) -> list[Post]:
     return [Post(id=f"gnews:{item.get('guid') or item.get('link')}", source=item.get("source") or "Google News",
                  beat=beat, kind="story", author=None, title=item.get("title") or "", url=item.get("link") or "",
-                 text="", posted_at=item.get("publishedAt") or "", engagement={}, visibility="public")]
+                 text="", posted_at=item.get("publishedAt") or "", engagement={}, visibility="public",
+                 image=item.get("image") or None)]
 
 
 def normalize(source_type: str, item: dict, beat_id: str) -> list[Post]:
