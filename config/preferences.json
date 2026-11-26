@@ -361,5 +361,9 @@
   "feedback": [],
   "writer": {
     "model": "deepseek-v4.1-flash"
+  },
+  "hosting": {
+    "bucket": "patient-mountain-3400",
+    "public_base": "https://patient-mountain-3400.fly.storage.tigris.dev"
   }
 }

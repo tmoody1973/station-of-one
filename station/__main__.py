@@ -232,8 +232,19 @@ def cmd_page(run: Path) -> None:
         write_control_room(run, prefs, read_json(run, "newscast.json"))
 
 
+def cmd_publish(run: Path) -> None:
+    from station.steps.publish import publish
+
+    prefs = load_prefs()
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("publish", "Tigris") as rec:
+        keys = publish(Gateway(), run, prefs.hosting.bucket)
+        rec.counts.update(files=len(keys), url=f"{prefs.hosting.public_base}/index.html")
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
-            "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page}
+            "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
+            "publish": cmd_publish}
 
 
 def cmd_build(hour: str | None) -> None:

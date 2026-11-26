@@ -102,6 +102,7 @@ def _detail(name: str, c: dict) -> str:
         "voice": f"{g('chapters_voiced', 0)} chapters voiced" + (f", {g('failed')} failed" if g("failed") else ""),
         "assemble": f"join, normalize, {g('chapters', 0)} chapters",
         "page": "front page and hour page",
+        "publish": f"{g('files', 0)} files to the public bucket",
     }.get(name, "")
 
 

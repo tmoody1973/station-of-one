@@ -58,12 +58,19 @@ class Writer:
 
 
 @dataclass(frozen=True)
+class Hosting:
+    bucket: str
+    public_base: str
+
+
+@dataclass(frozen=True)
 class Prefs:
     station: Station
     voices: Voices
     thresholds: Thresholds
     beats: tuple[Beat, ...]
     writer: Writer
+    hosting: Hosting
 
 
 def _need(d: dict[str, Any], key: str, where: str) -> Any:
@@ -102,4 +109,6 @@ def load_prefs(path: Path = DEFAULT_PREFS) -> Prefs:
         for b in _need(d, "beats", "top level")
     )
     writer = Writer(model=_need(_need(d, "writer", "top level"), "model", "writer"))
-    return Prefs(station=station, voices=voices, thresholds=thresholds, beats=beats, writer=writer)
+    h = _need(d, "hosting", "top level")
+    hosting = Hosting(bucket=_need(h, "bucket", "hosting"), public_base=_need(h, "public_base", "hosting"))
+    return Prefs(station=station, voices=voices, thresholds=thresholds, beats=beats, writer=writer, hosting=hosting)
