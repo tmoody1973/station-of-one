@@ -1,0 +1,26 @@
+{
+  "_note": "Neutral format, not the Jev API schema. Map these to the real request shape after Thursday check 1, using the API Usage example on the TypeSafe AI connector page.",
+  "per_post": [
+    {"id": "matter_week", "ask": "Will this still matter in a week?", "type": "probability", "use": "ranking"},
+    {"id": "new_or_reaction", "ask": "Is this new information, or reaction to something already known?", "type": "choice", "options": ["new", "reaction"], "use": "filter"},
+    {"id": "part", "ask": "Which part of the newscast fits this best?", "type": "choice", "options": ["lead", "story", "overheard", "none"], "use": "rundown"},
+    {"id": "primary_source", "ask": "Is the central claim supported by a linked primary source?", "type": "boolean_with_probability", "use": "hedging"},
+    {"id": "same_story", "ask": "Is this the same story as the earlier post provided?", "type": "boolean_with_probability", "use": "merge", "needs": "candidate_post"},
+    {"id": "private_harm", "ask": "Could airing this harm a private individual?", "type": "boolean_with_probability", "use": "exclude"}
+  ],
+  "per_newscast": [
+    {"id": "seconds", "ask": "How many seconds does this story deserve?", "type": "score", "min": 20, "max": 45}
+  ],
+  "corrections": [
+    {"id": "still_discussed", "ask": "Given these follow-up posts from one week later, was this story still being discussed?", "type": "boolean_with_probability"}
+  ],
+  "music": [
+    {"id": "taste_fit", "ask": "Given this listener's taste profile, would they want to hear this release?", "type": "probability"}
+  ],
+  "table": [
+    {"id": "two_sided", "ask": "Is there a real two-sided dispute in this thread?", "type": "probability"},
+    {"id": "low_stakes", "ask": "Is this dispute low-stakes?", "type": "probability"},
+    {"id": "claim_true", "ask": "Given the sources cited by both sides, is this claim true?", "type": "probability"},
+    {"id": "answered", "ask": "Did this claim answer the other side's last point?", "type": "boolean_with_probability"}
+  ]
+}

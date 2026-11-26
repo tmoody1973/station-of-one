@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Front page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#fff}
+a{color:#141414}a:hover{color:#C8102E}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="background:#fff">
+<header style="border-bottom:1px solid #e3e3e3">
+<div style="max-width:1160px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;letter-spacing:-0.5px">Station of One</span>
+<span style="font-size:14px;color:#555">WONE 1.0 FM · The Hourly Scroll · Thursday, November 26</span>
+</div>
+<nav style="display:flex;gap:22px;font-size:15px;font-weight:500;flex-wrap:wrap;align-items:center">
+<a href="#newscasts" style="text-decoration:none">Newscasts</a>
+<a href="#music" style="text-decoration:none">Music</a>
+<a href="ControlRoom.dc.html" style="text-decoration:none">Control room</a>
+<a href="Settings.dc.html" style="text-decoration:none">Settings</a>
+<span style="font-size:12px;border:1px solid #bbb;border-radius:4px;padding:3px 8px;color:#555">Sample content</span>
+</nav>
+</div>
+</header>
+<div style="background:#141414;color:#fff">
+<div style="max-width:1160px;margin:0 auto;padding:12px 24px;display:flex;flex-wrap:wrap;gap:18px;align-items:center">
+<button aria-label="Play latest newscast" style="width:48px;height:48px;border-radius:50%;border:0;background:#C8102E;color:#fff;display:flex;align-items:center;justify-content:center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18"><path d="M4 2l12 7-12 7z" fill="#fff"/></svg></button>
+<div style="display:flex;flex-direction:column;gap:2px;min-width:200px">
+<span style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#ff8a98;font-weight:600">On air · 9:00 am newscast</span>
+<span style="font-size:15px">Now: Lead story · chapter 2 of 6</span>
+</div>
+<div style="flex:1 1 260px;height:6px;background:#3a3a3a;border-radius:3px;position:relative"><div style="width:34%;height:6px;background:#fff;border-radius:3px"></div></div>
+<span style="font-size:14px;color:#d0d0d0">1:42 / 5:00</span>
+<button style="background:transparent;border:1px solid #777;color:#fff;border-radius:6px;padding:10px 14px;font-size:14px">−15s</button>
+<button style="background:transparent;border:1px solid #777;color:#fff;border-radius:6px;padding:10px 14px;font-size:14px">+15s</button>
+</div>
+</div>
+<main style="max-width:1160px;margin:0 auto;padding:32px 24px 56px;display:flex;flex-direction:column;gap:44px">
+<section style="display:flex;flex-wrap:wrap;gap:32px">
+<article style="flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px">
+<div style="height:320px;border-radius:10px;background:#1f3a5f;display:flex;align-items:flex-end;padding:20px;box-sizing:border-box"><span style="color:#fff;font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:600">Generated graphic · AI and developer tools</span></div>
+<span style="font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#C8102E">Lead story · AI and developer tools</span>
+<h1 style="margin:0;font-size:40px;line-height:1.1;letter-spacing:-0.8px">[Lead headline: the story most likely to still matter in a week]</h1>
+<p style="margin:0;font-size:18px;line-height:1.5;color:#333">[Two-sentence summary in the show's own words, with each claim attributed to where it was posted.]</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+<button style="background:#141414;color:#fff;border:0;border-radius:6px;padding:12px 18px;font-size:15px;font-weight:600">Play from this story · 1:00</button>
+<span style="font-size:14px;font-weight:600;background:#f1f1f1;border-radius:6px;padding:10px 12px">Jev: 86% likely to matter in a week</span>
+<a href="#sources" style="font-size:14px">4 sources</a>
+</div>
+</article>
+<aside style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px">
+<div style="background:#141414;color:#fff;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:6px">
+<span style="font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#d0d0d0;font-weight:600">Today so far</span>
+<span style="font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;line-height:1">2,140</span>
+<span style="font-size:16px">posts read so you didn't</span>
+<span style="font-size:16px;color:#ff8a98;font-weight:600">21 made air · 2,119 did not</span>
+</div>
+<div style="border:1px solid #e3e3e3;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<h3 style="margin:0;font-size:18px">Corrections</h3>
+<p style="margin:0;font-size:15px;line-height:1.5;color:#333">Last week this station called 9 stories at 70% or higher. 6 were still being discussed a week later. 3 were not.</p>
+<a href="#corrections" style="font-size:14px">See every call</a>
+</div>
+<div style="border:1px solid #e3e3e3;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<h3 style="margin:0;font-size:18px">Almost made air</h3>
+<sc-for list="{{ cuts }}" as="c" hint-placeholder-count="3">
+<div style="display:flex;justify-content:space-between;gap:12px;font-size:15px;border-top:1px solid #eee;padding-top:10px"><a href="#cut">{{ c.t }}</a><span style="color:#555;font-weight:600">{{ c.s }}</span></div>
+</sc-for>
+</div>
+</aside>
+</section>
+<section style="background:#141414;color:#fff;border-radius:12px;padding:28px;display:flex;flex-wrap:wrap;gap:28px;align-items:center">
+<div style="flex:999 1 420px;min-width:0;display:flex;flex-direction:column;gap:10px">
+<span style="font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#ff8a98">The Table · today's debate · 6 min</span>
+<h2 style="margin:0;font-size:30px;line-height:1.15;letter-spacing:-0.5px">[Today's question: the pettiest argument in your feeds]</h2>
+<p style="margin:0;font-size:16px;line-height:1.5;color:#d0d0d0">The Anchor and the Uncle argue it out over three rounds. Jev rules on every claim.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+<button style="background:#C8102E;color:#fff;border:0;border-radius:6px;padding:12px 18px;font-size:15px;font-weight:600">Play the debate</button>
+<a href="#table" style="color:#fff;font-size:14px">Episode page</a>
+</div>
+</div>
+<div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:10px;font-size:15px">
+<div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #3a3a3a;padding-bottom:10px"><span>The Anchor</span><span style="font-weight:600">3 claims · avg 78%</span></div>
+<div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #3a3a3a;padding-bottom:10px"><span>The Uncle</span><span style="font-weight:600">3 claims · avg 22%</span></div>
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="color:#d0d0d0">Season record</span><span style="font-weight:600">Uncle 2 · Anchor 11</span></div>
+</div>
+</section>
+<section style="display:flex;flex-direction:column;gap:16px">
+<h2 style="margin:0;font-size:24px">Also this hour</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px">
+<sc-for list="{{ stories }}" as="s" hint-placeholder-count="4">
+<article style="border:1px solid #e3e3e3;border-radius:10px;overflow:hidden;display:flex;flex-direction:column">
+<div style="height:8px;background:{{ s.color }}"></div>
+<div style="padding:18px;display:flex;flex-direction:column;gap:10px">
+<span style="font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#555">{{ s.beat }}</span>
+<h3 style="margin:0;font-size:19px;line-height:1.25">{{ s.title }}</h3>
+<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px">
+<button style="background:#fff;border:1px solid #141414;border-radius:6px;padding:10px 12px;font-size:14px;font-weight:600">Play · 0:40</button>
+<span style="font-weight:600">{{ s.score }}</span>
+<a href="#sources">{{ s.src }}</a>
+</div>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+<section id="newscasts" style="display:flex;flex-wrap:wrap;gap:32px">
+<div style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<h2 style="margin:0;font-size:24px">Today's newscasts</h2>
+<sc-for list="{{ hours }}" as="h" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:14px;border-top:1px solid #e3e3e3;padding-top:12px">
+<button aria-label="Play this newscast" style="width:44px;height:44px;border-radius:50%;border:1px solid #141414;background:#fff;display:flex;align-items:center;justify-content:center"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 18 18"><path d="M4 2l12 7-12 7z" fill="#141414"/></svg></button>
+<div style="display:flex;flex-direction:column;gap:2px;flex:1"><span style="font-weight:600;font-size:16px">{{ h.time }}</span><span style="font-size:14px;color:#555">{{ h.meta }}</span></div>
+<a href="#hour" style="font-size:14px">Page</a>
+</div>
+</sc-for>
+</div>
+<div id="music" style="flex:1 1 380px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<h2 style="margin:0;font-size:24px">On the turntable</h2>
+<sc-for list="{{ picks }}" as="p" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:14px;border-top:1px solid #e3e3e3;padding-top:12px">
+<div style="width:64px;height:64px;border-radius:6px;background:{{ p.color }};flex:none"></div>
+<div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0"><span style="font-weight:600;font-size:16px">{{ p.title }}</span><span style="font-size:14px;color:#555">{{ p.why }}</span></div>
+<span style="font-size:14px;font-weight:600">{{ p.score }}</span>
+<button style="background:#fff;border:1px solid #141414;border-radius:6px;padding:10px 12px;font-size:14px;font-weight:600">{{ p.where }}</button>
+</div>
+</sc-for>
+<p style="margin:0;font-size:13px;color:#555">Music plays through the official Bandcamp and YouTube players. Players load when tapped.</p>
+</div>
+</section>
+<footer style="border-top:1px solid #e3e3e3;padding-top:20px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;font-size:14px;color:#555">
+<span>Voices are synthetic. This show is machine-edited from public posts, with every source linked.</span>
+<span style="display:flex;gap:18px"><a href="#rss">RSS feed</a><a href="#share">Share this hour</a><a href="#video">Download today's video</a></span>
+</footer>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":2280}}'>
+class Component extends DCLogic {
+renderVals() {
+return {
+cuts: [{t:'[Near-miss story one]',s:'68%'},{t:'[Near-miss story two]',s:'64%'},{t:'[Near-miss story three]',s:'61%'}],
+stories: [
+{beat:'AI and developer tools',title:'[Story two headline]',score:'81%',src:'3 sources',color:'#1f3a5f'},
+{beat:'Media and public radio',title:'[Story three headline]',score:'77%',src:'2 sources',color:'#7a4a00'},
+{beat:'Milwaukee',title:'[Story four headline]',score:'74%',src:'5 sources',color:'#0f5c4a'},
+{beat:'AI and developer tools',title:'[Story five headline]',score:'71%',src:'2 sources',color:'#1f3a5f'}],
+hours: [
+{time:'9:00 am',meta:'5:00 · 5 stories · 164 posts read'},
+{time:'8:00 am',meta:'5:00 · 5 stories · 212 posts read · Corrections'},
+{time:'7:00 am',meta:'4:10 · 4 stories · 1,764 posts read overnight'}],
+picks: [
+{title:'[Artist · Release]',why:'[One line on why it fits your taste]',score:'91%',where:'Bandcamp',color:'#5b2a86'},
+{title:'[Artist · Release]',why:'[One line on why it fits your taste]',score:'88%',where:'YouTube',color:'#a23b1e'},
+{title:'[Artist · Release]',why:'[One line on why it fits your taste]',score:'84%',where:'Bandcamp',color:'#16506b'}]
+};
+}
+}
+</script>
+</body>
+</html>

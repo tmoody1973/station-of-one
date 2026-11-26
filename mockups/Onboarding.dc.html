@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Onboarding</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#f4f4f2}
+a{color:#141414}a:hover{color:#C8102E}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
+button,input{font:inherit}
+</style>
+</helmet>
+<div style="background:#f4f4f2;min-height:100vh">
+<main style="max-width:1160px;margin:0 auto;padding:40px 24px 56px;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px">Station of One</span>
+<h1 style="margin:0;font-size:40px;letter-spacing:-0.8px;line-height:1.1">Set up your station in three steps</h1>
+<p style="margin:0;font-size:17px;color:#444;max-width:640px;line-height:1.5">Tell the agent what to read, what you like to hear, and when to broadcast. You can change all of it later in settings.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;align-items:start">
+<section style="background:#fff;border:1px solid #dcdcd8;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+<span style="font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#C8102E">Step 1</span>
+<h2 style="margin:0;font-size:24px">Pick your beats</h2>
+<p style="margin:0;font-size:15px;color:#444;line-height:1.5">A beat is a topic and the public sources the agent reads for it.</p>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<sc-for list="{{ beats }}" as="b" hint-placeholder-count="6">
+<button aria-pressed="{{ b.on }}" style="border-radius:22px;padding:11px 16px;font-size:15px;font-weight:500;border:1px solid {{ b.border }};background:{{ b.bg }};color:{{ b.fg }}">{{ b.name }}</button>
+</sc-for>
+</div>
+<div style="border:1px solid #dcdcd8;border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px">
+<span style="font-size:14px;font-weight:600">Suggested sources · AI and developer tools</span>
+<sc-for list="{{ sources }}" as="s" hint-placeholder-count="4">
+<label style="display:flex;align-items:center;gap:10px;font-size:15px;min-height:28px"><input type="checkbox" checked style="width:18px;height:18px;accent-color:#141414"><span>{{ s }}</span></label>
+</sc-for>
+<a href="#add" style="font-size:14px">Add a source</a>
+</div>
+</section>
+<section style="background:#fff;border:1px solid #dcdcd8;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+<span style="font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#C8102E">Step 2</span>
+<h2 style="margin:0;font-size:24px">Set your music taste</h2>
+<p style="margin:0;font-size:15px;color:#444;line-height:1.5">The agent scores new releases against this and shows the best few each day.</p>
+<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px;font-weight:600;border:1px solid #dcdcd8;border-radius:8px;padding:12px 14px"><span>Include music picks</span><input type="checkbox" checked style="width:20px;height:20px;accent-color:#141414"></label>
+<div style="display:flex;flex-direction:column;gap:8px">
+<span style="font-size:14px;font-weight:600">Genres and tags</span>
+<div style="display:flex;flex-wrap:wrap;gap:10px">
+<sc-for list="{{ tags }}" as="t" hint-placeholder-count="6">
+<button aria-pressed="{{ t.on }}" style="border-radius:22px;padding:11px 16px;font-size:15px;font-weight:500;border:1px solid {{ t.border }};background:{{ t.bg }};color:{{ t.fg }}">{{ t.name }}</button>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label for="likes" style="font-size:14px;font-weight:600">Artists or labels you like</label>
+<input id="likes" type="text" placeholder="Type a name and press Enter" style="border:1px solid #9a9a96;border-radius:8px;padding:12px 14px;font-size:15px">
+</div>
+<div style="display:flex;flex-direction:column;gap:6px">
+<label for="avoid" style="font-size:14px;font-weight:600">Anything to leave out</label>
+<input id="avoid" type="text" placeholder="Optional" style="border:1px solid #9a9a96;border-radius:8px;padding:12px 14px;font-size:15px">
+</div>
+</section>
+<section style="background:#fff;border:1px solid #dcdcd8;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:16px">
+<span style="font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#C8102E">Step 3</span>
+<h2 style="margin:0;font-size:24px">Set your hours</h2>
+<p style="margin:0;font-size:15px;color:#444;line-height:1.5">A five-minute newscast airs at the top of each hour you choose.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<div style="display:flex;flex-direction:column;gap:6px;flex:1 1 120px"><label for="from" style="font-size:14px;font-weight:600">First newscast</label><input id="from" type="text" value="7:00 am" style="border:1px solid #9a9a96;border-radius:8px;padding:12px 14px;font-size:15px"></div>
+<div style="display:flex;flex-direction:column;gap:6px;flex:1 1 120px"><label for="to" style="font-size:14px;font-weight:600">Last newscast</label><input id="to" type="text" value="7:00 pm" style="border:1px solid #9a9a96;border-radius:8px;padding:12px 14px;font-size:15px"></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="show" style="font-size:14px;font-weight:600">Show name</label><input id="show" type="text" value="The Hourly Scroll" style="border:1px solid #9a9a96;border-radius:8px;padding:12px 14px;font-size:15px"></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="voice" style="font-size:14px;font-weight:600">Host voice</label><input id="voice" type="text" value="Calm, dry, unhurried" style="border:1px solid #9a9a96;border-radius:8px;padding:12px 14px;font-size:15px"></div>
+<div style="background:#f4f4f2;border-radius:8px;padding:14px;font-size:14px;line-height:1.5;color:#333">13 newscasts a day. Your first one airs at the next top of the hour.</div>
+<a href="Main.dc.html" style="background:#C8102E;color:#fff;text-decoration:none;border-radius:8px;padding:14px 18px;font-size:16px;font-weight:600;text-align:center">Go on air</a>
+</section>
+</div>
+<p style="margin:0;font-size:13px;color:#555">Only public sources are read. Nothing from your inbox or calendar is used in this version.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1060}}'>
+class Component extends DCLogic {
+renderVals() {
+function chip(name,on){return {name:name,on:on?'true':'false',bg:on?'#141414':'#fff',fg:on?'#fff':'#141414',border:on?'#141414':'#9a9a96'};}
+return {
+beats: [chip('AI and developer tools',true),chip('Media and public radio',true),chip('Milwaukee',true),chip('Civic tech',false),chip('Food',false),chip('Add your own',false)],
+sources: ['Hacker News front page','[Subreddit one]','[Subreddit two]','[Public account list]'],
+tags: [chip('[Tag one]',true),chip('[Tag two]',true),chip('[Tag three]',false),chip('[Tag four]',true),chip('[Tag five]',false),chip('[Tag six]',false)]
+};
+}
+}
+</script>
+</body>
+</html>

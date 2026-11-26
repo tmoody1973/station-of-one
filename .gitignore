@@ -1,0 +1,13 @@
+data/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+video/out/
+spikes/output/
+.superpowers/
+.DS_Store
+.claude/settings.local.json
+.remember/
+docs/Station of One PRD.md

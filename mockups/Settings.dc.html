@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#fff}
+a{color:#141414}a:hover{color:#C8102E}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
+button,input{font:inherit}
+</style>
+</helmet>
+<div style="background:#fff">
+<header style="border-bottom:1px solid #e3e3e3">
+<div style="max-width:1160px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+<a href="Main.dc.html" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;text-decoration:none">Station of One</a>
+<nav style="display:flex;gap:22px;font-size:15px;font-weight:500;flex-wrap:wrap"><a href="Main.dc.html" style="text-decoration:none">Front page</a><a href="ControlRoom.dc.html" style="text-decoration:none">Control room</a><span style="border-bottom:2px solid #C8102E">Settings</span></nav>
+</div>
+</header>
+<main style="max-width:1160px;margin:0 auto;padding:32px 24px 56px;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:6px">
+<h1 style="margin:0;font-size:36px;letter-spacing:-0.6px">Settings</h1>
+<p style="margin:0;font-size:16px;color:#444">Everything here is one preferences file on the Sprite. The agent reads it at the start of every run.</p>
+</div>
+<section style="display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px"><h2 style="margin:0;font-size:22px">Beats and sources</h2><button style="background:#141414;color:#fff;border:0;border-radius:6px;padding:11px 16px;font-size:14px;font-weight:600">Add a beat</button></div>
+<div style="overflow-x:auto;border:1px solid #e3e3e3;border-radius:10px">
+<table style="width:100%;border-collapse:collapse;font-size:15px;min-width:640px">
+<thead><tr style="background:#f6f6f6;text-align:left"><th style="padding:12px 16px">Beat</th><th style="padding:12px 16px">Sources</th><th style="padding:12px 16px">Posts yesterday</th><th style="padding:12px 16px">Aired</th><th style="padding:12px 16px">Used in</th></tr></thead>
+<tbody>
+<sc-for list="{{ beats }}" as="b" hint-placeholder-count="4">
+<tr style="border-top:1px solid #e3e3e3"><td style="padding:12px 16px;font-weight:600"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ b.color }};margin-right:8px"></span>{{ b.name }}</td><td style="padding:12px 16px"><a href="#edit">{{ b.sources }}</a></td><td style="padding:12px 16px">{{ b.posts }}</td><td style="padding:12px 16px">{{ b.aired }}</td><td style="padding:12px 16px;color:#444">{{ b.used }}</td></tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+<div style="border:1px solid #d9c27a;background:#fff8e1;border-radius:10px;padding:16px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between">
+<div style="display:flex;flex-direction:column;gap:4px;flex:1 1 320px"><span style="font-weight:600;font-size:15px">The source scout suggests 2 new sources</span><span style="font-size:14px;color:#444">[Source one] for Media and public radio · [Source two] for Milwaukee. Nothing is added until you approve it.</span></div>
+<div style="display:flex;gap:10px"><button style="background:#141414;color:#fff;border:0;border-radius:6px;padding:11px 16px;font-size:14px;font-weight:600">Review</button><button style="background:#fff;border:1px solid #141414;border-radius:6px;padding:11px 16px;font-size:14px;font-weight:600">Dismiss</button></div>
+</div>
+</section>
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;align-items:start">
+<div style="border:1px solid #e3e3e3;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<h2 style="margin:0;font-size:22px">Music taste</h2>
+<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px;font-weight:600"><span>Show music picks</span><input type="checkbox" checked style="width:20px;height:20px;accent-color:#141414"></label>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600">Genres and tags</span><span style="font-size:15px;color:#333">[Tag one] · [Tag two] · [Tag four]</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600">Artists and labels you like</span><span style="font-size:15px;color:#333">[Your list]</span></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600">Learned from your feedback</span><span style="font-size:15px;color:#333">12 thumbs up · 4 thumbs down</span></div>
+<a href="#edit-music" style="font-size:14px">Edit music taste</a>
+</div>
+<div style="border:1px solid #e3e3e3;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<h2 style="margin:0;font-size:22px">Broadcast</h2>
+<div style="display:flex;flex-wrap:wrap;gap:12px">
+<div style="display:flex;flex-direction:column;gap:6px;flex:1 1 110px"><label for="s-from" style="font-size:14px;font-weight:600">First newscast</label><input id="s-from" type="text" value="7:00 am" style="border:1px solid #9a9a96;border-radius:8px;padding:11px 12px;font-size:15px"></div>
+<div style="display:flex;flex-direction:column;gap:6px;flex:1 1 110px"><label for="s-to" style="font-size:14px;font-weight:600">Last newscast</label><input id="s-to" type="text" value="7:00 pm" style="border:1px solid #9a9a96;border-radius:8px;padding:11px 12px;font-size:15px"></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="s-show" style="font-size:14px;font-weight:600">Show name</label><input id="s-show" type="text" value="The Hourly Scroll" style="border:1px solid #9a9a96;border-radius:8px;padding:11px 12px;font-size:15px"></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;font-weight:600">Voices</span><span style="font-size:15px;color:#333">Host and reporter · Gemini TTS · synthetic</span></div>
+</div>
+<div style="border:1px solid #e3e3e3;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:14px">
+<h2 style="margin:0;font-size:22px">Editorial rules</h2>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="s-th" style="font-size:14px;font-weight:600">Airs if likely to matter in a week</label><input id="s-th" type="text" value="70% or higher" style="border:1px solid #9a9a96;border-radius:8px;padding:11px 12px;font-size:15px"></div>
+<div style="display:flex;flex-direction:column;gap:6px"><label for="s-pv" style="font-size:14px;font-weight:600">Dropped if it may harm a private person</label><input id="s-pv" type="text" value="20% or higher" style="border:1px solid #9a9a96;border-radius:8px;padding:11px 12px;font-size:15px"></div>
+<label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:15px;font-weight:600"><span>Run Corrections each morning</span><input type="checkbox" checked style="width:20px;height:20px;accent-color:#141414"></label>
+<span style="font-size:14px;color:#444;line-height:1.5">Jev makes every call. These thresholds are applied in code.</span>
+</div>
+</section>
+<section style="display:flex;flex-direction:column;gap:14px">
+<h2 style="margin:0;font-size:22px">Connections</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px">
+<sc-for list="{{ conns }}" as="c" hint-placeholder-count="8">
+<div style="border:1px solid #e3e3e3;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-weight:600;font-size:15px">{{ c.name }}</span><span style="font-size:12px;font-weight:600;color:{{ c.fg }};background:{{ c.bg }};border-radius:4px;padding:3px 8px">{{ c.state }}</span></div><span style="font-size:14px;color:#444">{{ c.job }}</span></div>
+</sc-for>
+</div>
+<p style="margin:0;font-size:13px;color:#555">Keys are held by the Fly.io connector gateway and never stored on the Sprite. Sample data for layout.</p>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1240}}'>
+class Component extends DCLogic {
+renderVals() {
+var ok={state:'Connected',fg:'#0b5d3b',bg:'#e3f5ec'},later={state:'Not set up',fg:'#444',bg:'#eee'};
+function c(name,job,s){return {name:name,job:job,state:s.state,fg:s.fg,bg:s.bg};}
+return {
+beats: [
+{name:'AI and developer tools',sources:'5 sources',posts:'1,420',aired:'31',used:'Newscast',color:'#1f3a5f'},
+{name:'Media and public radio',sources:'5 sources',posts:'310',aired:'14',used:'Newscast',color:'#7a4a00'},
+{name:'Milwaukee',sources:'4 sources',posts:'410',aired:'18',used:'Newscast',color:'#0f5c4a'},
+{name:'Music',sources:'6 sources',posts:'96',aired:'5',used:'Music picks',color:'#5b2a86'}],
+conns: [c('Apify','Scrapes every source',ok),c('TypeSafe Jev','Scores and selects',ok),c('Ollama Cloud','Writes scripts',ok),c('Google Gemini','Voices',ok),c('Pinecone','Duplicates and memory',ok),c('Box','Archive',ok),c('Tigris','Public hosting',ok),c('Blotato','Posts the daily video',later)]
+};
+}
+}
+</script>
+</body>
+</html>

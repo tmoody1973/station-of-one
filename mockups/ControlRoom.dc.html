@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Control room</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#f2f2f2;background:#111214}
+a{color:#f2f2f2}a:hover{color:#ff8a98}
+h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
+</style>
+</helmet>
+<div style="background:#111214;min-height:100vh">
+<header style="border-bottom:1px solid #2c2e33">
+<div style="max-width:1160px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between">
+<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+<a href="Main.dc.html" style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;text-decoration:none">Station of One</a>
+<span style="font-size:14px;color:#b8bcc4">Control room</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+<span style="background:#C8102E;color:#fff;font-size:13px;font-weight:600;letter-spacing:1px;border-radius:4px;padding:6px 10px">BUILDING · 9:00 AM NEWSCAST</span>
+<span style="font-family:'JetBrains Mono',monospace;font-size:14px;color:#b8bcc4">8:54:12 · airs in 5:48</span>
+</div>
+</div>
+</header>
+<main style="max-width:1160px;margin:0 auto;padding:28px 24px 48px;display:flex;flex-direction:column;gap:28px">
+<section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
+<sc-for list="{{ stats }}" as="s" hint-placeholder-count="4">
+<div style="background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:4px">
+<span style="font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#b8bcc4;font-weight:600">{{ s.label }}</span>
+<span style="font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;line-height:1.1">{{ s.value }}</span>
+<span style="font-size:14px;color:#b8bcc4">{{ s.note }}</span>
+</div>
+</sc-for>
+</section>
+<section style="display:flex;flex-wrap:wrap;gap:24px">
+<div style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<h2 style="margin:0;font-size:20px">This run, step by step</h2>
+<div style="background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;overflow:hidden">
+<sc-for list="{{ steps }}" as="p" hint-placeholder-count="10">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #2c2e33">
+<span style="width:10px;height:10px;border-radius:50%;background:{{ p.dot }};flex:none"></span>
+<span style="font-weight:600;font-size:15px;flex:1 1 150px">{{ p.name }}</span>
+<span style="font-size:13px;font-weight:600;border:1px solid #4a4d55;border-radius:4px;padding:3px 8px;color:#e4e6ea">{{ p.tool }}</span>
+<span style="font-size:14px;color:#b8bcc4;flex:2 1 200px">{{ p.detail }}</span>
+<span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#b8bcc4">{{ p.time }}</span>
+</div>
+</sc-for>
+</div>
+<p style="margin:0;font-size:13px;color:#b8bcc4">Green: done. White: running now. Grey: waiting. Amber: repaired by the station manager.</p>
+</div>
+<div style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px">
+<h2 style="margin:0;font-size:20px">Jev's decisions, live</h2>
+<div style="background:#0b0c0e;border:1px solid #2c2e33;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;font-family:'JetBrains Mono',monospace;font-size:13px">
+<sc-for list="{{ log }}" as="l" hint-placeholder-count="8">
+<div style="display:flex;gap:10px;align-items:baseline">
+<span style="color:{{ l.color }};font-weight:600;width:42px;flex:none">{{ l.verdict }}</span>
+<span style="width:38px;flex:none;color:#e4e6ea">{{ l.score }}</span>
+<span style="color:#b8bcc4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.post }}</span>
+</div>
+</sc-for>
+</div>
+<h2 style="margin:8px 0 0;font-size:20px">Station manager</h2>
+<div style="background:#1b1d21;border:1px solid #6b4e00;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5">
+<span style="color:#ffc857;font-weight:600">Repaired at 8:52:40</span>
+<span>The scraper for one Milwaukee source returned nothing. Retried once, then used the source's RSS feed. 14 posts recovered. Logged for review.</span>
+</div>
+<div style="background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5">
+<span style="font-weight:600">Sprite</span>
+<span style="color:#b8bcc4">Woke at 8:50:02 on schedule. Last checkpoint 8:05. Sleeps after publish.</span>
+</div>
+</div>
+</section>
+<p style="margin:0;font-size:13px;color:#b8bcc4">Sample run for layout. Counts and times are placeholders until the first real build.</p>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+var G='#3ecf8e',W='#ffffff',Q='#5a5e68',A='#ffc857';
+return {
+stats: [
+{label:'Posts read this hour',value:'164',note:'2,140 today'},
+{label:'Jev decisions',value:'984',note:'6 questions per post'},
+{label:'Cleared for air',value:'5',note:'threshold 70%'},
+{label:'Build time so far',value:'4:10',note:'budget 10:00'}],
+steps: [
+{name:'Scrape sources',tool:'Apify',detail:'14 sources, 164 new posts, 1 repaired',time:'0:58',dot:A},
+{name:'Find duplicates',tool:'Pinecone',detail:'164 embedded, 21 merged',time:'0:22',dot:G},
+{name:'Judge every post',tool:'TypeSafe Jev',detail:'984 typed decisions',time:'0:41',dot:G},
+{name:'Build the rundown',tool:'Code',detail:'5 stories, lead chosen',time:'0:01',dot:G},
+{name:'Write the scripts',tool:'Ollama Cloud',detail:'6 chapters, 720 words',time:'1:12',dot:G},
+{name:'Voice the newscast',tool:'Gemini TTS',detail:'chapter 4 of 6',time:'0:56',dot:W},
+{name:'Assemble audio',tool:'ffmpeg',detail:'join, normalize, chapters',time:'',dot:Q},
+{name:'Build the page',tool:'Code',detail:'front page and hour page',time:'',dot:Q},
+{name:'Publish',tool:'Tigris',detail:'audio, pages, feed',time:'',dot:Q},
+{name:'Archive',tool:'Box',detail:'bundle and decision log',time:'',dot:Q}],
+log: [
+{verdict:'AIR',score:'86%',post:'[post title] · lead story',color:G},
+{verdict:'AIR',score:'81%',post:'[post title] · newscast',color:G},
+{verdict:'CUT',score:'68%',post:'[post title] · below threshold',color:'#b8bcc4'},
+{verdict:'CUT',score:'12%',post:'[post title] · reaction, not news',color:'#b8bcc4'},
+{verdict:'DROP',score:'31%',post:'[post title] · private individual',color:'#ff8a98'},
+{verdict:'AIR',score:'77%',post:'[post title] · newscast',color:G},
+{verdict:'MERGE',score:'94%',post:'[post title] · same story as above',color:A},
+{verdict:'CUT',score:'40%',post:'[post title] · below threshold',color:'#b8bcc4'}]
+};
+}
+}
+</script>
+</body>
+</html>

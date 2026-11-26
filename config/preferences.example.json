@@ -1,0 +1,126 @@
+{
+  "station": {
+    "name": "Station of One",
+    "show_name": "The Hourly Scroll",
+    "call_sign": "WONE",
+    "timezone": "America/Chicago",
+    "first_newscast": "07:00",
+    "last_newscast": "19:00",
+    "frequency": "1.0 FM",
+    "id_lines": {
+      "newscast": [
+        "WONE, 1.0 FM. One station, one listener.",
+        "Listener-supported. Listener, singular."
+      ],
+      "table": [
+        "WNCL, broadcasting to a potential audience of one."
+      ],
+      "undecided": [
+        "You're listening to WYOU. Literally only you."
+      ]
+    }
+  },
+  "voices": {
+    "host": "Kore",
+    "reporter": "Charon",
+    "style": "brisk, warm, conversational news read"
+  },
+  "thresholds": {
+    "air_min_probability": 0.4,
+    "private_harm_max_probability": 0.2,
+    "min_stories": 3,
+    "max_stories": 5
+  },
+  "beats": [
+    {
+      "id": "ai-dev",
+      "name": "AI and developer tools",
+      "used_in": "newscast",
+      "color": "#1f3a5f",
+      "sources": [
+        {
+          "type": "hackernews",
+          "ref": "front_page",
+          "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "REPLACE_ME",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "REPLACE_WITH_FEED_URL",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "media",
+      "name": "Media and public radio",
+      "used_in": "newscast",
+      "color": "#7a4a00",
+      "sources": [
+        {
+          "type": "rss",
+          "ref": "REPLACE_WITH_FEED_URL",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "milwaukee",
+      "name": "Milwaukee",
+      "used_in": "newscast",
+      "color": "#0f5c4a",
+      "sources": [
+        {
+          "type": "rss",
+          "ref": "REPLACE_WITH_FEED_URL",
+          "visibility": "public"
+        },
+        {
+          "type": "subreddit",
+          "ref": "REPLACE_ME",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "music",
+      "name": "Music",
+      "used_in": "music_picks",
+      "color": "#5b2a86",
+      "sources": [
+        {
+          "type": "bandcamp_tag",
+          "ref": "REPLACE_ME",
+          "visibility": "public"
+        },
+        {
+          "type": "youtube_channel",
+          "ref": "REPLACE_ME",
+          "visibility": "public"
+        }
+      ]
+    }
+  ],
+  "music": {
+    "enabled": true,
+    "tags": [],
+    "liked_artists_and_labels": [],
+    "leave_out": [],
+    "picks_per_day": 4
+  },
+  "table": {
+    "enabled": false,
+    "excluded_topics": [
+      "elections",
+      "contested policy",
+      "religion",
+      "health"
+    ],
+    "call_sign": "WNCL"
+  },
+  "feedback": []
+}
