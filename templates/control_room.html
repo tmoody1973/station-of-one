@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/logo.png" type="image/png">
 <title>Control room · {{ station.name }}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,sans-serif;color:#f2f2f2;background:#111214}
@@ -42,11 +42,12 @@ h2{margin:0;font-size:20px}
 .card{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
 .card.repair{border-color:#6b4e00}.card.repair .t{color:#ffc857;font-weight:600}
 .logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap;color:inherit}.logo b{font-weight:700;letter-spacing:1px}
+.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',Inter,sans-serif;line-height:1;border-radius:4px;overflow:hidden;font-size:15px}.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}.wone-id{box-shadow:0 0 0 2px #3a3d44}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <div class="brand"><a class="logo" href="/index.html">{% include "_logo_mark.svg" %}<span class="lockup"><b>{{ station.call_sign }}</b> {{ station.frequency }}</span></a><span class="muted">Control room</span></div>
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a><span class="muted">Control room</span></div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span class="badge">Built · {{ n.hour_label }} newscast</span>
     <span class="mono muted" style="font-size:14px">started {{ started }} · build {{ total }}</span>

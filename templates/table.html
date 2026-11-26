@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="icon" href="/logo.png" type="image/png">
 <title>The Table · {{ ep.question }} · WNCL</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#fff}
@@ -29,11 +29,12 @@ h1{font-size:40px;line-height:1.1}
 .sources{font-size:13px}
 .verdict{border:2px solid #141414;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:8px}
 footer{border-top:1px solid #e3e3e3;padding-top:18px;font-size:14px;color:#555;display:flex;flex-direction:column;gap:6px}
+.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',Inter,sans-serif;line-height:1;border-radius:4px;overflow:hidden;font-size:15px}.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <a class="logo" href="/index.html">{% include "_logo_mark.svg" %}<span class="lockup"><b>{{ station.call_sign }}</b> {{ station.frequency }}</span></a>
+  <a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
   <nav><a href="/index.html">Front page</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav>
 </div></header>
 <main class="wrap">

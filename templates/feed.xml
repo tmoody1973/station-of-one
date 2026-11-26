@@ -7,7 +7,7 @@
   <description>An hourly five-minute newscast from {{ station.call_sign }} {{ station.frequency }}, a fictional one-listener station. The show is machine-edited: TypeSafe AI's Jev decides what airs from public posts, and every claim is attributed to where it was posted. Voices are synthetic.</description>
   <language>en-us</language>
   <itunes:author>{{ station.name }}</itunes:author>
-  <itunes:image href="{{ base }}/cover-dial.png"/>
+  <itunes:image href="{{ base }}/cover-wone.png"/>
   <itunes:category text="News"/>
   <itunes:explicit>false</itunes:explicit>
   <itunes:type>episodic</itunes:type>

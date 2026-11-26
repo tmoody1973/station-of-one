@@ -5,7 +5,7 @@ import { loadFont as loadMono } from "@remotion/google-fonts/JetBrainsMono";
 import { AbsoluteFill, Easing, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { AudioBars } from "./AudioBars";
 import { Captions } from "./Captions";
-import { Dial } from "./Dial";
+import { IdBlock } from "./IdBlock";
 import { ScoreDial } from "./ScoreDial";
 
 const { fontFamily } = loadFont("normal", { weights: ["500", "700"], subsets: ["latin"] });
@@ -33,8 +33,9 @@ const OUT = Easing.bezier(0.16, 1, 0.3, 1);
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 // Safe area: text stays between 250 px from the top and 400 px from the bottom.
 
-const sweep = (frame: number, fps: number, delay = 0) =>
-  interpolate(frame, [delay, delay + 0.9 * fps], [-70, -28], { ...clamp, easing: Easing.spring({ damping: 12 }) });
+// The ID block punches in: a springy overshoot, then settles.
+const punch = (frame: number, fps: number, delay = 0) =>
+  interpolate(frame, [delay, delay + 0.7 * fps], [0.3, 1], { ...clamp, easing: Easing.spring({ damping: 9 }), output: "perceptual-scale" });
 
 const DotField: React.FC<{ frame: number; fps: number }> = ({ frame, fps }) => {
   const lit = interpolate(frame, [0.2 * fps, 1.8 * fps], [0, 1], clamp);
@@ -56,8 +57,8 @@ const Intro: React.FC<{ postsRead: number; station: string }> = ({ postsRead, st
     <AbsoluteFill>
       <DotField frame={frame} fps={fps} />
       <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 18 }}>
-        <div style={{ scale: String(interpolate(frame, [0, 0.4 * fps], [0.6, 1], { ...clamp, easing: OUT })) }}>
-          <Dial size={200} needleDeg={sweep(frame, fps)} />
+        <div style={{ scale: String(punch(frame, fps)), marginBottom: 20 }}>
+          <IdBlock size={90} />
         </div>
         <div style={{ fontFamily: mono, fontSize: 210, color: "#f2f2f2", lineHeight: 1 }}>{n.toLocaleString("en-US")}</div>
         <div style={{ fontFamily, fontSize: 62, color: MUTED, translate: `0px ${interpolate(frame, [0.3 * fps, 0.8 * fps], [40, 0], { ...clamp, easing: OUT })}px`,
@@ -116,7 +117,7 @@ const EndCard: React.FC<ReelProps> = (p) => {
                                      translate: `0px ${interpolate(frame, [delay, delay + 14], [40, 0], { ...clamp, easing: OUT })}px` });
   return (
     <AbsoluteFill style={{ justifyContent: "center", alignItems: "center", gap: 26, padding: "250px 80px 400px" }}>
-      <Dial size={220} needleDeg={sweep(frame, fps)} />
+      <div style={{ scale: String(punch(frame, fps)), marginBottom: 20 }}><IdBlock size={110} /></div>
       <div style={{ fontFamily, fontSize: 96, fontWeight: 700, color: "#f2f2f2", textAlign: "center", ...rise(6) }}>{p.show}</div>
       <div style={{ fontFamily: mono, fontSize: 48, color: "#ff8a98", ...rise(12) }}>{p.station}</div>
       <div style={{ fontFamily: mono, fontSize: 34, color: "#f2f2f2", textAlign: "center", wordBreak: "break-all", marginTop: 30, ...rise(18) }}>{p.url}</div>

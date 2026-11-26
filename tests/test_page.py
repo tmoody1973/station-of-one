@@ -34,7 +34,7 @@ def test_links_end_in_index_html():  # Tigris serves no index documents
     html = render_front(newscast(), [newscast(), newscast("2026-11-26T16")], PREFS)
     internal = [h for h in re.findall(r'href="([^"]+)"', html) if h.startswith("/") and not h.startswith("//")]
     files = [h.split("#")[0] for h in internal]  # a #fragment after a named file is fine
-    assert files and all(f.endswith(("index.html", ".mp3", ".xml", ".svg")) for f in files)  # never a bare folder
+    assert files and all(f.endswith(("index.html", ".mp3", ".xml", ".svg", ".png")) for f in files)  # never a bare folder
 
 
 def test_footer_synthetic_line():

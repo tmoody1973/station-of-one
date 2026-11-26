@@ -13,16 +13,19 @@ const CaptionPage: React.FC<{ page: TikTokPage; fontFamily: string }> = ({ page,
   return (
     // A plain box, not AbsoluteFill: AbsoluteFill is always 100% wide, so left/right offsets pushed text off-screen.
     <div style={{ position: "absolute", top: 1080, left: 80, right: 80, bottom: 440 }}>
-      <div style={{ fontFamily, fontSize: 84, fontWeight: 700, lineHeight: 1.15, whiteSpace: "pre-wrap", color: "#f2f2f2" }}>
+      <div style={{ fontFamily, fontSize: 84, fontWeight: 700, lineHeight: 1.15, color: "#f2f2f2" }}>
         {page.tokens.map((t) => {
           const active = t.fromMs <= nowMs && t.toMs > nowMs;
           // The spoken word pops: a quick scale-up as it starts, settling while it is said.
           const pop = active ? interpolate(nowMs, [t.fromMs, t.fromMs + 120, t.toMs], [1, 1.14, 1.06], {
             extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) }) : 1;
+          // The space before a word stays outside the animated box, so wrapped lines never start with a gap.
           return (
-            <span key={t.fromMs} style={{ color: active ? HIGHLIGHT : "#f2f2f2", display: "inline-block", scale: String(pop),
-                                          whiteSpace: "pre", transformOrigin: "50% 80%" }}>
-              {t.text}
+            <span key={t.fromMs}>
+              {t.text.startsWith(" ") ? " " : ""}
+              <span style={{ color: active ? HIGHLIGHT : "#f2f2f2", display: "inline-block", scale: String(pop), transformOrigin: "50% 80%" }}>
+                {t.text.trim()}
+              </span>
             </span>
           );
         })}
