@@ -252,6 +252,77 @@
       ]
     },
     {
+      "id": "music-industry",
+      "name": "Music business and industry",
+      "used_in": "newscast",
+      "color": "#9b2c2c",
+      "sources": [
+        {
+          "type": "rss",
+          "ref": "https://www.musicbusinessworldwide.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.billboard.com/c/business/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.digitalmusicnews.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://completemusicupdate.com/rss/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://pitchfork.com/feed/feed-news/rss",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
+      "id": "arts-culture",
+      "name": "Arts and culture",
+      "used_in": "newscast",
+      "color": "#2e6f73",
+      "sources": [
+        {
+          "type": "rss",
+          "ref": "https://www.artnews.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.theartnewspaper.com/rss.xml",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.thisiscolossal.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://feeds.npr.org/1008/rss.xml",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.artsjournal.com/feed",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.theguardian.com/us/culture/rss",
+          "visibility": "public"
+        }
+      ]
+    },
+    {
       "id": "music",
       "name": "Music",
       "used_in": "music_picks",

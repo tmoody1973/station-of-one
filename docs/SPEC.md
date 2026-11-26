@@ -50,6 +50,8 @@ Content is organized into beats; each beat has about five public sources.
 | AI and developer tools | Subreddits, Hacker News, public accounts, RSS | Newscast |
 | Media and public radio | Trade newsletters, RSS, public accounts | Newscast |
 | Milwaukee | Local news RSS, city subreddit | Newscast |
+| Music business and industry | Trade press RSS (added Nov 26, Tarik) | Newscast |
+| Arts and culture | Arts and culture RSS (added Nov 26, Tarik) | Newscast |
 | Music | Bandcamp tags and labels, YouTube channels | Music picks only |
 
 Specific sources and Apify Actors are chosen during the Thursday checks. Each hourly run

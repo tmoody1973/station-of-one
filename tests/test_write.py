@@ -139,3 +139,24 @@ def test_overheard_inner_quotes_become_single():
     c = j("c1", 0.5, kind="comment", part="overheard", overheard_p=0.8)
     c = type(c)(c.post.__class__(**{**c.post.__dict__, "text": 'It says "English is hard" here.'}), c.answers, c.model)
     assert '"It says \'English is hard\' here."' in overheard_chapter(c).turns[0].text
+
+
+def test_system_prompt_carries_headlines_style():  # docs/reference/headlines-style-notes.md
+    from station.steps.write import SYSTEM
+    s = SYSTEM.lower()
+    assert "set the scene" in s and "explain any technical term" in s and "where things stand" in s
+
+
+def test_last_story_begins_and_finally():
+    from station.steps.write import messages_for
+    assert 'Begin with "And finally,"' in messages_for("story", j("a", 0.6), [], 40, last=True)[-1]["content"]
+    assert "And finally" not in messages_for("story", j("a", 0.6), [], 40)[-1]["content"]
+
+
+def test_write_all_marks_only_the_last_story():
+    gw = FakeGateway({("POST", "ollama", "/api/chat"): [ok({"message": {"content": LEAD_REPLY}}),
+                                                       ok({"message": {"content": REPLY}})]})
+    write_all(gw, rundown_of(j("a", 0.6), j("b", 0.5), j("c", 0.45)), load_prefs(),
+              datetime(2026, 11, 27, 9, 0, tzinfo=CHI), read_today=10, not_aired_today=7, sources={}, concurrency=1)
+    marked = ["And finally" in c[3]["messages"][-1]["content"] for c in gw.calls]
+    assert marked == [False, False, True]

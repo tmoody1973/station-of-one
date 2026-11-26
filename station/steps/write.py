@@ -34,6 +34,11 @@ Rules, all mandatory:
 - Never state a scraped claim as fact.
 - Summarize in the show's own words. At most one short quoted line, with the author named.
 - Calm, dry public-radio pacing. No jokes.
+- Shape each story like a public-radio headline read: open with one or two plain sentences that set the scene,
+  then what the posts report, attributed ("posters there say", "according to the outlet");
+  explain any technical term in a short clause the first time it appears;
+  end with one sentence on where things stand or what happens next.
+- Short, plain sentences. Past tense for what happened, present tense for who says it.
 - Plain spoken words only: no stage directions, no parentheses or brackets, no markdown, no emoji.
 - Pauses only with punctuation, "--", "..." or <short pause>. Capitals only for rare emphasis.
 Reply in exactly this format:
@@ -135,7 +140,7 @@ def problems(chapter: Chapter, seconds: int) -> list[str]:
     return found
 
 
-def messages_for(kind: str, story: Judged, sources: list[Post], seconds: int) -> list[dict]:
+def messages_for(kind: str, story: Judged, sources: list[Post], seconds: int, last: bool = False) -> list[dict]:
     target = round(seconds * WORDS_PER_SECOND)
     posts = [story.post, *[s for s in sources if s.id != story.post.id]]
     lines = [f"Write the {'lead story' if kind == 'lead' else 'story'} script: at most {target} words ({seconds} seconds). "
@@ -143,17 +148,21 @@ def messages_for(kind: str, story: Judged, sources: list[Post], seconds: int) ->
     if story.primary_source < 0.5:
         lines.append("The central claim has no linked primary source: hedge clearly.")
     if kind == "lead":
-        lines.append("Two voices. Write each line starting with HOST: or REPORTER:. The host introduces in one or two "
-                     "sentences, the reporter tells the story, the host closes in one sentence.")
+        lines.append("Two voices. Write each line starting with HOST: or REPORTER:. The host sets the scene in one or two "
+                     "sentences and hands to the reporter; the reporter tells the story with attribution; the host closes "
+                     "in one sentence on where things stand.")
+    if last:
+        lines.append('This is the last story of the newscast. Begin with "And finally,".')
     for p in posts:
         lines.append(f"\nPOST from {p.source} by {p.author or 'unknown'} at {p.posted_at}\nTITLE: {p.title}\n"
                      f"LINK: {p.url}\nTEXT: {p.text[:2000]}")
     return [{"role": "system", "content": SYSTEM}, {"role": "user", "content": "\n".join(lines)}]
 
 
-def _write_story(gw, model: str, kind: str, index: int, story: Judged, sources: list[Post], seconds: int):
+def _write_story(gw, model: str, kind: str, index: int, story: Judged, sources: list[Post], seconds: int,
+                 last: bool = False):
     title = "Lead story" if kind == "lead" else f"Story {index + 1}"
-    messages = messages_for(kind, story, sources, seconds)
+    messages = messages_for(kind, story, sources, seconds, last)
     last = "no reply"
     for attempt in range(2):  # one retry, told what was wrong
         try:
@@ -190,7 +199,7 @@ def write_all(gw, rundown: Rundown, prefs: Prefs, hour_local: datetime, read_tod
     def run(job):
         kind, i, story = job
         return _write_story(gw, prefs.writer.model, kind, i, story, sources.get(story.post.id, []),
-                            rundown.seconds[story.post.id])
+                            rundown.seconds[story.post.id], last=(i == len(jobs) - 1 and i > 0))
 
     with ThreadPoolExecutor(max_workers=concurrency) as pool:  # Ollama pay-as-you-go: 3 concurrent
         results = list(pool.map(run, jobs))
