@@ -315,9 +315,10 @@ def cmd_table_topic(run: Path) -> None:
             scored, model = topic_mod.score_threads(Gateway(), ts) if ts else ([], None)
             asked_at = datetime.now(UTC).isoformat()
             for s in scored:  # every Jev answer is logged with its probability
-                for key, qid in (("dispute", "table_dispute"), ("low_stakes", "table_low_stakes"), ("hot_topic", "hot_topic")):
+                for key, qid in (("dispute", "table_dispute"), ("low_stakes", "table_low_stakes"), ("hot_topic", "hot_topic"),
+                                 ("private_harm", "table_private_harm")):
                     record_decision(db, s["story_id"], qid, {"type": "noul", "noul": s[key]}, model, asked_at)
-        chosen = topic_mod.pick_topic(scored)
+        chosen = topic_mod.pick_topic(scored, harm_max=prefs.thresholds.private_harm_max_probability)
         if not ts:
             out = {"none": True, "reason": "no thread with 6 or more comments"}
         elif chosen is None:
@@ -348,7 +349,7 @@ def cmd_table_argue(run: Path) -> None:
 
 
 def cmd_table_referee(run: Path) -> None:
-    from station.store import record_decision, record_episode, season_record
+    from station.store import record_decision, season_record
     from station.table.argue import Claim
     from station.table.referee import referee, verdict
 
@@ -366,8 +367,8 @@ def cmd_table_referee(run: Path) -> None:
             for r in rulings:  # every Jev answer is logged with its probability
                 record_decision(db, f"table:{run.name}:{r.claim_index}", "table_true", {"type": "noul", "noul": r.p_true}, model, asked_at)
                 record_decision(db, f"table:{run.name}:{r.claim_index}", "table_answered", {"type": "noul", "noul": r.answered}, model, asked_at)
-            record_episode(db, run.name, drafted["question"], v["anchor"], v["uncle"], v["winner"], topic["story"]["id"])
-            record = season_record(db)
+            record = season_record(db, exclude_day=run.name)  # stored only once published (cmd_table_publish)
+        record = {**record, v["winner"]: record[v["winner"]] + 1}
         write_json(run, "rulings.json", {"rulings": [asdict(r) for r in rulings], "verdict": v, "record": record, "model": model})
         rec.counts.update(rulings=len(rulings), anchor=v["anchor"], uncle=v["uncle"], winner=v["winner"])
 
@@ -438,14 +439,24 @@ def cmd_table_page(run: Path) -> None:
 
 
 def cmd_table_publish(run: Path) -> None:
-    from station.steps.archive import archive
-    from station.table.build import ARCHIVE_FILES, publish_table
+    from station.steps import archive as arc
+    from station.store import record_episode
+    from station.table import build as tb
 
     log = RunLog.open(run / "run_log.json", run_id=run.name)
     with log.step("publish", "Tigris + Box") as rec:
         gw = Gateway()
-        keys = publish_table(gw, run, load_prefs())
-        rec.counts.update(files=len(keys), box_file_id=archive(gw, run, ARCHIVE_FILES))
+        keys = tb.publish_table(gw, run, load_prefs())
+        ruled, topic, drafted = read_json(run, "rulings.json"), read_json(run, "topic.json"), read_json(run, "claims.json")
+        v = ruled["verdict"]
+        with closing(_db()) as db:  # the season record counts only episodes that went out
+            record_episode(db, run.name, drafted["question"], v["anchor"], v["uncle"], v["winner"], topic["story"]["id"])
+        try:
+            rec.counts.update(box_file_id=arc.archive(gw, run, tb.ARCHIVE_FILES))
+        except Exception as e:  # a Box hiccup must not re-run and replace a public episode
+            rec.notes.append(f"Box archive failed ({type(e).__name__}: {e}); the episode is public.")
+        rec.counts.update(files=len(keys))
+        (run / "published").write_text(datetime.now(UTC).isoformat())  # listed on the front page and feed only now
 
 
 TABLE_STEPS = ["table-topic", "table-argue", "table-referee", "table-script", "table-voice", "table-assemble",
@@ -456,6 +467,7 @@ def run_table(day: str) -> Path:
     """The whole Table episode for `day`. Any failure raises before publish (no half episode)."""
     run = Path(os.environ.get("STATION_TABLE", "data/table")) / day
     run.mkdir(parents=True, exist_ok=True)
+    (run / "published").unlink(missing_ok=True)  # a rebuild is unlisted until it is published again
     for step in TABLE_STEPS:
         COMMANDS[step](run)
         if step == "table-topic" and (run / "topic.json").exists() and read_json(run, "topic.json").get("none"):

@@ -12,7 +12,7 @@ def jev(per_thread):
     answers = {}
     for i, (d, lo, hot) in enumerate(per_thread):
         answers |= {f"dispute_{i}": {"type": "noul", "noul": d}, f"low_stakes_{i}": {"type": "noul", "noul": lo},
-                    f"hot_topic_{i}": {"type": "noul", "noul": hot}}
+                    f"hot_topic_{i}": {"type": "noul", "noul": hot}, f"private_harm_{i}": {"type": "noul", "noul": 0.0}}
     return FakeGateway({("POST", "typesafe", "/v1/systemone"): [ok({"model": "jev-1.14.0", "answers": answers})]})
 
 
@@ -20,10 +20,11 @@ def test_one_request_three_questions_per_thread():
     gw = jev([(0.8, 0.9, 0.1), (0.4, 0.9, 0.0)])
     scored, model = score_threads(gw, [thread(1), thread(2)])
     (_, _, _, req), = gw.calls
-    assert set(req["questions"]) == {"dispute_0", "low_stakes_0", "hot_topic_0", "dispute_1", "low_stakes_1", "hot_topic_1"}
+    assert set(req["questions"]) == {f"{q}_{i}" for q in ("dispute", "low_stakes", "hot_topic", "private_harm") for i in (0, 1)}
     assert "threads[0]" in req["questions"]["hot_topic_0"]["instructions"]
     assert req["state"]["threads"][0]["title"] == "Story 1" and len(req["state"]["threads"][0]["comments"]) == 7
-    assert scored[0] == {"story_id": "hn:1", "dispute": 0.8, "low_stakes": 0.9, "hot_topic": 0.1} and model == "jev-1.14.0"
+    assert scored[0] == {"story_id": "hn:1", "dispute": 0.8, "low_stakes": 0.9, "hot_topic": 0.1, "private_harm": 0.0}
+    assert model == "jev-1.14.0"
 
 
 def test_pick_highest_passing_both():
@@ -58,7 +59,7 @@ def test_cli_writes_topic_and_logs_every_answer(tmp_path, monkeypatch, make_db):
     add(db, [p("hn:1", "story", "Fonts"), *[p(f"hn:1{k}", "comment", "Comment on: Fonts") for k in range(7)]])
     db.close()
     monkeypatch.setattr(topic_mod, "score_threads", lambda gw, ts: (
-        [{"story_id": "hn:1", "dispute": 0.8, "low_stakes": 0.9, "hot_topic": 0.1}], "jev-1.14.0"))
+        [{"story_id": "hn:1", "dispute": 0.8, "low_stakes": 0.9, "hot_topic": 0.1, "private_harm": 0.01}], "jev-1.14.0"))
     monkeypatch.setattr("station.__main__.Gateway", lambda: None)
     run = tmp_path / "table" / "2026-11-26"
     assert main(["table-topic", "--run", str(run)]) == 0
@@ -66,7 +67,7 @@ def test_cli_writes_topic_and_logs_every_answer(tmp_path, monkeypatch, make_db):
     assert out["story"]["id"] == "hn:1" and len(out["comments"]) == 7 and out["scores"]["dispute"] == 0.8
     db = open_db(tmp_path / "s.db")
     logged = {r[0] for r in db.execute("SELECT question_id FROM decisions WHERE post_id = 'hn:1'")}
-    assert logged == {"table_dispute", "table_low_stakes", "hot_topic"}
+    assert logged == {"table_dispute", "table_low_stakes", "hot_topic", "table_private_harm"}
 
 
 def test_cli_quiet_day_writes_none(tmp_path, monkeypatch):

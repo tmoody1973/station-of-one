@@ -37,7 +37,7 @@ def test_rulings_inserted_verbatim_after_each_round_claim():
 def test_verdict_and_record_are_code_written():
     ps, _ = built(delivered())
     v = next(p for p in ps if p.kind == "verdict")
-    assert "2.9" in v.turns[0].text and "2.7" in v.turns[0].text and "The Anchor takes it" in v.turns[0].text
+    assert "2.87" in v.turns[0].text and "2.67" in v.turns[0].text and "The Anchor takes it" in v.turns[0].text
     rec = next(p for p in ps if p.kind == "record")
     assert "Anchor 1, Uncle 0" in rec.turns[0].text
 

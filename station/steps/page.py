@@ -184,7 +184,8 @@ def render_settings(prefs: Prefs, beat_counts: dict[str, tuple[int, int]]) -> st
 
 def table_episodes(table_root: Path) -> list[dict]:
     """The Table's episodes, newest first (data/table/<day>/table.json)."""
-    return [json.loads(f.read_text()) for f in sorted(table_root.glob("*/table.json"), reverse=True)]
+    return [json.loads(f.read_text()) for f in sorted(table_root.glob("*/table.json"), reverse=True)
+            if (f.parent / "published").exists()]  # never link an episode that failed to upload
 
 
 def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int, table_episodes: list[dict] = ()) -> str:

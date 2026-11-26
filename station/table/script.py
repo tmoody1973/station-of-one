@@ -11,15 +11,12 @@ from dataclasses import dataclass
 
 from station.gateway import GatewayError
 from station.steps.write import Turn
-from station.table.argue import ATTRIBUTION, PARTS, SIDES, Claim
+from station.table.argue import ATTRIBUTION, FORBIDDEN, PARTS, SIDES, Claim
 from station.table.referee import Ruling
 
 STATION_ID = "WNCL, broadcasting to a potential audience of one."
 WELCOME = "Welcome to The Table, where two of us argue about one thread and Jev keeps score."  # code-written: the writer repeated the question
 SPEAKER = {"anchor": "Anchor", "uncle": "Uncle"}
-# Declaring a result is code's job. "win" as an ordinary verb ("details win people over") is fine.
-FORBIDDEN = re.compile(r"\d\s*%|\bpercent\b|\bwinner\b|\b(?:I|we|you|he|anchor|uncle)\s+wins?\b|\bwins?\s+(?:this|the|today's|tonight's)\s+(?:one|round|debate|argument|day)\b"
-                       r"|\bverdict\b|\bscor(?:e|ed|ing)\b|@\w", re.I)
 MAX_WORDS = 75
 
 SYSTEM = """You voice two characters on The Table, a daily radio debate. Rewrite each claim so its character can say it
@@ -99,7 +96,7 @@ def parts(script: dict, claims: list[Claim], rulings: list[Ruling], verdict: dic
     winner = {"anchor": "The Anchor takes it.", "uncle": "The Uncle takes it.", "draw": "It's a draw."}[verdict["winner"]]
     reaction = {"anchor": "The numbers are in on it too.", "uncle": "Told you.", "draw": "I'll take it."}[verdict["winner"]]
     out.append(TablePart(5, "verdict", "The verdict", (
-        Turn("Anchor", f"Jev's totals. The Anchor: {verdict['anchor']:.1f} points. The Uncle: {verdict['uncle']:.1f}. {winner}"),
+        Turn("Anchor", f"Jev's totals. The Anchor: {verdict['anchor']:.2f} points. The Uncle: {verdict['uncle']:.2f}. {winner}"),
         Turn("Uncle", reaction))))
     out.append(TablePart(6, "record", "The record", (
         Turn("Anchor", f"The season so far: Anchor {record['anchor']}, Uncle {record['uncle']}, draws {record['draw']}. "

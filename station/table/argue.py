@@ -15,6 +15,11 @@ from station.gateway import GatewayError
 PARTS = ("opening", "round1", "round2", "round3")
 SIDES = ("anchor", "uncle")
 MAX_WORDS = 60
+HANDLE = re.compile(r"@\w|\bu/\w+", re.I)  # Bluesky/HN-style @name and Reddit u/name
+# Declaring a result is code's job. "win" as an ordinary verb ("details win people over") is fine.
+FORBIDDEN = re.compile(r"\d\s*%|\bpercent\b|\bwinner\b|\b(?:I|we|you|he|anchor|uncle)\s+wins?\b"
+                       r"|\bwins?\s+(?:this|the|today's|tonight's)\s+(?:one|round|debate|argument|day)\b"
+                       r"|\bverdict\b|\bscor(?:e|ed|ing)\b|@\w", re.I)
 ATTRIBUTION = re.compile(r"\b(posters?|commenters?|people in the thread|someone in the thread|one person|"
                          r"some (?:people|folks|users)|others? (?:say|argue|claim))\b", re.I)
 
@@ -60,6 +65,11 @@ def problems(data: dict, comments: list[dict]) -> list[str]:
     if sorted((c.get("side"), c.get("part")) for c in claims) != sorted((s, p) for s in SIDES for p in PARTS):
         found.append("need exactly one claim per side for opening, round1, round2, round3")
     ids, names = {c["id"] for c in comments}, _names(comments)
+    for label in ("question", "anchor_position", "uncle_position"):  # spoken and shown too (review finding 3)
+        text = str(data.get(label) or "")
+        if HANDLE.search(text):
+            found.append(f"{label}: remove the handle")
+        found += [f"{label}: remove the username {n}" for n in names if re.search(rf"\b{re.escape(n)}\b", text, re.I)]
     for c in claims:
         where, text = f"{c.get('side')} {c.get('part')}", str(c.get("text") or "")
         for sid in c.get("sources") or []:
@@ -67,8 +77,10 @@ def problems(data: dict, comments: list[dict]) -> list[str]:
                 found.append(f"{where}: source {sid} is not a comment in this thread")
         if c.get("side") == "anchor" and not c.get("sources"):
             found.append(f"{where}: the Anchor must cite at least one comment id")
-        if re.search(r"@\w", text):
+        if HANDLE.search(text):
             found.append(f"{where}: remove the handle")
+        if FORBIDDEN.search(text):  # the script fallback speaks claim text as written (review finding 4)
+            found.append(f"{where}: no percent figures, scores, winners or verdicts; the referee handles those")
         for n in names:
             if re.search(rf"\b{re.escape(n)}\b", text, re.I):
                 found.append(f"{where}: remove the username {n}")

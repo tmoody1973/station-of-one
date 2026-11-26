@@ -63,7 +63,7 @@ footer{border-top:1px solid #e3e3e3;padding-top:18px;font-size:14px;color:#555;d
 {% endfor %}
 <section class="verdict">
   <h2>The verdict</h2>
-  <span>Jev's totals: the Anchor {{ "%.1f" | format(ep.verdict.anchor) }}, the Uncle {{ "%.1f" | format(ep.verdict.uncle) }}. {{ winner }}</span>
+  <span>Jev's totals: the Anchor {{ "%.2f" | format(ep.verdict.anchor) }}, the Uncle {{ "%.2f" | format(ep.verdict.uncle) }}. {{ winner }}</span>
   <span class="muted">Season record: Anchor {{ ep.record.anchor }}, Uncle {{ ep.record.uncle }}, draws {{ ep.record.draw }}.</span>
   <span class="muted" style="font-size:13px">Jev scores every claim; code adds up the points. The writer never picks the winner.</span>
 </section>

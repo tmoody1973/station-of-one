@@ -170,6 +170,7 @@ def record_episode(db: sqlite3.Connection, day: str, question: str, anchor: floa
     db.commit()
 
 
-def season_record(db: sqlite3.Connection) -> dict[str, int]:
-    counts = dict(db.execute("SELECT winner, COUNT(*) FROM table_episodes GROUP BY winner").fetchall())
+def season_record(db: sqlite3.Connection, exclude_day: str | None = None) -> dict[str, int]:
+    counts = dict(db.execute("SELECT winner, COUNT(*) FROM table_episodes WHERE day IS NOT ? GROUP BY winner",
+                             (exclude_day,)).fetchall())
     return {k: counts.get(k, 0) for k in ("anchor", "uncle", "draw")}
