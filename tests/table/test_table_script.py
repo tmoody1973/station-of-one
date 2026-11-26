@@ -17,7 +17,7 @@ def delivered(override=None):
     lines = [{"side": c.side, "part": c.part, "text": f"Some posters say, in my words, {c.side} {c.part}."} for c in CLAIMS]
     for (side, part), text in (override or {}).items():
         next(x for x in lines if x["side"] == side and x["part"] == part)["text"] = text
-    return ok({"message": {"content": json.dumps({"intro": "Welcome to The Table.", "lines": lines})}})
+    return ok({"message": {"content": json.dumps({"lines": lines})}})
 
 
 def built(*replies):
@@ -56,7 +56,7 @@ def test_writer_percentage_rejected_then_falls_back_to_checked_claims():  # Revi
 
 
 def test_draw_verdict_line():
-    p = parts({"intro": "Hi.", "lines": {}}, CLAIMS, RULINGS, {"anchor": 2.5, "uncle": 2.52, "winner": "draw"}, RECORD,
+    p = parts({"lines": {}}, CLAIMS, RULINGS, {"anchor": 2.5, "uncle": 2.52, "winner": "draw"}, RECORD,
               TOPIC, "Q?")
     assert "a draw" in next(x for x in p if x.kind == "verdict").turns[0].text
 
@@ -78,9 +78,7 @@ def test_cli_writes_script(tmp_path, monkeypatch):
     assert out["parts"][2]["turns"][1] == {"speaker": "Anchor", "text": "Jev's ruling. That claim: 79% likely true."}
 
 
-def test_intro_that_asks_the_question_is_rejected():  # real run said the question twice
-    from station.table.script import _issues
-
-    lines = json.loads(json.loads(delivered().body)["message"]["content"])["lines"]
-    assert _issues({"intro": "Welcome! Is Intel One Mono worth it?", "lines": lines})
-    assert not _issues({"intro": "Welcome to The Table.", "lines": lines})
+def test_welcome_is_code_written_and_question_said_once():  # real run said the question twice
+    ps, _ = built(delivered())
+    first = ps[0].turns[0].text
+    assert first.startswith("Welcome to The Table") and first.count("Is it worth switching?") == 1
