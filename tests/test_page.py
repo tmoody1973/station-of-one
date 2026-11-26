@@ -91,3 +91,11 @@ def test_only_http_links_render():  # scraped URLs are untrusted
                                    "source_name": "Evil", "posted_at": ""}]
     html = render_front(n, [n], PREFS)
     assert "javascript:" not in html and 'href="#"' in html
+
+
+def test_play_labels_show_story_length():  # "0:010:01..." bug seen in the first screenshot
+    n = newscast()
+    n["stories"][0]["seconds"] = 90
+    n["stories"][1]["seconds"] = 32
+    html = render_front(n, [n], PREFS)
+    assert "Play from this story · 1:30" in html and "Play · 0:32" in html and "0:010:01" not in html

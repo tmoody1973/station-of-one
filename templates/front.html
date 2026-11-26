@@ -100,7 +100,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
     <h1>{{ lead.headline }}</h1>
     <p>{{ lead.summary }}</p>
     <div class="actions">
-      <button class="btn-dark" data-start-ms="{{ lead.chapter_start_ms }}">Play from this story · {{ (lead.seconds or 0) * 1000 | duration }}</button>
+      <button class="btn-dark" data-start-ms="{{ lead.chapter_start_ms }}">Play from this story · {{ ((lead.seconds or 0) * 1000) | duration }}</button>
       <span class="score">Jev: {{ lead.score_matter_week | pct }} likely to matter in a week</span>
       <details class="sources"><summary>{{ lead.sources | length }} source{{ '' if lead.sources | length == 1 else 's' }}</summary><ul>
         {% for s in lead.sources %}<li><a href="{{ s.url | safe_url }}" rel="noopener" target="_blank">{{ s.source_name }}{% if s.author %} · {{ s.author }}{% endif %}</a></li>{% endfor %}
@@ -132,7 +132,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
         <span class="tag">{{ beats[s.beat_id].name if s.beat_id in beats else s.beat_id }}</span>
         <h3>{{ s.headline }}</h3>
         <div class="row">
-          <button class="btn-line" data-start-ms="{{ s.chapter_start_ms }}">Play · {{ (s.seconds or 0) * 1000 | duration }}</button>
+          <button class="btn-line" data-start-ms="{{ s.chapter_start_ms }}">Play · {{ ((s.seconds or 0) * 1000) | duration }}</button>
           <span style="font-weight:600">{{ s.score_matter_week | pct }}</span>
           <details class="sources"><summary>{{ s.sources | length }} source{{ '' if s.sources | length == 1 else 's' }}</summary><ul>
             {% for src in s.sources %}<li><a href="{{ src.url | safe_url }}" rel="noopener" target="_blank">{{ src.source_name }}</a></li>{% endfor %}
