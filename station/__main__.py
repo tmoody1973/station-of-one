@@ -537,9 +537,31 @@ def cmd_picks(run: Path) -> None:
         rec.counts.update(candidates=out["candidates"], picks=len(out["picks"]))
 
 
+def cmd_radio(run: Path, station_id: str | None = None) -> None:
+    """Build step after finish: update every music station (or one, by hand), each a note on failure."""
+    from station.radio.model import STATIONS_ROOT
+    from station.radio.run import run_station
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name) if run is not None else None
+    ids = [station_id] if station_id else sorted(p.stem for p in STATIONS_ROOT.glob("*.json"))
+    totals: dict = {}
+    notes: list[str] = []
+    for sid in ids:
+        with closing(_db()) as db:
+            out = run_station(Gateway(), sid, db, datetime.now(UTC), load_prefs())
+        notes += [f"{sid}: {n}" for n in out.pop("notes", [])]
+        totals[sid] = out
+    if log is None:
+        print(json.dumps({"stations": totals, "notes": notes}, indent=1))
+        return
+    with log.step("radio", "Apify + Ollama + Jev + Apple Music") as rec:
+        rec.notes.extend(notes)
+        rec.counts.update({k: sum(t.get(k, 0) for t in totals.values()) for k in ("items", "extracted", "resolved", "scheduled")})
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story, "picks": cmd_picks,
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story, "picks": cmd_picks, "radio": cmd_radio,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
             "table-referee": cmd_table_referee, "table-script": cmd_table_script, "table-voice": cmd_table_voice,
             "table-assemble": cmd_table_assemble, "table-page": cmd_table_page, "table-publish": cmd_table_publish,
@@ -576,9 +598,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run", type=Path, help="run folder for one step, e.g. data/runs/2026-11-27T09")
     parser.add_argument("--hour", help="build: newscast hour YYYY-MM-DDTHH (local); default = next top of the hour")
     parser.add_argument("--day", help="video: YYYY-MM-DD; uses that day's last run folder")
+    parser.add_argument("--station", help="radio: one music station id (config/stations/<id>.json)")
     args = parser.parse_args(argv)
     if args.step == "table" and args.day:
         run_table(args.day)
+        return 0
+    if args.step == "radio" and args.run is None:
+        cmd_radio(None, args.station)
         return 0
     if args.step == "picks" and args.day:
         print(json.dumps(run_picks(args.day), indent=1))

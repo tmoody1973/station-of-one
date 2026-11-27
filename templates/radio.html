@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo.png" type="image/png">
+<title>{{ st.name }} · {{ station.name }}</title>
+<meta name="description" content="{{ st.brief }}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+{% include "_bauhaus.css" %}
+main.wrap{padding-top:34px;padding-bottom:56px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:40px 48px;align-items:start}
+.intro{grid-column:1/-1;display:flex;flex-direction:column;gap:12px}
+.intro h1{margin:0;font-size:56px;font-weight:800;line-height:1}
+.intro p{margin:0;font-size:19px;color:var(--ink-2);max-width:70ch}
+.connect{align-self:flex-start;background:var(--card);color:var(--muted);border:2px dashed var(--ink);padding:12px 16px;font:inherit;font-weight:700;cursor:not-allowed}
+.list{display:flex;flex-direction:column}
+.trk{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:16px;align-items:center;border-top:2px solid var(--ink);padding:14px 0}
+.trk img{width:72px;height:72px;border:2px solid var(--ink);object-fit:cover;background:var(--blue)}
+.trk h3{margin:0;font-size:19px;line-height:1.2}.trk .by{font-size:15px;color:var(--ink-2)}
+.trk .note{font-size:13px;color:var(--muted);margin-top:4px}.trk .note a{color:var(--muted)}
+.trk .act{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.pv{background:var(--card);border:2px solid var(--ink);padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
+.pv.on{background:var(--yellow)}
+.am{font-size:13px;font-weight:700;white-space:nowrap}
+aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
+.log{background:var(--ink);color:#ece4cf;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--yellow);padding:16px;font-family:var(--mono);font-size:13px;display:flex;flex-direction:column;gap:6px}
+.log b{color:var(--yellow);font-weight:500}
+@media (max-width:900px){main.wrap{grid-template-columns:minmax(0,1fr)}aside{position:static}.intro h1{font-size:40px}.trk{grid-template-columns:56px minmax(0,1fr)}.trk img{width:56px;height:56px}.trk .act{grid-column:2;flex-direction:row}}
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
+    <span class="line">{{ st.name }} · machine-programmed</span></div>
+  <nav><a href="/index.html">Newscast</a><a href="/control-room/index.html">Control room</a></nav>
+</div></header>
+<main class="wrap">
+<section class="intro">
+  <span class="tag kicker">Music station · sampler</span>
+  <h1>{{ st.name }}</h1>
+  <p>{{ st.brief }}</p>
+  <p style="font-size:15px">An agent read the station's feeds, Jev judged each find against that brief, and code programmed this {{ minutes }}-minute set from what matched on Apple Music. Every track links to where it was found.</p>
+  <button class="connect" disabled title="Full songs need Apple Music sign-in, coming next">Connect Apple Music for full songs · coming soon</button>
+</section>
+<div class="list">
+  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">This set</span></h2>
+  {% for t in block.tracks %}
+  <div class="trk">
+    <img src="{{ t.artwork_url | safe_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <div><h3>{{ t.title }}</h3><div class="by">{{ t.artist }} · {{ t.album }}{% if t.release_date %} · {{ t.release_date[:4] }}{% endif %}</div>
+      <div class="note"><a href="{{ t.source_url | safe_url }}" rel="noopener" target="_blank">{{ t.note }}</a></div></div>
+    <div class="act">
+      <button class="pv" data-preview="{{ t.preview_url | safe_url }}" aria-label="Play a 30-second preview of {{ t.title }}">▶ Preview</button>
+      <a class="am" href="{{ t.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a>
+    </div>
+  </div>
+  {% else %}
+  <p>No set yet: nothing has matched on Apple Music this hour.</p>
+  {% endfor %}
+</div>
+<aside>
+  <div class="log">
+    <span><b>agent log</b> · {{ block.built_at[:16].replace('T', ' ') }} UTC</span>
+    <span>feed items read: {{ counts.get('items', 0) }}</span>
+    <span>music found: {{ counts.get('extracted', 0) }}</span>
+    <span>matched on Apple Music: {{ counts.get('resolved', 0) }}</span>
+    <span>held (match too weak): {{ counts.get('held', 0) }}</span>
+    <span>not on Apple Music: {{ counts.get('not_on_apple', 0) }}</span>
+    <span>in this set: {{ block.tracks | length }}</span>
+  </div>
+  <div class="box"><h3>How previews work</h3><p>Each preview is Apple's 30-second clip. It plays only when you tap it and never moves on to the next track. Full songs come with Apple Music sign-in.</p></div>
+</aside>
+<footer>
+  <span>Machine-programmed from public feeds. Previews and links are Apple Music's; no audio is stored by this station.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+</footer>
+</main>
+<audio id="pv" preload="none"></audio>
+<script>
+// One preview at a time, only on tap. Nothing starts the next track.
+const audio = document.getElementById("pv");
+let current = null;
+document.querySelectorAll(".pv").forEach(b => b.addEventListener("click", () => {
+  if (current === b && !audio.paused) { audio.pause(); b.classList.remove("on"); b.textContent = "▶ Preview"; return; }
+  if (current) { current.classList.remove("on"); current.textContent = "▶ Preview"; }
+  current = b; audio.src = b.dataset.preview; audio.play(); b.classList.add("on"); b.textContent = "❚❚ Pause";
+}));
+audio.addEventListener("pause", () => { if (current) { current.classList.remove("on"); current.textContent = "▶ Preview"; } });
+</script>
+</body>
+</html>

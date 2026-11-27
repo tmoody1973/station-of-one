@@ -15,7 +15,7 @@ from typing import Callable
 from station.runs import RUNS_ROOT
 from station.sprite import hold
 
-STEPS = ["scrape", "dedupe", "judge", "rundown", "write", "voice", "assemble", "story", "page", "publish", "archive", "finish"]
+STEPS = ["scrape", "dedupe", "judge", "rundown", "write", "voice", "assemble", "story", "page", "publish", "archive", "finish", "radio"]
 LOCK = Path("data/build.lock")
 STALE_LOCK_S = 1200
 
