@@ -97,3 +97,19 @@ def test_schedule_only_run_reads_no_feeds(tmp_path, monkeypatch):  # overnight r
     monkeypatch.setattr(onair, "put_object", put)
     run_mod.run_station(object(), RL, db, NOW, load_prefs(), out_root=tmp_path, discover=False)
     assert f"data/radio/{RL}/queue.json" in uploads
+
+
+def test_on_now_with_a_local_clock_time(tmp_path, monkeypatch):  # preview bug: ISO strings with mixed offsets compare wrong
+    from zoneinfo import ZoneInfo
+    db = rl_db()
+    _, uploads = run(db, tmp_path, monkeypatch, now=NOW.astimezone(ZoneInfo("America/Chicago")))
+    html = uploads[f"radio/{RL}/index.html"].decode()
+    assert "On now" in html and "No set yet" not in html
+
+
+def test_clock_station_page_never_says_sampler(tmp_path, monkeypatch):
+    db = station_db()
+    db.executescript(STORE_SCHEMA)           # an empty rotation: nothing on now
+    _, uploads = run(db, tmp_path, monkeypatch)
+    html = uploads[f"radio/{RL}/index.html"].decode()
+    assert "sampler" not in html.lower() and "program director" in html

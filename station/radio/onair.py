@@ -97,6 +97,7 @@ def _explainer(db, station: StationConfig, prefs: Prefs) -> str:
 
 def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime, prefs: Prefs, out_root: Path,
               counts: dict, notes: list[str]) -> dict:
+    now = now.astimezone(UTC)  # queue times are UTC ISO strings, compared as text: never mix offsets
     if meeting_due(db, station, now):
         res = music_meeting(gw, station, db, now)
         notes += res.notes
