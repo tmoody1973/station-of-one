@@ -108,3 +108,48 @@ def test_station_strip(page):
     _click(page, "#wone-strip .chip:has-text('ONE Jazz')")
     s = page.evaluate(STATE)
     assert s["path"].endswith("/radio/uk-jazz/index.html") and not s["paused"] and s["marker"]
+
+
+def _inject(page, html):
+    page.evaluate("h => document.querySelector('main').insertAdjacentHTML('beforeend', h)", html)
+
+
+EMBED = '<button id="emb" data-play=\'{"src": "https://www.youtube-nocookie.com/embed/lN96f4SwJyk", "title": "t", "label": "Music pick", "start": 0, "chapters": [], "kind": "embed"}\'>dock</button>'
+
+
+def test_older_page_loads_normally(page):  # review I1: archive pages built before the shell
+    _inject(page, '<a id="old" href="old/index.html">old</a>')
+    page.locator("#old").click()
+    page.wait_for_url("**/old/index.html", timeout=10000)
+    page.wait_for_load_state("load")
+    assert page.evaluate("() => window.__marker") is None and "built before the shell" in page.content()
+
+
+def test_bar_play_follows_the_current_page(page):  # review I2
+    page.goto(f"{BASE}/radio/uk-jazz/index.html", wait_until="networkidle")   # a page with nothing to play
+    page.evaluate("() => { window.__marker = 1 }")
+    _click(page, "header.site nav a:has-text('News')")
+    page.locator("#wone-play").click()
+    page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
+    assert page.evaluate("() => window.__marker") == 1
+
+
+def test_bar_play_after_docked_embed_plays_one_thing(page):  # review I3
+    _start(page)
+    _inject(page, EMBED)
+    page.locator("#emb").click()
+    page.wait_for_function("() => document.querySelector('#wone-embed iframe') !== null", timeout=5000)
+    page.locator("#wone-play").click()
+    page.wait_for_timeout(1000)
+    s = page.evaluate("() => ({iframes: document.querySelectorAll('#wone-embed iframe').length, playing: !document.getElementById('wone-audio').paused})")
+    assert s == {"iframes": 0, "playing": True}
+
+
+def test_phone_page_clears_a_docked_embed(page):  # review I5
+    page.set_viewport_size({"width": 390, "height": 844})
+    _inject(page, EMBED)
+    page.locator("#emb").click()
+    page.wait_for_function("() => document.querySelector('#wone-embed iframe') !== null", timeout=5000)
+    page.wait_for_timeout(500)
+    pad, bar = page.evaluate("() => [parseFloat(getComputedStyle(document.body).paddingBottom), document.getElementById('wone-player').offsetHeight]")
+    assert pad >= bar

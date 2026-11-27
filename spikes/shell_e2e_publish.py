@@ -27,6 +27,7 @@ latest = json.loads(Path("data/radio/uk-jazz/latest.json").read_text())
 b = latest["block"]
 pages["radio/uk-jazz/index.html"] = render_sampler(load_station("uk-jazz"), Block(b["station_id"], b["block_id"], b["built_at"], b["tracks"]),
                                                    latest["counts"], prefs)
+pages["old/index.html"] = '<!doctype html><title>an older page</title><main><p>an older page, built before the shell</p><audio src="/x.mp3"></audio></main>'
 pages["broken/index.html"] = '<!doctype html><title>no main here</title><p>deliberately has no main element</p>'
 
 
