@@ -13,7 +13,7 @@ from pathlib import Path
 from station.gateway import GatewayError
 
 CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".mp3": "audio/mpeg", ".json": "application/json",
-                 ".js": "text/javascript", ".mp4": "video/mp4", ".png": "image/png", ".jpg": "image/jpeg",
+                 ".js": "text/javascript", ".css": "text/css; charset=utf-8", ".mp4": "video/mp4", ".png": "image/png", ".jpg": "image/jpeg",
                  ".xml": "application/rss+xml; charset=utf-8", ".svg": "image/svg+xml"}
 IMMUTABLE = {".mp3", ".png", ".jpg"}  # audio and story art keys carry a content fingerprint; the cover never changes
 

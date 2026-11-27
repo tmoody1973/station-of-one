@@ -65,3 +65,9 @@ def test_failed_put_raises_and_stops(tmp_path):
 def test_prefs_name_the_bucket():
     h = load_prefs().hosting
     assert h.bucket == "patient-mountain-3400" and h.public_base == "https://patient-mountain-3400.fly.storage.tigris.dev"
+
+
+def test_every_file_the_page_step_writes_has_a_content_type():  # 5:37 pm: shell.css crashed publish (KeyError '.css')
+    for suffix in (".html", ".js", ".css", ".json", ".xml", ".mp3", ".png", ".jpg"):
+        assert suffix in CONTENT_TYPES, suffix
+    assert CONTENT_TYPES[".css"].startswith("text/css")
