@@ -38,7 +38,7 @@ def test_navigation_keeps_audio_playing(page):
     _start(page)
     t0 = page.evaluate(STATE)["t"]
     _click(page, "main a[href*='/s/']")                        # a story page
-    _click(page, "header.site nav a:has-text('Music')")        # the jazz sampler
+    _click(page, "#wone-strip a:has-text('ONE Jazz')")        # the jazz sampler
     _click(page, "header.site nav a:has-text('Settings')")
     s = page.evaluate(STATE)
     assert s["marker"] and not s["paused"] and s["t"] > t0 + 2
@@ -46,7 +46,7 @@ def test_navigation_keeps_audio_playing(page):
 
 def test_back_forward_keeps_playing(page):
     _start(page)
-    _click(page, "header.site nav a:has-text('Music')")
+    _click(page, "#wone-strip a:has-text('ONE Jazz')")
     _click(page, "header.site nav a:has-text('Settings')")
     for step in ("back", "back", "forward"):
         getattr(page, f"go_{step}")()
@@ -85,7 +85,7 @@ def test_failed_fetch_falls_back(page):
 
 
 def test_controls_work_after_swap(page):
-    _click(page, "header.site nav a:has-text('Music')")          # reached by a swap, not a page load
+    _click(page, "#wone-strip a:has-text('ONE Jazz')")          # reached by a swap, not a page load
     page.locator("main .pv").first.click()
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('itunes.apple.com') }", timeout=15000)
     assert "preview" in page.locator("#wone-label").inner_text().lower()

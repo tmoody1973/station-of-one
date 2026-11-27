@@ -45,7 +45,7 @@ def test_titles_are_escaped():
 
 
 def test_feed_served_as_xml_with_short_cache():
-    assert CONTENT_TYPES[".xml"] == "application/rss+xml; charset=utf-8" and cache_control("feed.xml") == "max-age=60"
+    assert CONTENT_TYPES[".xml"] == "application/rss+xml; charset=utf-8" and cache_control("feed.xml") == "private, no-cache"
 
 
 def test_front_page_links_the_feed():

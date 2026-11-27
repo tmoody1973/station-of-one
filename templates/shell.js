@@ -224,7 +224,7 @@
     !(a.hash && a.pathname === location.pathname && a.search === location.search);
   async function go(url, push) {
     try {
-      const r = await fetch(url, { headers: { Accept: "text/html" } });
+      const r = await fetch(url, { headers: { Accept: "text/html" }, cache: "no-cache" });
       if (!r.ok) throw new Error(String(r.status));
       const doc = new DOMParser().parseFromString(await r.text(), "text/html");
       const next = doc.querySelector("main"), here = document.querySelector("main");
