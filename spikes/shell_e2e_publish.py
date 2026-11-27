@@ -42,6 +42,7 @@ for key, html in pages.items():
     print(f"{PREFIX}/{key}")
 put_object(gw, prefs.hosting.bucket, "_checks/shell-e2e/shell.js", Path("templates/shell.js").read_bytes(), "text/javascript", "max-age=0")
 put_object(gw, prefs.hosting.bucket, "_checks/shell-e2e/live.js", Path("templates/live.js").read_bytes(), "text/javascript", "max-age=0")
+put_object(gw, prefs.hosting.bucket, "_checks/shell-e2e/shell.css", Path("templates/_shell.css").read_bytes(), "text/css", "max-age=0")
 strip = stations_json(prefs, n)
 for st in strip["stations"]:
     st["page"] = PREFIX + st["page"]

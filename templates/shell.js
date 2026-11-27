@@ -14,6 +14,12 @@
   const BASE = new URL(".", (document.currentScript && document.currentScript.src) || location.href);
   const MUSICKIT = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
   const msgEl = $("wone-msg");
+  // Pages built before the strip or bar changed carry old styles for them: give those pages the current ones.
+  if (![...document.querySelectorAll("style")].some((n) => n.textContent.includes("wone-shell-css"))) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet"; link.href = new URL("shell.css", BASE).href;
+    document.head.append(link);
+  }
   document.head.querySelectorAll("style").forEach((n) => { n.dataset.wonePage = "1"; });  // the page's own styles, before any script adds one
   let mk = null, mkReady = null, station = null, errors = 0, joining = false;
   let gen = 0, lastStart = 0, rejoinAt = 0;  // gen: a newer tap or sound cancels a tune-in still in progress (review I2)

@@ -1,0 +1,48 @@
+/* wone-shell-css */
+/* site shell: station strip under the masthead, player bar pinned to the bottom of every page */
+.strip{background:var(--ink);color:var(--paper)}
+.strip-row{display:flex;gap:18px;align-items:center;overflow-x:auto;padding-top:8px;padding-bottom:8px;font-size:14px;scrollbar-width:none}
+.strip-row:empty{display:none}
+.strip .onair{flex:none;border:2px solid var(--red);color:var(--red);border-radius:999px;padding:1px 9px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:lowercase}
+.strip .onair::before{content:"● "}
+.strip .st{display:flex;align-items:center;gap:10px;flex:none;max-width:360px;min-width:0}
+.strip .st-name{display:inline-flex;align-items:center;gap:8px;flex:none;background:var(--paper);color:var(--ink);border:0;padding:4px 9px;font:inherit;font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:lowercase;cursor:pointer;text-decoration:none}
+.strip .st-name .tri{font-size:11px}
+.strip .st-name:hover{background:var(--yellow)}
+.strip .st-now{color:var(--paper);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;text-decoration:none}
+.strip .st-now:hover{text-decoration:underline}
+.strip .more{margin-left:auto;flex:none;background:transparent;border:0;color:var(--paper);font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.strip .strip-link{flex:none;color:var(--paper);font-size:13px;border-left:1px solid #5a564d;padding-left:14px}
+.strip-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:28px;padding-top:20px;padding-bottom:26px;border-top:1px solid #3a3833}
+.strip-panel[hidden]{display:none}
+.strip .sp{display:flex;flex-direction:column;gap:6px;color:var(--paper)}
+.strip .sp h3{margin:0;font-size:16px;letter-spacing:.08em;text-transform:lowercase;display:flex;align-items:center;gap:10px}
+.strip .sp .pill{border:1.5px solid var(--red);color:var(--red);border-radius:999px;padding:0 7px;font-size:10px;font-weight:800}
+.strip .sp img{width:64px;height:64px;object-fit:cover;border:2px solid var(--paper)}
+.strip .sp .at{color:var(--yellow);font-family:var(--mono);font-size:13px}
+.strip .sp-title{color:var(--paper);font-weight:800;font-size:17px;text-decoration:none}
+.strip .sp p{margin:0;color:#d9d2bf;font-size:14px;line-height:1.5}
+.strip .sp h4{margin:8px 0 0;font-size:12px;letter-spacing:.12em;text-transform:lowercase;color:#d9d2bf}
+.strip .sp-next{font-size:14px}
+.strip .sp-links{display:flex;gap:14px;font-size:13px;margin-top:6px}.strip .sp-links a{color:var(--paper)}
+.strip .chip{display:flex;flex-direction:column;gap:1px;flex:none;max-width:280px;padding:4px 12px 4px 10px;border:0;border-left:4px solid var(--yellow);background:transparent;color:var(--paper);text-align:left;font:inherit;cursor:pointer;text-decoration:none}
+.strip .chip b{font-size:13px;letter-spacing:.12em;text-transform:lowercase;color:var(--yellow)}
+.strip .chip span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .chip:hover span{text-decoration:underline}
+body{padding-bottom:96px}
+.player{background:var(--ink);color:var(--paper);position:fixed;left:0;right:0;bottom:0;z-index:20;border-top:4px solid var(--yellow)}
+.player .wrap{padding-top:10px;padding-bottom:10px;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.player .play{width:48px;height:48px;border-radius:50%;border:0;background:var(--red);display:flex;align-items:center;justify-content:center;flex:none}
+.player .now{display:flex;flex-direction:column;gap:2px;min-width:180px;flex:1 1 220px}
+.player .now .label{font-size:12px;letter-spacing:.14em;text-transform:lowercase;color:var(--yellow);font-weight:700}
+.player .now .chapter{font-size:15px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player .bar{flex:2 1 200px;height:8px;background:#3a3833;cursor:pointer}
+.player .bar div{width:0;height:8px;background:var(--yellow)}
+.player .time{font-size:13px;color:#d9d2bf;font-family:var(--mono)}
+.player .skip,.player .ctl{background:transparent;border:2px solid var(--paper);color:var(--paper);padding:6px 10px;font-size:13px;font-weight:700}
+.player .station-only{display:none}.player.station .station-only{display:inline-block}.player.station .skip{display:none}
+.player .now .msg{font-size:13px;color:var(--yellow)}
+.player .embed{flex-basis:100%}
+.player .embed iframe{width:100%;border:0;display:block}
+@media (max-width:640px){body{padding-bottom:132px}.player .skip{display:none}.player .bar{order:5;flex-basis:100%}}
+/* /wone-shell-css */

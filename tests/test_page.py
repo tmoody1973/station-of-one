@@ -82,7 +82,7 @@ def test_page_writes_front_and_hour_files(tmp_path):
         (runs / h / "newscast.json").write_text(json.dumps(newscast(h)))
     written = page(runs / "2026-11-26T17", PREFS, runs_root=runs)
     names = sorted(str(p.relative_to(runs / "2026-11-26T17" / "site")) for p in written)
-    assert names == ["data/stations.json", "feed.xml", "h/2026-11-26/1700/index.html", "index.html", "live.js", "shell.js"]
+    assert names == ["data/stations.json", "feed.xml", "h/2026-11-26/1700/index.html", "index.html", "live.js", "shell.css", "shell.js"]
 
 
 def test_only_http_links_render():  # scraped URLs are untrusted
@@ -129,3 +129,13 @@ def test_no_token_no_musickit_json(tmp_path):
 def test_token_file_is_git_ignored():
     import subprocess
     assert subprocess.run(["git", "check-ignore", "-q", "data/musickit_token"]).returncode == 0
+
+
+def test_shell_css_published_and_still_inline(tmp_path):  # older pages get the strip/bar styles from /shell.css
+    runs = tmp_path / "runs"
+    (runs / "2026-11-26T17").mkdir(parents=True)
+    (runs / "2026-11-26T17" / "newscast.json").write_text(json.dumps(newscast("2026-11-26T17")))
+    written = page(runs / "2026-11-26T17", PREFS, runs_root=runs)
+    css = runs / "2026-11-26T17" / "site" / "shell.css"
+    assert css in written and ".strip .st-name" in css.read_text() and ".player.station" in css.read_text()
+    assert ".strip .st-name" in (runs / "2026-11-26T17" / "site" / "index.html").read_text()   # new pages still carry it inline
