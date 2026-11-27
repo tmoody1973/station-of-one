@@ -59,6 +59,7 @@ def test_apple_refusal_keeps_last_page(db, tmp_path, monkeypatch):  # Review Foc
                                                                  item.published_at, item.excerpt, now.isoformat()))
         return [item], []
     monkeypatch.setattr(run_mod, "poll", fake_poll)
+    monkeypatch.setattr(run_mod, "seed_candidates", lambda gw, st, d, now: ([], []))
     monkeypatch.setattr(run_mod, "extract", lambda gw, m, items: ({"fi1": [Extracted("track", "Nubya Garcia", "Odyssey", "", "", 2024, "")]}, []))
     monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: ({c[0][0]: 0.9}, {c[0][0]: {"type": "noul", "noul": 0.9}}, "jev"))
 
@@ -76,3 +77,16 @@ def test_build_runs_radio_after_finish():
     from station.manager import FALLBACKS, SKIP_MEANS
     assert STEPS[STEPS.index("finish") + 1] == "radio"
     assert FALLBACKS["radio"] == ["retry", "skip"] and "newscast" in SKIP_MEANS["radio"]
+
+
+def test_seed_tracks_are_fit_scored_with_feed_finds(db, tmp_path, monkeypatch):
+    seed_item = FeedItem("seed1", "the station's seed list", "seed:Ezra Collective", "Ezra Collective, a core artist", "", "", "brief")
+    seed = ("sc1", Extracted("track", "Ezra Collective", "Victory Dance", "", "", 2022, ""), seed_item)
+    monkeypatch.setattr(run_mod, "poll", lambda gw, st, d, now: ([], []))
+    monkeypatch.setattr(run_mod, "extract", lambda gw, m, items: ({}, []))
+    monkeypatch.setattr(run_mod, "seed_candidates", lambda gw, st, d, now: ([seed], []))
+    seen = []
+    monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: (seen.extend(x[0] for x in c), ({}, {}, None))[1])
+    monkeypatch.setattr(run_mod, "put_object", lambda *a, **k: None)
+    run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
+    assert seen == ["sc1"]
