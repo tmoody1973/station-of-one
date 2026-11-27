@@ -1,0 +1,223 @@
+{
+  "id": "rhythm-lab",
+  "name": "Rhythm Lab",
+  "type": "flagship",
+  "brief": "Rhythm Lab: beats, soul, jazz and electronic music from the Rhythm Lab Radio library, new and old, sequenced like the show",
+  "feeds": [
+    {
+      "type": "rss",
+      "ref": "https://daily.bandcamp.com/feed"
+    },
+    {
+      "type": "rss",
+      "ref": "https://www.stonesthrow.com/feed/"
+    },
+    {
+      "type": "rss",
+      "ref": "https://www.brownswoodrecordings.com/feed"
+    },
+    {
+      "type": "rss",
+      "ref": "https://djmag.com/feed"
+    },
+    {
+      "type": "rss",
+      "ref": "https://thequietus.com/feed/"
+    }
+  ],
+  "seeds": {
+    "artists": [
+      "Machinedrum",
+      "Flying Lotus",
+      "Little Dragon",
+      "Outkast",
+      "TOKiMONSTA",
+      "Kendrick Lamar",
+      "James Blake",
+      "Sault",
+      "Little Simz",
+      "Emma-Jean Thackray",
+      "Kaytranada",
+      "Swindle",
+      "BADBADNOTGOOD",
+      "Toro Y Moi",
+      "The Internet",
+      "Hiatus Kaiyote",
+      "Anderson .Paak",
+      "Cleo Sol",
+      "GoldLink",
+      "Thundercat",
+      "Mount Kimbie",
+      "Kelis",
+      "Disclosure",
+      "Massive Attack",
+      "Kassa Overall",
+      "SBTRKT",
+      "Kadhja Bonet",
+      "Danny Brown",
+      "Prince",
+      "Georgia Anne Muldrow",
+      "Bonobo",
+      "The Cinematic Orchestra",
+      "Gabriel Garzon-Montano",
+      "Electric Wire Hustle",
+      "Werkha",
+      "Soil & Pimp Sessions",
+      "Sly5thAve",
+      "Rosie Lowe",
+      "Makaya McCraven",
+      "Madison McFerrin"
+    ],
+    "labels": [
+      "Stones Throw",
+      "Brownswood Recordings",
+      "Ninja Tune",
+      "Brainfeeder",
+      "Warp"
+    ]
+  },
+  "era_mix": {
+    "new": 0.3,
+    "recent": 0.3,
+    "older": 0.4
+  },
+  "flow": {
+    "artist_gap_hours": 3,
+    "block_minutes": 50
+  },
+  "talk": {
+    "every": 3,
+    "seconds": [
+      20,
+      30
+    ]
+  },
+  "voice": {
+    "name": "Sulafat",
+    "style": "warm, curious, a crate-digger talking between records"
+  },
+  "news": true,
+  "storefront": "us",
+  "apple_connection": "YlFQlsDQx9sk2cz9TI82Ng",
+  "rotation": [
+    {
+      "code": "P",
+      "name": "Power Gold",
+      "size": 160,
+      "rest_hours": 20
+    },
+    {
+      "code": "M",
+      "name": "Rotation",
+      "size": 900,
+      "rest_hours": 72
+    },
+    {
+      "code": "R",
+      "name": "Repeat, recent",
+      "size": 700,
+      "rest_hours": 120
+    },
+    {
+      "code": "G",
+      "name": "Library",
+      "size": 2000,
+      "rest_hours": 240
+    },
+    {
+      "code": "N",
+      "name": "New",
+      "size": 30,
+      "rest_hours": 6
+    }
+  ],
+  "clocks": [
+    {
+      "name": "day",
+      "from_hour": 7,
+      "to_hour": 18,
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news"
+          ]
+        ],
+        [
+          5,
+          [
+            "P",
+            "G",
+            "M",
+            "break",
+            "N",
+            "R",
+            "P"
+          ]
+        ],
+        [
+          30,
+          [
+            "id_tease",
+            "G",
+            "N",
+            "break",
+            "M",
+            "R",
+            "M"
+          ]
+        ],
+        [
+          55,
+          [
+            "backsell"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "overnight",
+      "from_hour": 19,
+      "to_hour": 6,
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "G",
+            "P",
+            "G",
+            "R",
+            "break",
+            "G",
+            "M"
+          ]
+        ],
+        [
+          30,
+          [
+            "id",
+            "G",
+            "R",
+            "G",
+            "break",
+            "M",
+            "G"
+          ]
+        ],
+        [
+          55,
+          [
+            "backsell"
+          ]
+        ]
+      ]
+    }
+  ],
+  "separation": {
+    "artist_hours": 3,
+    "long_ms": 420000,
+    "max_energy_step": 1
+  }
+}

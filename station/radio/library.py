@@ -88,4 +88,21 @@ def match_library(gw, conn: str, storefront: str, db: sqlite3.Connection, min_pl
     return counts
 
 
-__all__ = ["import_tracks", "to_match", "match_library", "AppleRefused"]
+REPORT_FIELDS = ("track_id", "artist", "title", "version", "play_count", "tier", "match_status", "matched_artist",
+                 "matched_title", "match_confidence")
+
+
+def held_report(db: sqlite3.Connection, path: Path) -> int:
+    """Tracks the station can't program yet (held: a doubtful match; not_on_apple), for Tarik to check by hand.
+    Private: written to the Sprite's data/ only, never published or committed."""
+    rows = db.execute(f"SELECT {', '.join(REPORT_FIELDS)} FROM library_tracks WHERE match_status IN ('held', 'not_on_apple') "
+                      "AND in_segment = 0 ORDER BY play_count DESC, track_id").fetchall()
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(REPORT_FIELDS)
+        w.writerows(rows)
+    return len(rows)
+
+
+__all__ = ["import_tracks", "to_match", "match_library", "held_report", "AppleRefused"]
