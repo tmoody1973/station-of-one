@@ -70,7 +70,8 @@ class StationConfig:
     rotation: Rotation = Rotation(())
     clocks: tuple[Clock, ...] = ()
     separation: dict[str, Any] | None = None
-    meeting: dict[str, Any] | None = None  # the station's ladder: new, catalog, top, up, burn, age, down
+    meeting: dict[str, Any] | None = None
+    shape: dict[str, Any] | None = None  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
 
     def clock_for(self, local_hour: int) -> Clock:
         return next(c for c in self.clocks if c.covers(local_hour))
@@ -85,7 +86,7 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
                          rotation=Rotation(tuple(Category(c["code"], c["name"], c["size"], c["rest_hours"]) for c in d.get("rotation", []))),
                          clocks=tuple(Clock(c["name"], c["from_hour"], c["to_hour"],
                                             tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
-                         separation=d.get("separation"), meeting=d.get("meeting"))
+                         separation=d.get("separation"), meeting=d.get("meeting"), shape=d.get("shape"))
 
 
 SCHEMA = """
@@ -102,7 +103,7 @@ CREATE TABLE IF NOT EXISTS station_candidates (
   PRIMARY KEY (station_id, candidate_id));
 CREATE TABLE IF NOT EXISTS rotation (
   station_id TEXT, candidate_id TEXT, category TEXT, energy INTEGER, vocal INTEGER, added_at TEXT, moved_at TEXT,
-  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT,
+  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT, tags TEXT,
   PRIMARY KEY (station_id, candidate_id));
 CREATE TABLE IF NOT EXISTS queue (
   station_id TEXT, starts_at TEXT, kind TEXT, candidate_id TEXT, song_id TEXT, duration_ms INTEGER, category TEXT,

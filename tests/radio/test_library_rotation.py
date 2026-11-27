@@ -80,3 +80,10 @@ def test_reseeding_keeps_the_meetings_moves():
     db.execute("UPDATE rotation SET category = 'R', moved_at = '2026-12-01' WHERE candidate_id = 'lib:t1'")  # burned out
     seed_rotation(db, st)
     assert rot(db)["lib:t1"][0] == "R"
+
+
+def test_seed_rotation_carries_holiday_tags():
+    db = lib({"track_id": "t1", "special_tags": "holiday;best_of_year_2014"}, {"track_id": "t2"})
+    seed_rotation(db, load_station("rhythm-lab"))
+    tags = dict(db.execute("SELECT candidate_id, tags FROM rotation"))
+    assert "holiday" in tags["lib:t1"] and not tags["lib:t2"]

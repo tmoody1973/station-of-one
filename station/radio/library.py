@@ -120,12 +120,12 @@ def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
     Safe to run again: existing rows keep their plays and last-played time."""
     rows = db.execute("SELECT track_id, tier, first_played, last_played, hour1_plays, hour2_plays, opener_count, closer_count, "
                       "apple_music_id, isrc, match_confidence, apple_url, preview_url, artwork_url, duration_ms, release_date, "
-                      "matched_artist, matched_title, matched_album, version FROM library_tracks "
+                      "matched_artist, matched_title, matched_album, version, special_tags FROM library_tracks "
                       "WHERE match_status = 'resolved' AND in_segment = 0").fetchall()
     counts: dict[str, int] = {}
     now = datetime.now(UTC).isoformat()
     for (tid, tier, first, last, h1, h2, opens, closes, song_id, isrc, conf, apple_url, preview, art, dur, released,
-         artist, title, album, version) in rows:
+         artist, title, album, version, tags) in rows:
         cid = f"lib:{tid}"
         db.execute("INSERT INTO candidates (id, kind, artist, title, version, status, song_id, match_confidence, apple_url, "
                    "preview_url, artwork_url, duration_ms, isrc, release_date, album, matched_artist, matched_title, resolved_at) "
@@ -135,10 +135,11 @@ def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
                    (cid, artist, title, version or "", song_id, conf, apple_url, preview, art, dur, isrc, released, album,
                     artist, title, now))
         cat = _category(tier, last)  # the starting category only: once a song is in, the music meeting owns it
-        db.execute("INSERT INTO rotation (station_id, candidate_id, category, energy, added_at, opener, closer, source_note) "
-                   "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(station_id, candidate_id) DO UPDATE SET "
-                   "energy = excluded.energy, opener = excluded.opener, closer = excluded.closer, source_note = excluded.source_note",
-                   (station.id, cid, cat, library_energy(h1, h2), now, int((opens or 0) > 0), int((closes or 0) > 0), _note(first)))
+        db.execute("INSERT INTO rotation (station_id, candidate_id, category, energy, added_at, opener, closer, source_note, tags) "
+                   "VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(station_id, candidate_id) DO UPDATE SET energy = excluded.energy, "
+                   "opener = excluded.opener, closer = excluded.closer, source_note = excluded.source_note, tags = excluded.tags",
+                   (station.id, cid, cat, library_energy(h1, h2), now, int((opens or 0) > 0), int((closes or 0) > 0), _note(first),
+                    tags or ""))
         counts[cat] = counts.get(cat, 0) + 1
     db.commit()
     return counts

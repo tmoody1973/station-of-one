@@ -14,11 +14,13 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 from station.radio.model import StationConfig, normalize
+from station.radio.pairs import pair_bonus
 from station.radio.program import era
 
 SPOKEN_MS = {"id": 8000, "id_tease": 12000, "break": 25000, "backsell": 30000}
 FIXED_MINUTES = (0, 30)  # :00 and :30 start on time; other clock segments follow on (no dead air after the news)
-NEW_DAYS = 7  # "N" on a station without an N category: a C song added in the last 7 days
+NEW_DAYS = 7
+LAST_SONG_MS = 240000  # a song that leaves less room than this is probably the block's last: it prefers a closer  # "N" on a station without an N category: a C song added in the last 7 days
 
 
 @dataclass(frozen=True)
@@ -36,12 +38,14 @@ class QueueItem:
 def _songs(db: sqlite3.Connection, station_id: str) -> list[dict]:
     rows = db.execute(
         "SELECT ro.candidate_id, ro.category, COALESCE(ro.energy, 2), ro.vocal, ro.last_played_at, ro.added_at, c.song_id, "
-        "c.duration_ms, COALESCE(c.matched_artist, c.artist), c.release_date, ro.source_note, fi.feed, fi.title, fi.link "
+        "c.duration_ms, COALESCE(c.matched_artist, c.artist), c.release_date, ro.source_note, fi.feed, fi.title, fi.link, "
+        "COALESCE(ro.opener, 0), COALESCE(ro.closer, 0), COALESCE(ro.tags, '') "
         "FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id LEFT JOIN feed_items fi ON fi.id = c.feed_item_id "
         "WHERE ro.station_id = ? AND c.duration_ms > 0 AND c.song_id IS NOT NULL ORDER BY ro.candidate_id", (station_id,)).fetchall()
     return [{"id": r[0], "category": r[1], "energy": r[2], "vocal": r[3], "last_played": r[4], "added_at": r[5],
              "song_id": r[6], "duration_ms": r[7], "artist": normalize(r[8]), "released": r[9],
-             "note": r[10] or (f"Found in {r[11]}: {r[12]}" if r[11] else ""), "source_url": "" if r[10] else (r[13] or "")}
+             "note": r[10] or (f"Found in {r[11]}: {r[12]}" if r[11] else ""), "source_url": "" if r[10] else (r[13] or ""),
+             "opener": r[14], "closer": r[15], "tags": r[16]}
             for r in rows]
 
 
@@ -74,6 +78,7 @@ class _Hour:
         self.prev = {"id": prev[0], "duration_ms": prev[1], "energy": prev[2], "vocal": prev[3], "released": prev[4]} if prev else None
         self.adjacent = False  # was the previous item a song (for "no two long songs back to back")
         self.played: dict[str, datetime] = {}
+        self.db = db
 
     def allowed(self, s: dict, at: datetime, category_rest: str) -> bool:
         last = self.played.get(s["id"]) or (datetime.fromisoformat(s["last_played"]) if s["last_played"] else None)
@@ -88,13 +93,19 @@ class _Hour:
                 return False
         return True
 
-    def soft(self, s: dict, today) -> int:
-        """Higher is better. Vocal balance outweighs era alternation, so era gives way first."""
+    def soft(self, s: dict, today, ctx: dict) -> tuple:
+        """Soft rules as a ranking, most important first; the last ones give way first:
+        opener/closer slot, holiday slot, energy for the half hour, a pairing Tarik played, vocal balance, era alternation."""
+        role = s["opener"] if ctx["first"] else s["closer"] if ctx["room"] - s["duration_ms"] < LAST_SONG_MS else 0
+        holiday = int(bool(ctx["holiday"]) and ctx["holiday"] in s["tags"].split(";"))
+        band = ctx["band"]
+        in_band = int(not band or band[0] <= s["energy"] <= band[1])
+        pair = pair_bonus(self.db, self.prev["id"], s["id"]) if self.prev else 0.0
         if not self.prev:
-            return 0
-        vocal = 2 if s["vocal"] is None or self.prev["vocal"] is None or s["vocal"] != self.prev["vocal"] else 0
-        eras = 1 if era(s["released"], today) != era(self.prev["released"], today) else 0
-        return vocal + eras
+            return (role, holiday, in_band, pair, 0, 0)
+        vocal = int(s["vocal"] is None or self.prev["vocal"] is None or s["vocal"] != self.prev["vocal"])
+        eras = int(era(s["released"], today) != era(self.prev["released"], today))
+        return (role, holiday, in_band, pair, vocal, eras)
 
     def take(self, s: dict, at: datetime) -> None:
         self.artists.append((at, s["artist"]))
@@ -124,6 +135,10 @@ def schedule_hour(station: StationConfig, db: sqlite3.Connection, hour_start_loc
     songs = _songs(db, station.id)
     codes = [c.code for c in station.rotation.categories]
     rules = _Hour(station, db, start)
+    shape = station.shape or {}
+    holiday = shape.get("holiday") or {}
+    in_season = bool(holiday) and holiday["from"] <= hour_start_local.strftime("%m-%d") <= holiday["to"]
+    first_song = True
     used: set[str] = set()
     items: list[QueueItem] = []
     segments: list[tuple[int, tuple[str, ...]]] = []
@@ -152,17 +167,21 @@ def schedule_hour(station: StationConfig, db: sqlite3.Connection, hour_start_loc
                 continue
             reserve = sum(news_ms if s == "news" else SPOKEN_MS.get(s, 0) for s in slots[k + 1:])
             room = (seg_end - cursor).total_seconds() * 1000 - reserve
+            half = "first_half" if cursor < start + timedelta(minutes=30) else "second_half"
+            ctx = {"first": first_song, "room": room, "band": (shape.get("energy") or {}).get(half),
+                   "holiday": holiday.get("tag") if in_season and minute == 30 and not any(i.kind == "song" for i in seg_items) else None}
             pick = None
             for cat, pool in _pool(songs, slot, codes, cursor):
                 fits = [s for s in pool if s["id"] not in used and s["duration_ms"] <= room
                         and rules.allowed(s, cursor, s["category"])]
                 if fits:
-                    rested_first = sorted(fits, key=lambda s: (-rules.soft(s, cursor.date()), s["last_played"] or "", s["id"]))
-                    pick = (cat, rested_first[0])
+                    best = min(fits, key=lambda s: (tuple(-x for x in rules.soft(s, cursor.date(), ctx)), s["last_played"] or "", s["id"]))
+                    pick = (cat, best)
                     break
             if not pick:
                 continue  # nothing eligible fits: the time goes to the break
             cat, s = pick
+            first_song = False
             used.add(s["id"])
             rules.take(s, cursor)
             seg_items.append(QueueItem(cursor.isoformat(), "song", s["id"], s["song_id"], s["duration_ms"], cat, s["note"], s["source_url"]))
