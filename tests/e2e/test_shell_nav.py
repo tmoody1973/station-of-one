@@ -188,3 +188,26 @@ def test_swap_keeps_styles_added_by_scripts(page):  # MusicKit adds its own <sty
     page.evaluate("() => { const s = document.createElement('style'); s.id = 'injected'; s.textContent = '.x{color:red}'; document.head.append(s); }")
     _click(page, "header.site nav a:has-text('Settings')")
     assert page.evaluate("() => !!document.getElementById('injected')")
+
+
+def test_older_page_without_the_new_strip_loads_fresh(page):  # review I1: its old styles would restyle the bar and strip
+    def old(route):
+        html = route.fetch().text().replace('<div class="wrap strip-panel" hidden></div>', "")
+        route.fulfill(body=html, headers={"content-type": "text/html"})
+    page.route("**/_checks/shell-e2e/settings/index.html", old)
+    _click_nav = page.locator("header.site nav a:has-text('Settings')").first
+    _click_nav.click()
+    page.wait_for_url("**/settings/index.html", timeout=10000)
+    page.wait_for_load_state("load")
+    assert page.evaluate("() => window.__marker") is None      # a full load: the page looks as it was built
+
+
+def test_strip_keeps_its_buttons_between_redraws(page):  # review I2: no lost taps, focus stays put
+    page.wait_for_selector("#wone-strip [data-strip-more]", timeout=10000)
+    page.evaluate("() => { document.querySelector('#wone-strip [data-strip-more]').__kept = 1; document.dispatchEvent(new CustomEvent('wone:song')); }")
+    assert page.evaluate("() => document.querySelector('#wone-strip [data-strip-more]').__kept") == 1
+    page.locator("#wone-strip [data-strip-more]").focus()
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(300)
+    assert page.evaluate("() => document.activeElement && document.activeElement.hasAttribute('data-strip-more')")
+    assert page.locator("#wone-strip .strip-panel").is_visible()

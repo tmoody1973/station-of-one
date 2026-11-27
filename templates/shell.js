@@ -147,7 +147,7 @@
     if (!station || !song || id === shownSong) return;
     shownSong = id;
     errors = 0;
-    nowEl.textContent = [song.title, song.artistName].filter(Boolean).join(" · ");
+    nowEl.textContent = [song.artistName, song.title].filter(Boolean).join(" · ");  // Artist · Title, as in the strip
     document.dispatchEvent(new CustomEvent("wone:song"));  // the strip and the station page follow what plays
   }
   setInterval(() => {  // the station's clock, progress and end of queue
@@ -240,7 +240,8 @@
       const doc = new DOMParser().parseFromString(await r.text(), "text/html");
       const next = doc.querySelector("main"), here = document.querySelector("main");
       const nextBar = doc.getElementById("wone-player");
-      if (!next || !here || !nextBar) throw new Error("not a shell page");  // e.g. an archive page built before the shell
+      if (!next || !here || !nextBar) throw new Error("not a shell page");
+      if (!doc.querySelector(".strip-panel")) throw new Error("older page");  // its old styles would restyle the bar and strip  // e.g. an archive page built before the shell
       root.dataset.default = nextBar.dataset.default || "{}";  // the bar's ▶ plays this page's own audio
       if (!item) label.textContent = JSON.parse(root.dataset.default).label || "ONE 1.0 FM";
       // Each page carries its own layout rules in <style>: swap them with the content, or the new content is drawn
@@ -274,7 +275,7 @@
   // schedule by the clock, or from the player's own song while this browser plays it, so the strip always names
   // what you hear. Text only: titles come from feeds and Apple, so nothing here is inserted as HTML.
   const stripEl = document.getElementById("wone-strip");
-  let stripData = null, panelOpen = false;
+  let stripData = null, panelOpen = false, stripSig = "";
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
   const songLine = (s) => [s.artist, s.title].filter(Boolean).join(" · ");
   function stationNow(st) {
@@ -299,6 +300,9 @@
     if (!row || !stripData) return;
     let panel = stripEl.querySelector(".strip-panel");
     if (!panel) { panel = el("div", "wrap strip-panel"); stripEl.append(panel); }  // pages built before this change
+    const sig = JSON.stringify((stripData.stations || []).map((st) => [st.id, st.name, st.page, st.play && st.play.src, stationNow(st)]));
+    if (sig === stripSig && row.childElementCount) return;  // nothing changed: keep the buttons (and any tap or focus on them)
+    stripSig = sig;
     const items = [el("span", "onair", "on air")], cols = [];
     let schedulePage = null;
     for (const st of stripData.stations || []) {
@@ -351,9 +355,13 @@
     } catch (err) { /* the strip is a nicety: a failed read leaves the page as it is */ }
   }
   document.addEventListener("click", (e) => {
-    if (!e.target.closest("[data-strip-more]")) return;
-    panelOpen = !panelOpen;
-    renderStrip();
+    const more = e.target.closest("[data-strip-more]");
+    if (!more) return;
+    panelOpen = !panelOpen;  // toggle in place: focus stays on the button
+    more.textContent = panelOpen ? "▴ Less station info" : "▾ More station info";
+    more.setAttribute("aria-expanded", String(panelOpen));
+    const panel = stripEl.querySelector(".strip-panel");
+    if (panel) panel.hidden = !panelOpen;
   });
   document.addEventListener("wone:song", () => renderStrip());
   drawStrip();

@@ -259,3 +259,9 @@ def test_label_follows_the_song_even_without_an_event(make_page):  # Tarik, 5:04
     pg.wait_for_function("() => document.getElementById('wone-now').textContent.includes('Song s1')", timeout=5000)
     pg.evaluate("() => { MusicKit.getInstance().idx += 1 }")      # Apple moved on to the next song, and said nothing
     pg.wait_for_function("() => document.getElementById('wone-now').textContent.includes('Song s2')", timeout=3000)
+
+
+def test_bar_and_strip_name_songs_the_same_way(make_page):  # one order everywhere: Artist · Title
+    pg = make_page()
+    tune(pg)
+    pg.wait_for_function("() => document.getElementById('wone-now').textContent === 'Artist s1 · Song s1'", timeout=5000)

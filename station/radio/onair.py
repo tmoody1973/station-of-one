@@ -116,7 +116,6 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
         it["ends_at"] = (start_dt + timedelta(milliseconds=it["duration_ms"] or 0)).isoformat()
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
-    upcoming = [s for s in songs if s["starts_at"] > now.isoformat() and s["starts_at"] < (now + timedelta(hours=1)).isoformat()]
     counts["scheduled"] = len([s for s in songs if s["starts_at"] > now.isoformat()])
 
     out = Path(out_root) / station.id
