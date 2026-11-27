@@ -86,3 +86,16 @@ def test_deluxe_edition_is_not_an_edit():  # review I4
     assert match_score(probe, {"artistName": "Nubya Garcia", "name": "Odyssey (Deluxe Edition)", "albumName": "Odyssey (Deluxe Edition)"}) >= MATCH_MIN
     assert match_score(want(), {"artistName": "Nubya Garcia", "name": "Solstice (Radio Edit)"}) < MATCH_MIN
     assert match_score(want(), {"artistName": "Nubya Garcia", "name": "Solstice (Remastered 2025)"}) < MATCH_MIN
+
+
+def test_requested_remix_missing_is_held_not_swapped():  # Rhythm Lab: the remix is the record
+    w = Extracted("track", "Little Dragon", "Klapp Klapp", "", "", None, "Swindle Remix")
+    assert match_score(w, {"artistName": "Little Dragon", "name": "Klapp Klapp"}) < MATCH_MIN
+    assert match_score(w, {"artistName": "Little Dragon", "name": "Klapp Klapp (Swindle Remix)"}) >= MATCH_MIN
+
+
+def test_dj_mix_versions_lose():
+    w = Extracted("track", "Kelis", "Runnin'", "", "", None, "Machinedrum Remix")
+    mixed = match_score(w, {"artistName": "Kelis", "name": "Runnin' (Machinedrum Remix) [Mixed]"})
+    plain = match_score(w, {"artistName": "Kelis", "name": "Runnin' (Machinedrum Remix)"})
+    assert plain > mixed and mixed < MATCH_MIN
