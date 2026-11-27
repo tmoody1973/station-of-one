@@ -92,6 +92,15 @@ def _resolve_some(gw, station, db, now: datetime, counts: dict, notes: list[str]
         db.commit()
 
 
+def _upload_strip(gw, prefs: Prefs, radio_root: Path) -> None:
+    from station.runs import RUNS_ROOT
+    from station.steps.stations import stations_json
+    latest = sorted(Path(RUNS_ROOT).glob("*T??/newscast.json"))
+    newscast = json.loads(latest[-1].read_text()) if latest else None
+    put_object(gw, prefs.hosting.bucket, "data/stations.json", json.dumps(stations_json(prefs, newscast, radio_root)).encode(),
+               "application/json", cache_control("data/stations.json"))
+
+
 def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, prefs: Prefs, out_root: Path = OUT_ROOT) -> dict:
     station = load_station(station_id)
     open_radio(db)
@@ -135,4 +144,8 @@ def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, pref
         put_object(gw, prefs.hosting.bucket, key, body, ctype, cache_control(key))
     mark_scheduled(db, block, now)  # only after the upload: a failed upload burns nothing
     counts["scheduled"] = len(block.tracks)
+    try:  # the strip is a nicety: its failure never fails the set
+        _upload_strip(gw, prefs, Path(out_root))
+    except Exception as e:  # noqa: BLE001
+        notes.append(f"station strip not updated: {e}")
     return counts

@@ -41,7 +41,18 @@ The same agent programs music stations heard through each listener's own Apple M
 4. matches the finds on Apple Music (matches under 80% confidence are held; originals beat remasters and live takes);
 5. programs a 50-minute set (no artist twice in 3 hours, a mix of new, recent and older records).
 
-The sampler page (https://patient-mountain-3400.fly.storage.tigris.dev/radio/uk-jazz/index.html) shows the set: each track's note and source link, Apple's 30-second preview (plays only when tapped, never advancing on its own) and a "Listen on Apple Music" link. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: a persistent player across the site, voice breaks with cited facts, and full songs through MusicKit.
+The sampler page (https://patient-mountain-3400.fly.storage.tigris.dev/radio/uk-jazz/index.html) shows the set: each track's note and source link, Apple's 30-second preview (plays only when tapped, never advancing on its own) and a "Listen on Apple Music" link. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: voice breaks with cited facts, and full songs through MusicKit.
+
+## How the site plays
+
+Every page shares one player bar, pinned to the bottom, and one strip of stations under the masthead (`templates/_player.html`, `templates/_masthead.html`, `templates/shell.js`).
+
+1. Every ▶ on the site says what it plays in a `data-play` attribute: the file, the title, where to start, and its chapters. The newscast, a story's Listen button, The Table's chapters, music picks and 30-second previews all play through the same bar.
+2. When you follow a link to another page of the site, `shell.js` fetches that page and swaps in only its main content. The bar, the masthead and the strip never reload, so the audio keeps playing, including through Back and Forward. Anything unusual (another site, the RSS feed, a download, a failed fetch) is an ordinary page load.
+3. The strip reads `/data/stations.json` every minute: News with the latest newscast, and each music station with what is on now. The page step writes it each hour; the radio step rewrites it after each new set.
+4. A music pick's page keeps its big player on the page; "Keep it playing as you browse" docks it in the bar instead.
+
+Nothing plays until you tap. Why the main-content swap and not a library such as Turbo: `docs/decisions/010-persistent-player.md` (check 19).
 
 ## Connectors (Sprites connector gateway)
 

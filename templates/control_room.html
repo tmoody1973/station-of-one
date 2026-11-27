@@ -43,14 +43,12 @@ h2{margin:0;font-size:22px;text-transform:lowercase}
 </style>
 </head>
 <body>
-<header class="site"><div class="wrap">
-  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a><span class="line">Control room</span></div>
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+{% set masthead_line = "Control room" %}{% include "_masthead.html" %}
+<main class="wrap">
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span class="badge">Built · {{ n.hour_label }} newscast</span>
     <span class="mono muted" style="font-size:14px">started {{ started }} · build {{ total }}</span>
   </div>
-</div></header>
-<main class="wrap">
 <section class="tiles">
   <div class="tile"><span class="l">Posts read this hour</span><span class="v">{{ n.counts.posts_read_hour | thousands }}</span><span class="muted">{{ n.counts.posts_read_today | thousands }} today</span></div>
   <div class="tile"><span class="l">Jev decisions</span><span class="v">{{ decisions_count | thousands }}</span><span class="muted">5 questions per post</span></div>
@@ -89,5 +87,6 @@ h2{margin:0;font-size:22px;text-transform:lowercase}
 </section>
 <p class="muted" style="margin:0;font-size:13px">Jev makes every editorial call. Code applies the thresholds. Posts dropped for privacy are never shown.</p>
 </main>
+{% set player_default = {} %}{% include "_player.html" %}
 </body>
 </html>

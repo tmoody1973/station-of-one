@@ -56,7 +56,7 @@ def test_page_shows_rulings_and_sources():
     html = render_table(EPISODE, PREFS)
     assert "79%" in html and "68%" in html and 'href="https://news.ycombinator.com/item?id=11"' in html
     assert "&lt;b&gt;A&lt;/b&gt;" in html and "ONE 1.0" in html and "synthetic" in html.lower()
-    assert "The Anchor takes it" in html and "Anchor 1" in html and 'src="/audio/table-2026-11-26-abc12345.mp3"' in html
+    assert "The Anchor takes it" in html and "Anchor 1" in html and '"src": "/audio/table-2026-11-26-abc12345.mp3"' in html
 
 
 def test_feed_keeps_table_episodes():

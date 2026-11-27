@@ -40,7 +40,7 @@ def test_story_page_has_article_sources_and_labels():
     assert "First paragraph." in html and 'href="https://ex.com/a"' in html
     assert "likely to matter in a week" in html and "Voices are synthetic" in html
     assert '<meta property="og:image" content="https://ex.com/p.jpg">' in html
-    assert 'src="/audio/2026-11-27T10-abcd1234.mp3"' in html and 'data-start-ms="9000"' in html
+    assert '"src": "/audio/2026-11-27T10-abcd1234.mp3"' in html and '"start": 9.0' in html
     assert "Story 2 headline" in html  # more from this hour
 
 

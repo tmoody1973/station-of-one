@@ -327,15 +327,19 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
         mp.parent.mkdir(parents=True, exist_ok=True)
         mp.write_text(render_pick(picks, pk, prefs))
         story_pages.append(mp)
-    player = site / "player.js"
-    player.write_text((TEMPLATES / "player.js").read_text())
+    player = site / "shell.js"  # the site shell: one player for every page (decision 010)
+    player.write_text((TEMPLATES / "shell.js").read_text())
+    from station.steps.stations import stations_json
+    strip = site / "data" / "stations.json"  # the station strip's data
+    strip.parent.mkdir(parents=True, exist_ok=True)
+    strip.write_text(json.dumps(stations_json(prefs, current)))
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
     feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0, episodes))
     for asset in ("cover-one.png", "logo-one.png"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
-    written = [front, hour, player, feed, *story_pages]
+    written = [front, hour, player, strip, feed, *story_pages]
     if control_room and (run / "run_log.json").exists() and (run / "rundown.json").exists():
         written += write_control_room(run, prefs, current)
     if beat_counts is not None:

@@ -25,7 +25,7 @@ def test_pages_and_feed_use_the_key():
     n = newscast()
     n["audio"]["key"] = "audio/2026-11-26T17-abc12345.mp3"
     assert audio_path(n) == "/audio/2026-11-26T17-abc12345.mp3"
-    assert 'src="/audio/2026-11-26T17-abc12345.mp3"' in render_front(n, [n], PREFS)
+    assert "/audio/2026-11-26T17-abc12345.mp3" in render_front(n, [n], PREFS)  # inside the player's data-play
     assert "/audio/2026-11-26T17-abc12345.mp3" in render_feed(n, PREFS, 1)
 
 
