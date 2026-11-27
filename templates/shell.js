@@ -40,7 +40,8 @@
         const go = () => { audio.currentTime = Number(next.start) || 0; };
         audio.readyState ? go() : audio.addEventListener("loadedmetadata", go, { once: true });
       }
-    } else if (!item) {
+    } else if (!item || item.kind === "embed") {  // a docked video gives way: one thing plays at a time
+      embed.replaceChildren(); embed.hidden = true; item = null;
       const d = JSON.parse(root.dataset.default || "{}");
       return d.src ? play(d) : undefined;  // the page's own newscast, from #t= if given
     }
@@ -91,7 +92,10 @@
       if (!r.ok) throw new Error(String(r.status));
       const doc = new DOMParser().parseFromString(await r.text(), "text/html");
       const next = doc.querySelector("main"), here = document.querySelector("main");
-      if (!next || !here) throw new Error("no main");
+      const nextBar = doc.getElementById("wone-player");
+      if (!next || !here || !nextBar) throw new Error("not a shell page");  // e.g. an archive page built before the shell
+      root.dataset.default = nextBar.dataset.default || "{}";  // the bar's ▶ plays this page's own audio
+      if (!item) label.textContent = JSON.parse(root.dataset.default).label || "ONE 1.0 FM";
       here.replaceWith(document.adoptNode(next));
       document.title = doc.title;
       const line = doc.querySelector("header.site .line"), mine = document.querySelector("header.site .line");
@@ -135,6 +139,9 @@
   }
   drawStrip();
   setInterval(drawStrip, 60000);
+
+  // The page keeps clear of the bar, whatever its height (a docked video makes it tall on a phone).
+  new ResizeObserver(() => { document.body.style.paddingBottom = `${root.offsetHeight + 16}px`; }).observe(root);
 
   const d = JSON.parse(root.dataset.default || "{}");  // show what ▶ will play, without playing it
   if (d.label) label.textContent = d.label;
