@@ -1,23 +1,207 @@
 {
   "id": "uk-jazz",
   "name": "ONE Jazz",
-  "type": "flagship",
+  "type": "genre",
   "brief": "New UK jazz and the records behind it, London first: the scene around Ezra Collective, Nubya Garcia, Yussef Dayes and Kokoroko, plus the older records it grew from.",
   "feeds": [
-    {"type": "rss", "ref": "https://ukvibe.org/feed/"},
-    {"type": "rss", "ref": "https://www.brownswoodrecordings.com/feed"},
-    {"type": "rss", "ref": "https://daily.bandcamp.com/feed"},
-    {"type": "subreddit", "ref": "Jazz"}
+    {
+      "type": "rss",
+      "ref": "https://ukvibe.org/feed/"
+    },
+    {
+      "type": "rss",
+      "ref": "https://www.brownswoodrecordings.com/feed"
+    },
+    {
+      "type": "rss",
+      "ref": "https://daily.bandcamp.com/feed"
+    },
+    {
+      "type": "subreddit",
+      "ref": "Jazz"
+    }
   ],
   "seeds": {
-    "artists": ["Ezra Collective", "Nubya Garcia", "Shabaka", "Yussef Dayes", "Moses Boyd", "Sons of Kemet", "Kokoroko", "Alfa Mist", "Theon Cross", "Joe Armon-Jones"],
-    "labels": ["Brownswood Recordings", "Jazz re:freshed", "Impulse!", "Gearbox Records"]
+    "artists": [
+      "Ezra Collective",
+      "Nubya Garcia",
+      "Shabaka",
+      "Yussef Dayes",
+      "Moses Boyd",
+      "Sons of Kemet",
+      "Kokoroko",
+      "Alfa Mist",
+      "Theon Cross",
+      "Joe Armon-Jones"
+    ],
+    "labels": [
+      "Brownswood Recordings",
+      "Jazz re:freshed",
+      "Impulse!",
+      "Gearbox Records"
+    ]
   },
-  "era_mix": {"new": 0.5, "recent": 0.3, "older": 0.2},
-  "flow": {"artist_gap_hours": 3, "block_minutes": 50},
-  "talk": {"every": 3, "seconds": [20, 30]},
-  "voice": {"name": "Sulafat", "style": "warm, unhurried, late-night"},
+  "era_mix": {
+    "new": 0.5,
+    "recent": 0.3,
+    "older": 0.2
+  },
+  "flow": {
+    "artist_gap_hours": 3,
+    "block_minutes": 50
+  },
+  "talk": {
+    "every": 3,
+    "seconds": [
+      20,
+      30
+    ]
+  },
+  "voice": {
+    "name": "Sulafat",
+    "style": "warm, unhurried, late-night"
+  },
   "news": true,
   "storefront": "us",
-  "apple_connection": "YlFQlsDQx9sk2cz9TI82Ng"
+  "apple_connection": "YlFQlsDQx9sk2cz9TI82Ng",
+  "rotation": [
+    {
+      "code": "A",
+      "name": "Power",
+      "size": 8,
+      "rest_hours": 3.5
+    },
+    {
+      "code": "B",
+      "name": "Medium",
+      "size": 14,
+      "rest_hours": 7
+    },
+    {
+      "code": "C",
+      "name": "Light/New",
+      "size": 14,
+      "rest_hours": 12
+    },
+    {
+      "code": "R",
+      "name": "Recurrent",
+      "size": 35,
+      "rest_hours": 36
+    },
+    {
+      "code": "G",
+      "name": "Gold",
+      "size": 300,
+      "rest_hours": 96
+    }
+  ],
+  "clocks": [
+    {
+      "name": "day",
+      "from_hour": 7,
+      "to_hour": 18,
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news"
+          ]
+        ],
+        [
+          5,
+          [
+            "A",
+            "G",
+            "C",
+            "break",
+            "B",
+            "R",
+            "A"
+          ]
+        ],
+        [
+          30,
+          [
+            "id_tease",
+            "G",
+            "N",
+            "break",
+            "B",
+            "R",
+            "C"
+          ]
+        ],
+        [
+          55,
+          [
+            "backsell"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "overnight",
+      "from_hour": 19,
+      "to_hour": 6,
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "G",
+            "A",
+            "G",
+            "R",
+            "break",
+            "G",
+            "B"
+          ]
+        ],
+        [
+          30,
+          [
+            "id",
+            "G",
+            "R",
+            "G",
+            "break",
+            "C",
+            "G"
+          ]
+        ],
+        [
+          55,
+          [
+            "backsell"
+          ]
+        ]
+      ]
+    }
+  ],
+  "separation": {
+    "artist_hours": 3,
+    "long_ms": 420000,
+    "max_energy_step": 1
+  },
+  "meeting": {
+    "new": "C",
+    "catalog": "G",
+    "top": "A",
+    "up": {
+      "C": "B",
+      "B": "A"
+    },
+    "burn": {
+      "A": "R"
+    },
+    "age": {
+      "R": "G"
+    },
+    "down": {
+      "A": "B",
+      "B": "C"
+    }
+  }
 }

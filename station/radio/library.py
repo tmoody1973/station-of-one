@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import sqlite3
+from datetime import UTC, datetime
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -88,4 +89,89 @@ def match_library(gw, conn: str, storefront: str, db: sqlite3.Connection, min_pl
     return counts
 
 
-__all__ = ["import_tracks", "to_match", "match_library", "AppleRefused"]
+def library_energy(h1: int, h2: int) -> int:
+    """Energy from Tarik's own placement: hour 2 of the show leans uptempo. No hour data is mid (2)."""
+    total = (h1 or 0) + (h2 or 0)
+    if not total:
+        return 2
+    share = (h2 or 0) / total
+    return 3 if share >= 0.65 else 1 if share <= 0.35 else 2
+
+
+def _category(tier: str, last_played: str) -> str:
+    if tier == "core":
+        return "P"
+    if tier == "rotation":
+        return "M"
+    if tier == "repeat" and (last_played or "") >= "2023":
+        return "R"
+    return "G"  # older repeats and matched single spins
+
+
+def _note(first_played: str) -> str:
+    try:
+        return f"First aired on Rhythm Lab Radio, {datetime.strptime(first_played, '%Y-%m-%d'):%b %Y}"
+    except (TypeError, ValueError):
+        return "First aired on Rhythm Lab Radio"
+
+
+def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
+    """Matched, non-guest-mix library tracks into the station's rotation (and the song pool the scheduler reads).
+    Safe to run again: existing rows keep their plays and last-played time."""
+    rows = db.execute("SELECT track_id, tier, first_played, last_played, hour1_plays, hour2_plays, opener_count, closer_count, "
+                      "apple_music_id, isrc, match_confidence, apple_url, preview_url, artwork_url, duration_ms, release_date, "
+                      "matched_artist, matched_title, matched_album, version, special_tags FROM library_tracks "
+                      "WHERE match_status = 'resolved' AND in_segment = 0").fetchall()
+    counts: dict[str, int] = {}
+    now = datetime.now(UTC).isoformat()
+    for (tid, tier, first, last, h1, h2, opens, closes, song_id, isrc, conf, apple_url, preview, art, dur, released,
+         artist, title, album, version, tags) in rows:
+        cid = f"lib:{tid}"
+        db.execute("INSERT INTO candidates (id, kind, artist, title, version, status, song_id, match_confidence, apple_url, "
+                   "preview_url, artwork_url, duration_ms, isrc, release_date, album, matched_artist, matched_title, resolved_at) "
+                   "VALUES (?, 'track', ?, ?, ?, 'resolved', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET "
+                   "song_id = excluded.song_id, apple_url = excluded.apple_url, preview_url = excluded.preview_url, "
+                   "duration_ms = excluded.duration_ms",
+                   (cid, artist, title, version or "", song_id, conf, apple_url, preview, art, dur, isrc, released, album,
+                    artist, title, now))
+        cat = _category(tier, last)  # the starting category only: once a song is in, the music meeting owns it
+        db.execute("INSERT INTO rotation (station_id, candidate_id, category, energy, added_at, opener, closer, source_note, tags) "
+                   "VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(station_id, candidate_id) DO UPDATE SET energy = excluded.energy, "
+                   "opener = excluded.opener, closer = excluded.closer, source_note = excluded.source_note, tags = excluded.tags",
+                   (station.id, cid, cat, library_energy(h1, h2), now, int((opens or 0) > 0), int((closes or 0) > 0), _note(first),
+                    tags or ""))
+        counts[cat] = counts.get(cat, 0) + 1
+    db.commit()
+    return counts
+
+
+def library_track(db: sqlite3.Connection, candidate_id: str, today) -> dict:
+    """A library song as pages and the queue show it: the track, the Apple links and "First aired on ...".
+    No show notes, no Drive links (the library stays private), so source_url is empty."""
+    from station.radio.program import era
+    r = db.execute("SELECT c.id, c.song_id, c.matched_artist, c.matched_title, c.album, c.release_date, c.duration_ms, "
+                   "c.preview_url, c.apple_url, c.artwork_url, ro.source_note FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id "
+                   "WHERE ro.candidate_id = ?", (candidate_id,)).fetchone()
+    return {"candidate_id": r[0], "song_id": r[1], "artist": r[2], "title": r[3], "album": r[4], "release_date": r[5],
+            "duration_ms": r[6], "preview_url": r[7], "apple_url": r[8], "artwork_url": r[9], "fit": None,
+            "note": r[10] or "", "source_url": "", "era": era(r[5], today)}
+
+
+REPORT_FIELDS = ("track_id", "artist", "title", "version", "play_count", "tier", "match_status", "matched_artist",
+                 "matched_title", "match_confidence")
+
+
+def held_report(db: sqlite3.Connection, path: Path) -> int:
+    """Tracks the station can't program yet (held: a doubtful match; not_on_apple), for Tarik to check by hand.
+    Private: written to the Sprite's data/ only, never published or committed."""
+    rows = db.execute(f"SELECT {', '.join(REPORT_FIELDS)} FROM library_tracks WHERE match_status IN ('held', 'not_on_apple') "
+                      "AND in_segment = 0 ORDER BY play_count DESC, track_id").fetchall()
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(REPORT_FIELDS)
+        w.writerows(rows)
+    return len(rows)
+
+
+__all__ = ["import_tracks", "to_match", "match_library", "held_report", "library_energy", "library_track", "seed_rotation", "AppleRefused"]

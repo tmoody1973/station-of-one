@@ -140,6 +140,26 @@
   drawStrip();
   setInterval(drawStrip, 60000);
 
+  // A clock station's page lists its songs with start and end times; the browser marks what's on now and hides
+  // what has finished, so "On now" stays true between the hourly rebuilds. Text only (titles are Apple's data).
+  function markNow() {
+    const rows = [...document.querySelectorAll("main [data-starts]")];
+    if (!rows.length) return;
+    const t = Date.now(), at = (r, k) => Date.parse(r.dataset[k]);
+    const cur = rows.find((r) => at(r, "starts") <= t && t < at(r, "ends"));
+    rows.forEach((r) => { r.classList.toggle("past", at(r, "ends") <= t); r.classList.toggle("now", r === cur); });
+    const box = document.getElementById("onnow"), show = cur || rows.find((r) => at(r, "starts") > t);
+    if (!box || !show) return;
+    box.querySelector(".lbl").textContent = cur ? "On now" : "Up next";
+    box.querySelector("h2").textContent = show.dataset.title;
+    box.querySelector(".by").textContent = show.dataset.by;
+    const a = box.querySelector("a.am");
+    if (a && show.dataset.apple) a.href = show.dataset.apple;
+  }
+  markNow();
+  setInterval(markNow, 30000);
+  document.addEventListener("wone:page", markNow);
+
   // The page keeps clear of the bar, whatever its height (a docked video makes it tall on a phone).
   new ResizeObserver(() => { document.body.style.paddingBottom = `${root.offsetHeight + 16}px`; }).observe(root);
 

@@ -32,6 +32,8 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
     configs = [load_station(p.stem, stations_root) for p in sorted(Path(stations_root).glob("*.json"))]
     for st in sorted(configs, key=lambda s: (s.type != "flagship", s.name)):  # the flagship first
         latest = Path(radio_root) / st.id / "latest.json"
+        if not latest.exists():
+            continue  # never published: no chip linking to a page that isn't there
         try:  # a half-written or odd file shows the station quietly; it never stops the front page
             tracks = json.loads(latest.read_text())["block"]["tracks"] if latest.exists() else []
         except (OSError, ValueError, KeyError, TypeError):

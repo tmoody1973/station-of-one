@@ -1,0 +1,12 @@
+﻿show_id,date,show_status,hour,position,block,segment,track_id,artist,title,as_written
+S1,2020-01-03,counted,1,1,0,,RLTA,A,a,A - a
+S1,2020-01-03,counted,1,2,0,,RLTB,B,b,B - b
+S1,2020-01-03,counted,1,3,1,,RLTC,C,c,C - c
+S1,2020-01-03,counted,2,4,1,,RLTD,D,d,D - d
+S1,2020-01-03,counted,2,5,1,,RLTE,E,e,E - e
+S1,2020-01-03,counted,2,6,1,guest mix,RLTF,F,f,F - f
+S1,2020-01-03,counted,2,7,1,,RLTG,G,g,G - g
+S2,2020-01-10,counted,1,1,0,,RLTA,A,a,A - a
+S2,2020-01-10,counted,1,2,0,,RLTB,B,b,B - b
+S2b,2020-01-10,duplicate_file,1,1,0,,RLTA,A,a,A - a
+S2b,2020-01-10,duplicate_file,1,2,0,,RLTB,B,b,B - b

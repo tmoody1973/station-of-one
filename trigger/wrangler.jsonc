@@ -6,9 +6,9 @@
   "compatibility_date": "2026-11-01",
   "workers_dev": false,  // no public URL: the Worker only runs on its schedule
   "triggers": {
-    // UTC. :48 past 12:00-00:00 UTC = 6:48 am-6:48 pm Central (CST), one build per 7 am-7 pm newscast.
-    // The Sprite refuses automatic builds outside broadcast hours, so the daylight-saving shift is harmless.
-    "crons": ["48 12-23 * * *", "48 0 * * *"]
+    // Every hour at :48 (UTC). In newscast hours (7 am-7 pm Central) the Sprite builds the newscast, then the
+    // music stations; outside them it runs only the 24/7 music stations (plan B1, decision 009), no newscast.
+    "crons": ["48 * * * *"]
   }
   // Secret SPRITES_TOKEN is set with `npx wrangler secret put SPRITES_TOKEN`; it is never in this repo.
 }

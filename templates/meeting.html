@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo-one.png" type="image/png">
+<title>Music meeting · {{ st.name }} · {{ station.name }}</title>
+<meta name="description" content="What the program director added, moved and dropped this week on {{ st.name }}, and why.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+{% include "_bauhaus.css" %}
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:36px}
+.intro h1{margin:0;font-size:52px;font-weight:800;line-height:1}
+.intro p{margin:10px 0 0;font-size:18px;color:var(--ink-2);max-width:70ch}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:12px;letter-spacing:.12em;text-transform:lowercase;border-bottom:3px solid var(--ink);padding:8px 10px 8px 0}
+td{border-bottom:1px solid #cfc6ae;padding:10px 10px 10px 0;vertical-align:top}
+td.p{font-family:var(--mono);white-space:nowrap}
+.act{font-weight:800;text-transform:lowercase}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px}
+.cat{background:var(--card);border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:14px 16px}
+.cat h3{margin:0 0 4px;font-size:20px}.cat .meta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:8px}
+.cat ol{margin:0;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+.cat li span{color:var(--muted);font-family:var(--mono);font-size:12px}
+@media (max-width:700px){.intro h1{font-size:36px}table{font-size:14px}}
+</style>
+</head>
+<body>
+{% set masthead_line = st.name ~ " · music meeting" %}{% include "_masthead.html" %}
+<main class="wrap">
+<section class="intro">
+  <span class="tag kicker">The program director</span>
+  <h1>This week's music meeting</h1>
+  <p>Jev answers yes-or-no questions about each song, as probabilities; code applies the rules: a song joins or moves up at 0.6 or more, no category changes more than a quarter of its songs in one meeting. A language model never picks the next song. <a href="/radio/{{ st.id }}/index.html">Back to {{ st.name }}</a> · <a href="/radio/how-it-works/index.html">How the station is programmed</a>.</p>
+</section>
+<section>
+  <h2 class="marker ci"><span class="num">1</span><span class="lbl">Decisions</span></h2>
+  {% if rows %}
+  <table>
+    <thead><tr><th>Song</th><th>Change</th><th>Jev</th><th>Why</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      <tr><td><b>{{ r.title or "Unknown" }}</b><br>{{ r.artist or "" }}</td>
+          <td><span class="act">{{ r.action }}</span> {{ r.from_cat or "new" }} → {{ r.to_cat or "out" }}</td>
+          <td class="p">{{ "%.2f" | format(r.p) if r.p is not none else "rule" }}</td>
+          <td>{{ r.reason }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>No meeting yet. The first one runs when the station starts, then daily for a week, then on Mondays.</p>{% endif %}
+</section>
+<section>
+  <h2 class="marker ci"><span class="num">2</span><span class="lbl">The rotation</span></h2>
+  <div class="board">
+  {% for c in board %}
+    <div class="cat"><h3>{{ c.code }} · {{ c.name }}</h3>
+      <div class="meta">{{ c.count }} of {{ c.size }} songs · rests {{ c.rest_hours | round(1) }} h between plays</div>
+      {% if c.songs %}<ol>{% for s in c.songs %}<li>{{ s.title }} · {{ s.artist }} <span>{{ s.plays }} plays</span></li>{% endfor %}</ol>{% endif %}
+    </div>
+  {% endfor %}
+  </div>
+</section>
+<footer>
+  <span>Machine-programmed. Decisions are logged with Jev's probability; the code's thresholds are shown above.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+</footer>
+</main>
+{% set player_default = {} %}{% include "_player.html" %}
+</body>
+</html>

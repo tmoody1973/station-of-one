@@ -47,3 +47,18 @@ def test_match_stores_apple_fields_and_keeps_the_remix():
     assert counts == {"resolved": 2, "not_on_apple": 1}
     assert d.execute("SELECT apple_music_id, preview_url FROM library_tracks WHERE track_id = 'RLT00004'").fetchone() == ("3", "https://p/3.m4a")
     assert d.execute("SELECT match_status FROM library_tracks WHERE track_id = 'RLT00005'").fetchone()[0] == "not_on_apple"
+
+
+def test_held_report_lists_held_and_missing(tmp_path):  # Rhythm Lab plan, Task 1: private, for Tarik
+    import csv
+    import sqlite3
+    from station.radio.library import SCHEMA, held_report
+    db = sqlite3.connect(":memory:")
+    db.executescript(SCHEMA)
+    for tid, status, plays in (("t1", "resolved", 5), ("t2", "held", 4), ("t3", "not_on_apple", 2), ("t4", None, 1)):
+        db.execute("INSERT INTO library_tracks (track_id, artist, title, play_count, tier, in_segment, match_status) VALUES (?,?,?,?,?,0,?)",
+                   (tid, "A", tid, plays, "core", status))
+    out = tmp_path / "held.csv"
+    assert held_report(db, out) == 2
+    rows = list(csv.DictReader(open(out)))
+    assert [r["track_id"] for r in rows] == ["t2", "t3"] and rows[0]["match_status"] == "held"

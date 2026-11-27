@@ -364,3 +364,11 @@ Spike `spikes/check19_shell.py` (Playwright, system Chrome) against `_checks/she
 - Decision 010: approach (b).
 - **Built (Nov 27, branch `site-shell`):** `tests/e2e/test_shell_nav.py`, 7 tests in system Chrome against a test copy (`spikes/shell_e2e_publish.py` → `_checks/shell-e2e/`) built from the 1 pm newscast: audio keeps playing across story, sampler and settings pages and Back/Back/Forward; the RSS feed and outside links are left to the browser; a page with no `<main>` falls back to a normal load; controls on a swapped-in page play through the bar at the right start; the station strip lists News and ONE Jazz. **7 passed.**
 - **Live:** not yet checked (waits for the merge).
+
+### 20. Rhythm Lab feeds and library match (Nov 27)
+Spike `spikes/check20_feeds.py`: one run of the stations' Apify RSS actor (cap $0.10, reported $0.00) over the flagship's candidate feeds, last 14 days.
+- **Returned items:** DJ Mag 25, The Quietus 25, Bandcamp Daily 24, Brownswood 4, Stones Throw 1 (its last post was Nov 20: alive, slow).
+- **Dropped before the run:** XLR8R (last post May 24, 2026) and Fact (Sept 30, 2026), stale; The Vinyl Factory and Okayplayer feeds return 404. Checked by direct fetch of each feed's newest dates.
+- **Library match** (tracks with 2+ plays, guest mixes excluded): 2,513 resolved, 266 held, 129 not on Apple Music. Resolved by tier: core 156, rotation 888, repeat 1,469 (660 last played 2023 or later). Category sizes in `config/stations/rhythm-lab.json` are set to hold these.
+- Held and not-on-Apple tracks: private report on the Sprite, `data/library/held.csv` (`scripts/library_report.py`), never committed.
+- Earlier today the 1:48 build's scrapes failed with Apify `HTTP 403 platform-feature-disabled` (Free plan's $5 used up). Tarik upgraded the plan at ~2:00 pm; this check's runs `SUCCEEDED`.
