@@ -204,6 +204,27 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
     {% endfor %}
     </div>
   </section>
+
+  {% if picks and picks.picks %}
+  <section class="block" id="music">
+    <h2 class="marker ci"><span class="num">5</span><span class="lbl">Music picks</span></h2>
+    <p style="margin:0;color:var(--ink-2)">New releases from the labels and channels the station follows, ranked by Jev. Players are the artists' official Bandcamp and YouTube embeds and load only when you tap Play.</p>
+    <div class="cards">
+    {% for p in picks.picks %}
+      <article class="card pick">
+        <div class="body">
+          <span class="tag">{{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} · {{ p.source }}</span>
+          <h3>{{ p.title }}</h3>
+          <span style="font-weight:600">{{ p.artist }}</span>
+          <div class="player-slot" data-kind="{{ p.kind }}"></div>
+          <div class="row"><button class="btn-line" data-embed="{{ p.embed }}" data-kind="{{ p.kind }}" data-title="{{ p.artist }}: {{ p.title }}">Play here</button>
+            <a href="{{ p.url | safe_url }}" rel="noopener" target="_blank">on {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }}</a></div>
+        </div>
+      </article>
+    {% endfor %}
+    </div>
+  </section>
+  {% endif %}
   </div>
 </div>
 
@@ -215,5 +236,19 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
 </footer>
 </main>
 <script src="/player.js"></script>
+{% if picks and picks.picks %}<script>
+// Music picks: nothing loads from Bandcamp or YouTube until the reader taps Play.
+document.querySelectorAll("[data-embed]").forEach(b => b.addEventListener("click", () => {
+  const slot = b.closest(".body").querySelector(".player-slot");
+  if (slot.firstChild) return;
+  const f = document.createElement("iframe");
+  f.src = b.dataset.embed; f.title = b.dataset.title; f.loading = "lazy";
+  f.allow = "autoplay; encrypted-media"; f.referrerPolicy = "strict-origin-when-cross-origin"; // YouTube error 153 without a referrer
+  f.style.border = "0"; f.style.width = "100%";
+  f.style.height = b.dataset.kind === "bandcamp" ? "120px" : "";
+  if (b.dataset.kind !== "bandcamp") f.style.aspectRatio = "16/9";
+  slot.appendChild(f); b.remove();
+}));
+</script>{% endif %}
 </body>
 </html>

@@ -70,6 +70,30 @@ def _with_links(newscast: dict, extras: dict | None) -> list[dict]:
             for i, s in enumerate(newscast["stories"])]
 
 
+YOUTUBE_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
+ALBUM_ID = re.compile(r"^\d{1,12}$")
+
+
+def embed_url(pick: dict) -> str:
+    """Official player address, built from a validated id only; "" when the id is not valid."""
+    eid = str(pick.get("embed_id") or "")
+    if pick.get("kind") == "youtube" and YOUTUBE_ID.match(eid):
+        return f"https://www.youtube-nocookie.com/embed/{eid}?autoplay=1"
+    if pick.get("kind") == "bandcamp" and ALBUM_ID.match(eid):
+        return (f"https://bandcamp.com/EmbeddedPlayer/album={eid}/size=large/bgcol=ffffff/linkcol=d62d20/"
+                "tracklist=false/artwork=small/transparent=true/")
+    return ""
+
+
+def latest_picks(picks_root: Path) -> dict | None:
+    """The newest day with at least one pick (an empty day keeps the last real picks on the page)."""
+    for f in sorted(Path(picks_root).glob("????-??-??.json"), reverse=True):
+        data = json.loads(f.read_text())
+        if data.get("picks"):
+            return {**data, "picks": [{**p, "embed": embed_url(p)} for p in data["picks"] if embed_url(p)]}
+    return None
+
+
 def _hour_label(n: dict) -> str:
     t = datetime.fromisoformat(n["hour_local"])
     return f"{t.hour % 12 or 12}:00 {'am' if t.hour < 12 else 'pm'}"
@@ -101,9 +125,12 @@ def audio_path(n: dict) -> str:
 
 
 def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None,
-                 table: dict | None = None, corrections: dict | None = None, extras: dict | None = None) -> str:
+                 table: dict | None = None, corrections: dict | None = None, extras: dict | None = None,
+                 picks: dict | None = None) -> str:
+    if picks is not None and any("embed" not in p for p in picks.get("picks", [])):
+        picks = {**picks, "picks": [{**p, "embed": embed_url(p)} for p in picks["picks"] if embed_url(p)]}
     return env().get_template("front.html").render(**_context(current, today, prefs, "front", extras),
-                                                   video_url=video_url, table=table, corrections=corrections)
+                                                   video_url=video_url, table=table, corrections=corrections, picks=picks)
 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None, extras: dict | None = None) -> str:
@@ -258,7 +285,8 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     extras = json.loads(extras_file.read_text()) if extras_file.exists() else None
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
                                   table=episodes[0] if episodes else None,
-                                  corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras))
+                                  corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras,
+                                  picks=latest_picks(Path(os.environ.get("STATION_PICKS", "data/picks")))))
     hour.write_text(render_hour(current, prefs, today, extras=extras))
     story_pages = []
     if extras is not None:

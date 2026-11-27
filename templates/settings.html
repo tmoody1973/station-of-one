@@ -50,6 +50,13 @@ th{background:var(--ink);color:var(--paper);text-align:left;padding:12px 14px;fo
     <span class="k">Airs if likely to matter in a week</span><span class="v">The best story from each beat, then the top scores: top five at {{ floor }}% or higher</span>
     <span class="k">Dropped if it may harm a private person</span><span class="v">{{ harm }}% or higher</span>
     <p class="note">Jev makes every call. These thresholds are applied in code.</p></div>
+  {% if prefs.music_picks.bandcamp_labels or prefs.music_picks.youtube_channels %}
+  <div class="card"><h3>Music picks</h3>
+    <span class="k">Bandcamp labels</span><span class="v">{{ prefs.music_picks.bandcamp_labels | join(', ') }}</span>
+    <span class="k">YouTube channels</span><span class="v">{{ prefs.music_picks.youtube_channels | length }} channels</span>
+    <span class="k">Each day</span><span class="v">{{ prefs.music_picks.count }} picks after the first newscast, one per source, no repeats within a week</span>
+    <p class="note">Jev ranks the new releases; code picks. Players load only on tap.</p></div>
+  {% endif %}
 </section>
 <section style="display:flex;flex-direction:column;gap:14px">
   <h2>Connections</h2>
