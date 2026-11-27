@@ -71,7 +71,8 @@ class StationConfig:
     clocks: tuple[Clock, ...] = ()
     separation: dict[str, Any] | None = None
     meeting: dict[str, Any] | None = None
-    shape: dict[str, Any] | None = None  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
+    shape: dict[str, Any] | None = None
+    programmer: str = "sampler"  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
 
     def clock_for(self, local_hour: int) -> Clock:
         return next(c for c in self.clocks if c.covers(local_hour))
@@ -86,7 +87,8 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
                          rotation=Rotation(tuple(Category(c["code"], c["name"], c["size"], c["rest_hours"]) for c in d.get("rotation", []))),
                          clocks=tuple(Clock(c["name"], c["from_hour"], c["to_hour"],
                                             tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
-                         separation=d.get("separation"), meeting=d.get("meeting"), shape=d.get("shape"))
+                         separation=d.get("separation"), meeting=d.get("meeting"), shape=d.get("shape"),
+                         programmer=d.get("programmer", "sampler"))
 
 
 SCHEMA = """

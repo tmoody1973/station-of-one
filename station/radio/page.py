@@ -15,7 +15,15 @@ def sampler_path(station_id: str) -> str:
     return f"radio/{station_id}/index.html"
 
 
-def render_sampler(station: StationConfig, block: Block, counts: dict, prefs: Prefs) -> str:
+def meeting_path(station_id: str) -> str:
+    return f"radio/{station_id}/meeting/index.html"
+
+
+def render_sampler(station: StationConfig, block: Block, counts: dict, prefs: Prefs, on_now: dict | None = None) -> str:
     minutes = round(sum(t["duration_ms"] for t in block.tracks) / 60000)
     return env().get_template("radio.html").render(st=station, block=block, counts=counts, minutes=minutes,
-                                                   station=prefs.station)
+                                                   station=prefs.station, on_now=on_now)
+
+
+def render_meeting(station: StationConfig, rows: list[dict], board: list[dict], prefs: Prefs) -> str:
+    return env().get_template("meeting.html").render(st=station, rows=rows, board=board, station=prefs.station)

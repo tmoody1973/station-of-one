@@ -23,6 +23,8 @@ main.wrap{padding-top:34px;padding-bottom:56px;display:grid;grid-template-column
 .pv{background:var(--card);border:2px solid var(--ink);padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 .pv.on{background:var(--yellow)}
 .am{font-size:13px;font-weight:700;white-space:nowrap}
+.onnow{background:var(--ink);color:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--red);padding:18px 20px;margin-bottom:28px;display:flex;flex-direction:column;gap:6px}
+.onnow h2{margin:0;font-size:30px;line-height:1.1}.onnow .by{color:#d9d2bf}.onnow .am{color:var(--yellow)}
 aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
 .log{background:var(--ink);color:#ece4cf;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--yellow);padding:16px;font-family:var(--mono);font-size:13px;display:flex;flex-direction:column;gap:6px}
 .log b{color:var(--yellow);font-weight:500}
@@ -33,14 +35,17 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
 {% set masthead_line = st.name ~ " · machine-programmed" %}{% include "_masthead.html" %}
 <main class="wrap">
 <section class="intro">
-  <span class="tag kicker">Music station · sampler</span>
+  <span class="tag kicker">Music station · {% if on_now is not none %}on air around the clock{% else %}sampler{% endif %}</span>
   <h1>{{ st.name }}</h1>
   <p>{{ st.brief }}</p>
-  <p style="font-size:15px">An agent read the station's feeds, Jev judged each find against that brief, and code programmed this {{ minutes }}-minute set from what matched on Apple Music. Every track links to where it was found.</p>
+  {% if on_now is not none %}<p style="font-size:15px">Programmed around the clock by the station's program director: Jev decides what joins the rotation and what moves; code applies the categories, rest times and hour clocks. <a href="/radio/{{ st.id }}/meeting/index.html">This week's music meeting</a>.</p>
+  {% else %}<p style="font-size:15px">An agent read the station's feeds, Jev judged each find against that brief, and code programmed this {{ minutes }}-minute set from what matched on Apple Music. Every track links to where it was found.</p>{% endif %}
   <button class="connect" disabled title="Full songs need Apple Music sign-in, coming next">Connect Apple Music for full songs · coming soon</button>
 </section>
 <div class="list">
-  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">This set</span></h2>
+  {% if on_now %}<div class="onnow"><span class="tag kicker">On now</span><h2>{{ on_now.title }}</h2><div class="by">{{ on_now.artist }}{% if on_now.note %} · {{ on_now.note }}{% endif %}</div>
+    <a class="am" href="{{ on_now.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a></div>{% endif %}
+  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">{% if on_now is not none %}Next hour{% else %}This set{% endif %}</span></h2>
   {% for t in block.tracks %}
   <div class="trk">
     <img src="{{ t.artwork_url | safe_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">

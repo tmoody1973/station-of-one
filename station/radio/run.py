@@ -126,6 +126,15 @@ def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, pref
         counts["fit_scored"] = len(scores)
         db.commit()
     _resolve_some(gw, station, db, now, counts, notes)
+    if station.programmer == "clock":  # the program director: a 24/7 queue (plan B1)
+        from station.radio.onair import run_clock
+        counts["notes"] = notes
+        run_clock(gw, station, db, now, prefs, out_root, counts, notes)
+        try:
+            _upload_strip(gw, prefs, Path(out_root))
+        except Exception as e:  # noqa: BLE001
+            notes.append(f"station strip not updated: {e}")
+        return counts
     block = program_block(station, db, now, mark=False)
     counts["notes"] = notes
     counts["scheduled"] = 0
