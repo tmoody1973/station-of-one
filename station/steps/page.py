@@ -147,6 +147,7 @@ def _detail(name: str, c: dict) -> str:
         "finish": "control room updated, Sprite checkpoint",
         "video": f"{g('seconds', 0):.0f} s video, {g('words', 0)} captioned words",
         "table": "The Table, from yesterday's threads",
+        "story": f"{g('articles', 0)} articles, {g('photos', 0)} photos, {g('illustrations', 0)} illustrations",
     }.get(name, "")
 
 

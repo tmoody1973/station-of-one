@@ -13,6 +13,7 @@ from station.steps.write import ATTRIBUTION
 from station.store import Post
 
 MIN_WORDS, MAX_WORDS = 120, 350
+MIN_SOURCE_WORDS = 25  # less than this (e.g. a Google News headline) and the page keeps the summary
 HEADING = re.compile(r"^\s*#")
 BULLET = re.compile(r"^\s*[-*•]\s+")
 QUOTES = ('"', "“", "”")
@@ -70,6 +71,8 @@ def article_problems(paragraphs: list[str], cap: int) -> list[str]:
 
 
 def write_article(gw, model: str, story: dict, posts: list[Post]) -> tuple[list[str] | None, str | None]:
+    if sum(len(p.text.split()) for p in posts) < MIN_SOURCE_WORDS:  # review I3: never pad a headline into an article
+        return None, f"article skipped for {story.get('id')}: too little source text"
     messages, cap, last = article_messages(story, posts), word_cap(posts), "no reply"
     for _ in range(2):  # one retry, told what was wrong
         try:

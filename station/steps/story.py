@@ -11,13 +11,14 @@ import json
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.parse import urlparse
 
 from station.config import Prefs
 from station.runs import write_json
 from station.steps.article import write_article
 from station.steps.corrections import COLUMNS
 from station.steps.illustrate import illustrate
-from station.steps.photos import lookup_urls, preview_images
+from station.steps.photos import clean_image, lookup_urls, preview_images
 from station.store import Post, post_from_row
 
 CONCURRENCY = 3
@@ -30,8 +31,10 @@ def _source_posts(db: sqlite3.Connection, story: dict) -> list[Post]:
 
 
 def _photo(story: dict, src: str) -> dict:
-    first = (story.get("sources") or [{}])[0]
-    return {"kind": "photo", "src": src, "credit": first.get("source_name") or "source", "link": first.get("url") or ""}
+    """Credit the publisher whose page the photo comes from, not the site that linked it (review I1)."""
+    link = (story.get("sources") or [{}])[0].get("url") or ""
+    host = (urlparse(link).hostname or "").removeprefix("www.")
+    return {"kind": "photo", "src": src, "credit": host or "source", "link": link}
 
 
 def make_stories(gw, run: Path, prefs: Prefs, db: sqlite3.Connection) -> tuple[dict, dict]:
@@ -41,15 +44,26 @@ def make_stories(gw, run: Path, prefs: Prefs, db: sqlite3.Connection) -> tuple[d
     beats = {b.id: b.name for b in prefs.beats}
     notes: list[str] = []
 
+    def article(s: dict) -> tuple[list[str] | None, str | None]:
+        try:
+            return write_article(gw, prefs.writer.model, s, posts[s["id"]])
+        except Exception as e:  # noqa: BLE001 - review I2: any failure costs only this story's article
+            return None, f"article dropped for {s['id']}: {type(e).__name__}: {str(e)[:120]}"
+
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
-        articles = list(pool.map(lambda s: write_article(gw, prefs.writer.model, s, posts[s["id"]]), stories))
+        articles = list(pool.map(article, stories))
     notes += [note for _, note in articles if note]
 
-    found, apify_usd = preview_images(gw, lookup_urls([s for s in stories if not s.get("image")]))
+    try:
+        found, apify_usd = preview_images(gw, lookup_urls(stories))
+    except Exception as e:  # noqa: BLE001 - no photos this hour; stories fall back to illustrations
+        found, apify_usd = {}, 0.0
+        notes.append(f"photo lookup failed: {type(e).__name__}: {str(e)[:120]}")
     images: dict[str, dict | None] = {}
     for s in stories:
         first_url = (s.get("sources") or [{}])[0].get("url") or ""
-        src = s.get("image") or found.get(first_url)
+        # the publisher's full-size photo beats the scrape's own (often a ~140 px thumbnail); review M1
+        src = found.get(first_url) or clean_image(first_url, s.get("image"))
         images[s["id"]] = _photo(s, src) if src else None
 
     def draw(s: dict) -> tuple[str, dict | None]:

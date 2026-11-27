@@ -90,3 +90,8 @@ def test_page_writes_story_pages_and_front_links_them(run_with_stories):
     written = page(run_with_stories, load_prefs(), runs_root=run_with_stories.parent, control_room=False)
     assert run_with_stories / "site/s/2026-11-27/1000/1-story-1-headline/index.html" in written
     assert 'href="/s/2026-11-27/1000/1-' in (run_with_stories / "site/index.html").read_text()
+
+
+def test_control_room_shows_story_counts():  # review M4
+    from station.steps.page import _detail
+    assert _detail("story", {"articles": 4, "photos": 3, "illustrations": 2}) == "4 articles, 3 photos, 2 illustrations"

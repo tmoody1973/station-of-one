@@ -3,7 +3,7 @@ from station.store import Post
 from tests.fakes import FakeGateway, ok
 
 
-def post(id="p1", text="Posters say a thing happened.", source="Reddit r/milwaukee") -> Post:
+def post(id="p1", text="Posters say a thing happened. " * 6, source="Reddit r/milwaukee") -> Post:
     return Post(id, source, "mke", "story", "user7", "A title", "https://ex.com/a", text, "2026-11-27T15:00:00Z", {}, "public")
 
 
@@ -58,3 +58,9 @@ def test_write_article_writer_error_is_a_note():
     gw = FakeGateway({("POST", "ollama", "/api/chat"): [ok({"error": "busy"}, status=503)]})
     paragraphs, note = write_article(gw, "m", story_dict(), [post()])
     assert paragraphs is None and "503" in note
+
+
+def test_title_only_sources_skip_the_writer():  # review I3: Google News posts have no text
+    gw = FakeGateway({})
+    paragraphs, note = write_article(gw, "m", story_dict(), [post(text="")])
+    assert paragraphs is None and "too little source text" in note and gw.calls == []
