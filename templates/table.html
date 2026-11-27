@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="/logo.png" type="image/png">
-<title>The Table · {{ ep.question }} · WNCL</title>
+<link rel="icon" href="/logo-one.png" type="image/png">
+<title>The Table · {{ ep.question }} · ONE 1.0</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
 {% include "_bauhaus.css" %}
@@ -33,7 +33,7 @@ footer{flex-direction:column;gap:6px}
 </div></header>
 <main class="wrap">
 <div style="display:flex;flex-direction:column;gap:12px">
-  <span class="kicker">The Table · WNCL · {{ ep.day }}</span>
+  <span class="kicker">The Table · {{ ep.day }}</span>
   <h1>{{ ep.question }}</h1>
   <p class="muted" style="margin:0">From a {{ ep.thread.source }} thread: <a href="{{ ep.thread.url | safe_url }}" rel="noopener" target="_blank">{{ ep.thread.title }}</a>.
     The Anchor argues: {{ ep.positions.anchor }} The Uncle argues: {{ ep.positions.uncle }}</p>
@@ -64,7 +64,7 @@ footer{flex-direction:column;gap:6px}
 </section>
 <footer>
   <span>{{ station_id }} The Table is machine-edited from public comments; voices are synthetic; positions are attributed to posters, never to a named person.</span>
-  <span>{{ station.call_sign }} {{ station.frequency }} and WNCL are fictional stations.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
 </footer>
 </main>
 <script>

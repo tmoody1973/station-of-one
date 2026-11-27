@@ -7,7 +7,7 @@
   <description>An hourly five-minute newscast from {{ station.call_sign }} {{ station.frequency }}, a fictional one-listener station. The show is machine-edited: TypeSafe AI's Jev decides what airs from public posts, and every claim is attributed to where it was posted. Voices are synthetic.</description>
   <language>en-us</language>
   <itunes:author>{{ station.name }}</itunes:author>
-  <itunes:image href="{{ base }}/cover-wone.png"/>
+  <itunes:image href="{{ base }}/cover-one.png"/>
   <itunes:category text="News"/>
   <itunes:explicit>false</itunes:explicit>
   <itunes:type>episodic</itunes:type>
@@ -25,7 +25,7 @@ Voices are synthetic; the show is machine-edited. Sources for every story: {{ ba
   {% for t in table_episodes %}
   <item>
     <title>The Table: {{ t.question }}</title>
-    <description>A daily debate from WNCL: the Anchor and the Uncle argue a thread from {{ t.thread.source }}, and TypeSafe AI's Jev scores every claim. {% for c in t.chapters %}{{ c.start_ms | duration }} {{ c.title }}
+    <description>A daily debate on ONE 1.0: the Anchor and the Uncle argue a thread from {{ t.thread.source }}, and TypeSafe AI's Jev scores every claim. {% for c in t.chapters %}{{ c.start_ms | duration }} {{ c.title }}
 {% endfor %}Voices are synthetic; the show is machine-edited. Rulings and sources: {{ base }}/table/{{ t.day }}/index.html</description>
     <enclosure url="{{ base }}/{{ t.audio.key }}" length="{{ t.audio.bytes }}" type="audio/mpeg"/>
     <guid isPermaLink="false">{{ t.id }}</guid>

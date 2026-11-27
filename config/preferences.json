@@ -2,21 +2,21 @@
   "station": {
     "name": "Station of One",
     "show_name": "The Hourly Scroll",
-    "call_sign": "WONE",
+    "call_sign": "ONE",
     "timezone": "America/Chicago",
     "first_newscast": "07:00",
     "last_newscast": "19:00",
     "frequency": "1.0 FM",
     "id_lines": {
       "newscast": [
-        "WONE, 1.0 FM. One station, one listener.",
+        "ONE, 1.0 FM. One station, one listener.",
         "Listener-supported. Listener, singular."
       ],
       "table": [
-        "WNCL, broadcasting to a potential audience of one."
+        "The Table on ONE, broadcasting to a potential audience of one."
       ],
       "undecided": [
-        "You're listening to WYOU. Literally only you."
+        "You're listening to ONE. Literally only you."
       ]
     }
   },
@@ -396,7 +396,7 @@
       "religion",
       "health"
     ],
-    "call_sign": "WNCL"
+    "call_sign": "ONE"
   },
   "feedback": [],
   "writer": {

@@ -18,7 +18,7 @@ from station.radio.model import normalize
 
 MATCH_MIN = 0.8
 # whole words only: "Deluxe Edition" is not an "edit" (review, Nov 27)
-VERSION = re.compile(r"\b(remaster\w*|live|edit|clean|instrumental|karaoke|acoustic|demo|remix\w*|sped up|vip)\b")
+VERSION = re.compile(r"\b(remaster\w*|live|edit|clean|instrumental|karaoke|acoustic|demo|remix\w*|sped up|vip|mixed)\b")
 
 
 def has_version(name: str, asked: str = "") -> bool:
@@ -76,8 +76,15 @@ def match_score(want: Extracted, attrs: dict) -> float:
         extra = 0.2  # nothing to disagree with
     name = normalize(attrs.get("name", ""))
     penalty = 0.3 if has_version(name, f"{want.title} {want.version}") else 0.0
-    # the version the item asked for ("Live at the Barbican", "VIP") beats the plain take
-    bonus = 0.05 if want.version and normalize(want.version) in name else 0.0
+    # the version the item asked for ("Live at the Barbican", "VIP") beats the plain take; when it is
+    # missing, the plain take is a different record (Rhythm Lab: the remix is what aired), so it is held
+    if want.version:
+        if normalize(want.version) in name:
+            bonus = 0.05
+        else:
+            bonus, penalty = 0.0, max(penalty, 0.3)
+    else:
+        bonus = 0.0
     return round(0.4 * artist + 0.4 * title + extra - penalty + bonus, 3)
 
 

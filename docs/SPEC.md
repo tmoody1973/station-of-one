@@ -21,14 +21,14 @@ with code link, demo link and a two-sentence description.
 Judges come from TypeSafe AI, Box, Fly.io, Pinecone, Ollama and Apify. Each of those
 products must do visible, necessary work.
 
-Station identity: WONE at 1.0 FM. The Table is identified as WNCL. Station ID lines and
+Station identity: ONE at 1.0 FM (renamed from WONE on Nov 27, decision 011). The Table is identified as "The Table on ONE". Station ID lines and
 the open decision about them are in `docs/STATION-ID.md`.
 
 ## 2. Newscast format (5:00)
 
 | # | Chapter | Length | Content |
 | --- | --- | --- | --- |
-| 1 | Open | 0:10 | Sting, station ID ("WONE, 1.0 FM. One station, one listener."), the time, "here's the last hour on your internet" |
+| 1 | Open | 0:10 | Sting, station ID ("ONE, 1.0 FM. One station, one listener."), the time, "here's the last hour on your internet" |
 | 2 | Lead story | 1:00 | Highest score; host plus reporter, two voices |
 | 3 | Stories 2 to 5 | 2:40 | About 40 seconds each, host only |
 | 4 | Overheard | 0:30 | Best single comment of the hour, attributed |

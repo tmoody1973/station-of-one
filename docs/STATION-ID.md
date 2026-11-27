@@ -23,3 +23,5 @@ Use these as written, rotating one per newscast in the open or sign-off.
   stations may hold them. Check before the demo, and keep the 1.0 FM frequency and a
   "fictional station" note on the page either way.
 - No real station's name, theme or sound is used.
+
+**Nov 27 update:** renamed to **ONE 1.0 FM** (no call letters; real US call signs start with K or W, and WONE-FM may be a real station). The Table is "The Table on ONE". See `docs/decisions/011-rename-to-one.md`.

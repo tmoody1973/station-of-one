@@ -27,7 +27,7 @@ STAGE = re.compile(r"\([^)]*\)|\[[^\]]*\]|\*")
 TAG = re.compile(r"<[^>]+>")
 INNER_QUOTES = str.maketrans({'"': "'", "\u201c": "'", "\u201d": "'"})
 
-SYSTEM = """You write copy for The Hourly Scroll, a five-minute public-radio-style newscast on WONE, 1.0 FM.
+SYSTEM = """You write copy for The Hourly Scroll, a five-minute public-radio-style newscast on ONE, 1.0 FM.
 Rules, all mandatory:
 - Write only from the posts given. Add no facts of your own.
 - Attribute every claim to where it was posted: "according to <outlet>", "posters on Hacker News say".

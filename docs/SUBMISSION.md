@@ -26,5 +26,5 @@ Station of One is a radio station with exactly one listener, run by an agent on 
 
 ## Before posting
 
-- Check the call signs (WONE, WNCL) against the FCC's call sign search, or keep the "fictional station" lines as they are (they are on every page).
+- Done Nov 27: renamed to ONE 1.0 FM (no call letters), so no FCC check is needed. Old note: check the call signs (WONE, WNCL) against the FCC's call sign search, or keep the "fictional station" lines as they are (they are on every page).
 - Listen to the newest newscast once; check the control room shows a full green run.

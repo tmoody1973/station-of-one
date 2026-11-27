@@ -1,8 +1,8 @@
-# Station of One · WONE 1.0 FM
+# Station of One · ONE 1.0 FM
 
 **A radio station with exactly one listener, run by an agent on a Fly.io Sprite.** Every hour from 7 am to 7 pm Central it reads public posts (about 1,300 a day), lets TypeSafe AI's Jev decide what airs, and publishes a five-minute newscast with synthetic voices, chapters, a live front page and a control room that shows every decision; each morning it also grades last week's calls (Corrections) and stages a debate show, The Table, that Jev referees.
 
-Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and the show is machine-edited. WONE 1.0 FM and WNCL are fictional stations.
+Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and the show is machine-edited. ONE 1.0 FM is a fictional station.
 
 ## Open it
 
@@ -92,4 +92,4 @@ The network steps need the Sprites connector gateway, so they run on a Sprite wi
 - `docs/decisions/`: the decisions where a reasonable person could have chosen differently, with what was given up.
 - `docs/superpowers/plans/`: the two implementation plans (the newscast, then The Table), executed task by task with tests written first.
 
-Station identity: WONE at 1.0 FM, an invented frequency. The call signs have not been checked against the FCC's database; the page says the stations are fictional.
+Station identity: ONE at 1.0 FM, an invented frequency. It was WONE until Nov 27; real US call signs start with K or W, so the station now uses no call letters at all (`docs/decisions/011-rename-to-one.md`).

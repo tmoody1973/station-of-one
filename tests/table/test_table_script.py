@@ -44,7 +44,7 @@ def test_verdict_and_record_are_code_written():
 
 def test_station_id_line_3_in_record_part():
     ps, _ = built(delivered())
-    assert STATION_ID == "WNCL, broadcasting to a potential audience of one." and ps[-1].turns[-1].text.endswith(STATION_ID)
+    assert STATION_ID == "The Table on ONE, broadcasting to a potential audience of one." and ps[-1].turns[-1].text.endswith(STATION_ID)
 
 
 def test_writer_percentage_rejected_then_falls_back_to_checked_claims():  # Review Focus 3
