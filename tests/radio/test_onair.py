@@ -113,3 +113,14 @@ def test_clock_station_page_never_says_sampler(tmp_path, monkeypatch):
     _, uploads = run(db, tmp_path, monkeypatch)
     html = uploads[f"radio/{RL}/index.html"].decode()
     assert "sampler" not in html.lower() and "program director" in html
+
+
+def test_next_hour_shows_local_start_times(tmp_path, monkeypatch):
+    db = rl_db()
+    _, uploads = run(db, tmp_path, monkeypatch)
+    html = uploads[f"radio/{RL}/index.html"].decode()
+    q = json.loads(uploads[f"data/radio/{RL}/queue.json"])
+    nxt = next(it for it in q["items"] if it["kind"] == "song" and it["starts_at"] > NOW.isoformat())
+    from zoneinfo import ZoneInfo
+    local = datetime.fromisoformat(nxt["starts_at"]).astimezone(ZoneInfo("America/Chicago"))
+    assert f'<span class="at">{local:%-I:%M %p}' .lower() in html.lower()

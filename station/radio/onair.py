@@ -110,6 +110,8 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
         schedule_hour(station, db, local, news if station.clock_for(local.hour).name == "day" else 0)
     items = window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1))
+    for it in items:  # the listener's clock: start times in the station's time zone
+        it["at"] = datetime.fromisoformat(it["starts_at"]).astimezone(tz).strftime("%-I:%M %p").lower()
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
     upcoming = [s for s in songs if s["starts_at"] > now.isoformat() and s["starts_at"] < (now + timedelta(hours=1)).isoformat()]
