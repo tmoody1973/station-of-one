@@ -360,11 +360,6 @@
       "sources": [
         {
           "type": "rss",
-          "ref": "https://pitchfork.com/feed/feed-news/rss",
-          "visibility": "public"
-        },
-        {
-          "type": "rss",
           "ref": "https://www.stereogum.com/feed/",
           "visibility": "public"
         },
