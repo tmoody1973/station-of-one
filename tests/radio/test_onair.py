@@ -84,4 +84,4 @@ def test_sampler_shows_on_now(tmp_path, monkeypatch):
     assert "On now" in html and on[1] in html and "Next hour" in html
     latest = json.loads((tmp_path / RL / "latest.json").read_text())
     assert latest["block"]["tracks"][0]["title"] == on[1]          # the station strip shows what's on now
-    assert f"radio/{RL}/meeting/index.html" in uploads
+    assert f"radio/{RL}/meeting/index.html" in uploads and "radio/how-it-works/index.html" in uploads

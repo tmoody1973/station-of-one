@@ -38,8 +38,8 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
   <span class="tag kicker">Music station · {% if on_now is not none %}on air around the clock{% else %}sampler{% endif %}</span>
   <h1>{{ st.name }}</h1>
   <p>{{ st.brief }}</p>
-  {% if on_now is not none %}<p style="font-size:15px">Programmed around the clock by the station's program director: Jev decides what joins the rotation and what moves; code applies the categories, rest times and hour clocks. <a href="/radio/{{ st.id }}/meeting/index.html">This week's music meeting</a>.</p>
-  {% else %}<p style="font-size:15px">An agent read the station's feeds, Jev judged each find against that brief, and code programmed this {{ minutes }}-minute set from what matched on Apple Music. Every track links to where it was found.</p>{% endif %}
+  {% if on_now is not none %}<p style="font-size:15px">Programmed around the clock by the station's program director: Jev decides what joins the rotation and what moves; code applies the categories, rest times and hour clocks. <a href="/radio/{{ st.id }}/meeting/index.html">This week's music meeting</a> · <a href="/radio/how-it-works/index.html">How the station is programmed</a>.</p>
+  {% else %}<p style="font-size:15px">An agent read the station's feeds, Jev judged each find against that brief, and code programmed this {{ minutes }}-minute set from what matched on Apple Music. Every track links to where it was found. <a href="/radio/how-it-works/index.html">How the station is programmed</a>.</p>{% endif %}
   <button class="connect" disabled title="Full songs need Apple Music sign-in, coming next">Connect Apple Music for full songs · coming soon</button>
 </section>
 <div class="list">

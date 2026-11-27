@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from station.config import Prefs
 from station.radio.meeting import meeting_due, music_meeting
 from station.radio.model import StationConfig
-from station.radio.page import meeting_path, render_meeting, render_sampler, sampler_path
+from station.radio.page import EXPLAINER_PATH, meeting_path, render_explainer, render_meeting, render_sampler, sampler_path
 from station.radio.program import Block
 from station.radio.scheduler import schedule_hour
 from station.radio.tags import tag_songs
@@ -89,6 +89,12 @@ def meeting_view(db: sqlite3.Connection, station: StationConfig) -> tuple[list[d
     return rows, board
 
 
+def _explainer(db, station: StationConfig, prefs: Prefs) -> str:
+    counts = dict(db.execute("SELECT category, COUNT(*) FROM rotation WHERE station_id = ? GROUP BY category", (station.id,)).fetchall())
+    last = db.execute("SELECT MAX(held_at) FROM meeting WHERE station_id = ?", (station.id,)).fetchone()[0]
+    return render_explainer(station, counts, last, prefs)
+
+
 def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime, prefs: Prefs, out_root: Path,
               counts: dict, notes: list[str]) -> dict:
     if meeting_due(db, station, now):
@@ -116,7 +122,8 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     queue = {"station": station.id, "updated": now.isoformat(), "items": [{k: v for k, v in it.items() if k != "candidate_id"} for it in items]}
     pages = ((f"data/radio/{station.id}/queue.json", json.dumps(queue).encode(), "application/json"),
              (sampler_path(station.id), render_sampler(station, block, counts, prefs, on_now=on_now).encode(), "text/html; charset=utf-8"),
-             (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs).encode(), "text/html; charset=utf-8"))
+             (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs).encode(), "text/html; charset=utf-8"),
+             (EXPLAINER_PATH, _explainer(db, station, prefs).encode(), "text/html; charset=utf-8"))
     for key, body, ctype in pages:
         put_object(gw, prefs.hosting.bucket, key, body, ctype, cache_control(key))
     return counts

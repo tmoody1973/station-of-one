@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo-one.png" type="image/png">
+<title>How the station is programmed · {{ st.name }} · {{ station.name }}</title>
+<meta name="description" content="How an agent programs {{ st.name }} like a radio program director: rotation categories, hour clocks, separation rules and a weekly music meeting.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+{% include "_bauhaus.css" %}
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:44px;max-width:1080px}
+.intro h1{margin:0;font-size:54px;font-weight:800;line-height:1.02;max-width:18ch}
+.intro p,.sec p,.sec li{font-size:18px;line-height:1.55;color:var(--ink-2);max-width:68ch}
+.sec h2{margin:0 0 14px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.card{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:18px 20px}
+.card h3{margin:0 0 8px;font-size:20px}
+.card.jev{box-shadow:6px 6px 0 var(--yellow)}.card.code{box-shadow:6px 6px 0 var(--blue)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th{text-align:left;font-size:12px;letter-spacing:.12em;text-transform:lowercase;border-bottom:3px solid var(--ink);padding:8px 10px 8px 0}
+td{border-bottom:1px solid #cfc6ae;padding:10px 10px 10px 0}
+td.n{font-family:var(--mono)}
+.sw{display:inline-block;width:14px;height:14px;border:2px solid var(--ink);vertical-align:-2px;margin-right:6px}
+.clocks{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.clocks figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+.clocks svg{width:100%;max-width:320px;height:auto}
+.clocks figcaption{font-weight:700;text-transform:lowercase;letter-spacing:.1em}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px}
+.never{font-size:24px;font-weight:800;border-left:8px solid var(--red);padding-left:16px;max-width:30ch}
+@media (max-width:800px){.intro h1{font-size:38px}.split,.clocks{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+{% set masthead_line = st.name ~ " · how it's programmed" %}{% include "_masthead.html" %}
+<main class="wrap">
+<section class="intro">
+  <span class="tag kicker">The program director</span>
+  <h1>How {{ st.name }} is programmed</h1>
+  <p>{{ st.brief }}.</p>
+  <p>A radio station's program director decides which songs the station plays, how often, and in what order. On {{ st.name }} an agent does that job around the clock, the way a real station does it: songs sit in rotation categories, every hour follows a clock, and a weekly music meeting decides what moves. <a href="/radio/{{ st.id }}/index.html">Listen to {{ st.name }}</a>{% if last_meeting %} · <a href="/radio/{{ st.id }}/meeting/index.html">the latest music meeting</a>{% endif %}.</p>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">1</span><span class="lbl">Judgment and rules</span></h2>
+  <div class="split">
+    <div class="card jev"><h3>Jev's judgment</h3><p>Jev, a model that answers typed questions with probabilities, decides what a program director decides by ear: does a new record belong here, has a song earned more airplay, are listeners tired of it, how much energy does it have. Every answer is logged with its probability.</p></div>
+    <div class="card code"><h3>Code's rules</h3><p>Plain code applies the station's rules: the categories and their sizes, how long a song rests between plays, the hour clocks, and the separation rules. The numbers on this page are read from the configuration the station is running.</p></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">2</span><span class="lbl">The rotation</span></h2>
+  <p>Every song sits in one category. A category's rest time is how long a song waits before it can play again, so a short rest means a song you hear often.</p>
+  <table>
+    <thead><tr><th>Category</th><th>Songs now</th><th>Size</th><th>Rests between plays</th></tr></thead>
+    <tbody>
+    {% for c in st.rotation.categories %}
+      <tr data-cat="{{ c.code }}"><td><span class="sw" style="background:{{ clocks[0].arcs | selectattr('slot', 'equalto', c.code) | map(attribute='fill') | first | default('var(--card)') }}"></span><b>{{ c.code }}</b> · {{ c.name }}</td>
+        <td class="n">{{ counts.get(c.code, 0) }}</td><td class="n">{{ c.size }}</td>
+        <td class="n">{% if c.rest_hours >= 48 %}{{ (c.rest_hours / 24) | round(1) }} days ({{ c.rest_hours | round(1) }} h){% else %}{{ c.rest_hours | round(1) }} h{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">3</span><span class="lbl">The hour clocks</span></h2>
+  <p>Each hour follows a clock: a fixed order of slots, starting at the top. :00 and :30 always start on time. A song that would run past one is swapped for a shorter one, and any time left over goes to the break before it.</p>
+  <div class="clocks">
+  {% for c in clocks %}
+    <figure>
+      <svg viewBox="-10 -16 260 272" role="img" aria-label="The {{ c.clock.name }} clock: {{ c.arcs | map(attribute='slot') | join(', ') }}" data-clock="{{ c.clock.name }}">
+        <circle cx="120" cy="120" r="108" fill="none" stroke="var(--ink)" stroke-width="3"/>
+        {% for a in c.arcs %}<path d="{{ a.d }}" fill="{{ a.fill }}" stroke="var(--ink)" stroke-width="1.5" data-slot="{{ a.slot }}"><title>{{ a.slot }}</title></path>{% endfor %}
+        <text x="120" y="-3" text-anchor="middle" font-size="12" font-weight="700">:00</text>
+        <text x="120" y="252" text-anchor="middle" font-size="12" font-weight="700">:30</text>
+      </svg>
+      <figcaption>{{ c.clock.name }} · {{ "%02d" | format(c.clock.from_hour) }}:00–{{ "%02d" | format(c.clock.to_hour) }}:59</figcaption>
+    </figure>
+  {% endfor %}
+  </div>
+  <div class="legend">
+    {% for c in st.rotation.categories %}<span><span class="sw" style="background:{{ clocks[0].arcs | selectattr('slot', 'equalto', c.code) | map(attribute='fill') | first | default('var(--card)') }}"></span>{{ c.code }} {{ c.name }}</span>{% endfor %}
+    <span><span class="sw" style="background:var(--paper)"></span>IDs, news, breaks</span>
+  </div>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">4</span><span class="lbl">Separation</span></h2>
+  <p>Before a song can fill a slot, it must pass rules that never bend:</p>
+  <ul>
+    <li>No artist twice within {{ st.separation.artist_hours }} hours.</li>
+    <li>No two songs of {{ (st.separation.long_ms / 60000) | round | int }} minutes or longer back to back.</li>
+    <li>Energy (low, mid, high) never jumps by two between neighbours.</li>
+  </ul>
+  <p>Then softer preferences choose among the songs that pass. When there aren't enough songs to honour them all, they give way in this order: era alternation first, then the mix of sung and instrumental records{% if st.shape %}, then {{ st.name }}'s own hour shape (pairings Tarik played back to back, lower energy in the first half hour, an opener after the news and a closer at the end, a holiday record in season){% endif %}. If nothing passes the hard rules, the slot stays empty and the break runs longer; an artist is never repeated to fill it.</p>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">5</span><span class="lbl">The music meeting</span></h2>
+  <p>Once a week (daily in a station's first week) the program director holds a music meeting. Jev is asked, song by song: should this new record join the rotation; has this song earned more airplay; are listeners tired of this one. Code acts only on clear answers: a probability of {{ n.add }} or more.{% if st.meeting and st.meeting.burn %} A song in the top category for {{ n.burn_days }} days steps down.{% endif %} No category changes more than {{ n.churn }}% of its songs in one meeting, so the station's sound shifts gradually.</p>
+  {% if last_meeting %}<p><a href="/radio/{{ st.id }}/meeting/index.html">See the latest meeting</a>: every decision, with Jev's probability and the reason.</p>{% endif %}
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">6</span><span class="lbl">Where songs come from</span></h2>
+  <p>The agent reads the station's feeds{% if st.feeds %} ({{ st.feeds | length }} music sites and communities){% endif %}, pulls out the records each item names, and Jev rates each one against the station's brief; finds rated {{ n.fit_floor }} or more can go to the music meeting. Each record is matched on Apple Music; a match under {{ (n.match * 100) | round | int }}% confidence is held for a person to check, and originals are preferred over remasters, live takes and edits.{% if st.type == "flagship" %} {{ st.name }} also draws on its own library: thirteen years of Rhythm Lab Radio playlists, where each track starts in the category its play count earned.{% endif %}</p>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">7</span><span class="lbl">Breaks, IDs and news</span></h2>
+  <p>The clock reserves time for station IDs ({{ (n.spoken.id / 1000) | int }} seconds), breaks ({{ (n.spoken["break"] / 1000) | int }} seconds), a tease at :30 and a back-announce before the top of the hour{% if st.news %}, plus the hourly newscast at :00 from 7 am to 6 pm{% endif %}. The voices are synthetic. What gets said in breaks (short facts about the records, each one cited or cut) is being built next.</p>
+</section>
+
+<section class="sec">
+  <h2 class="marker ci"><span class="num">8</span><span class="lbl">What a model never does</span></h2>
+  <p class="never">A language model never picks the next song.</p>
+  <p>Jev answers questions; code applies thresholds and fills the clock. The order of songs comes from the rules above, so every choice can be traced back to a number on this page or a logged decision.</p>
+</section>
+
+<footer>
+  <span>Machine-programmed. Voices are synthetic. Songs play through each listener's own Apple Music; no audio is stored by this station.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+</footer>
+</main>
+{% set player_default = {} %}{% include "_player.html" %}
+</body>
+</html>
