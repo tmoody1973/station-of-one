@@ -14,6 +14,7 @@
   const BASE = new URL(".", (document.currentScript && document.currentScript.src) || location.href);
   const MUSICKIT = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
   const msgEl = $("wone-msg");
+  document.head.querySelectorAll("style").forEach((n) => { n.dataset.wonePage = "1"; });  // the page's own styles, before any script adds one
   let mk = null, mkReady = null, station = null, errors = 0, joining = false;
   let gen = 0, lastStart = 0, rejoinAt = 0;  // gen: a newer tap or sound cancels a tune-in still in progress (review I2)
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
@@ -238,10 +239,10 @@
       if (!item) label.textContent = JSON.parse(root.dataset.default).label || "ONE 1.0 FM";
       // Each page carries its own layout rules in <style>: swap them with the content, or the new content is drawn
       // with the previous page's layout (Tarik, Nov 27). Stylesheet links already loaded (fonts) are kept as they are.
-      document.head.querySelectorAll("style").forEach((n) => n.remove());
+      document.head.querySelectorAll("style[data-wone-page]").forEach((n) => n.remove());  // ours only, never MusicKit's
       const have = new Set([...document.head.querySelectorAll("link[rel=stylesheet]")].map((l) => l.href));
       doc.head.querySelectorAll("link[rel=stylesheet]").forEach((l) => { if (!have.has(l.href)) document.head.append(document.adoptNode(l)); });
-      doc.head.querySelectorAll("style").forEach((n) => document.head.append(document.adoptNode(n)));
+      doc.head.querySelectorAll("style").forEach((n) => { n.dataset.wonePage = "1"; document.head.append(document.adoptNode(n)); });
       here.replaceWith(document.adoptNode(next));
       document.title = doc.title;
       const line = doc.querySelector("header.site .line"), mine = document.querySelector("header.site .line");

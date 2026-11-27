@@ -182,3 +182,9 @@ def test_swapped_page_looks_like_a_fresh_load(page):  # Tarik, 4:54 pm: the layo
     _click(page, "header.site nav a:has-text('News')")            # then reach the front page by a swap
     assert page.evaluate("() => window.__marker") == 1            # a swap, not a reload
     assert page.evaluate(LAYOUT) == fresh
+
+
+def test_swap_keeps_styles_added_by_scripts(page):  # MusicKit adds its own <style>; a swap must not remove it
+    page.evaluate("() => { const s = document.createElement('style'); s.id = 'injected'; s.textContent = '.x{color:red}'; document.head.append(s); }")
+    _click(page, "header.site nav a:has-text('Settings')")
+    assert page.evaluate("() => !!document.getElementById('injected')")
