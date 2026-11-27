@@ -66,6 +66,13 @@ class Writer:
 
 
 @dataclass(frozen=True)
+class MusicPicks:
+    bandcamp_labels: tuple[str, ...] = ()
+    youtube_channels: tuple[str, ...] = ()
+    count: int = 3
+
+
+@dataclass(frozen=True)
 class Hosting:
     bucket: str
     public_base: str
@@ -80,6 +87,7 @@ class Prefs:
     writer: Writer
     hosting: Hosting
     table_voices: TableVoices
+    music_picks: MusicPicks = MusicPicks()
 
 
 def _need(d: dict[str, Any], key: str, where: str) -> Any:
@@ -122,5 +130,8 @@ def load_prefs(path: Path = DEFAULT_PREFS) -> Prefs:
     hosting = Hosting(bucket=_need(h, "bucket", "hosting"), public_base=_need(h, "public_base", "hosting"))
     tv = _need(d, "table_voices", "top level")
     table_voices = TableVoices(**{k: _need(tv, k, "table_voices") for k in ("anchor", "uncle", "anchor_style", "uncle_style")})
+    mp = d.get("music_picks") or {}  # optional: no block, no picks
+    music_picks = MusicPicks(bandcamp_labels=tuple(mp.get("bandcamp_labels", ())),
+                             youtube_channels=tuple(mp.get("youtube_channels", ())), count=int(mp.get("count", 3)))
     return Prefs(station=station, voices=voices, thresholds=thresholds, beats=beats, writer=writer, hosting=hosting,
-                 table_voices=table_voices)
+                 table_voices=table_voices, music_picks=music_picks)

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from contextlib import closing
@@ -520,9 +521,25 @@ def cmd_story(run: Path) -> None:
         rec.counts.update(counts)
 
 
+def run_picks(day: str) -> dict:
+    from station.picks.step import make_picks
+
+    with closing(_db()) as db:
+        return make_picks(Gateway(), load_prefs(), db, day, Path(os.environ.get("STATION_PICKS", "data/picks")))
+
+
+def cmd_picks(run: Path) -> None:
+    """Build step after the first newscast of the day (with Corrections and The Table)."""
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("picks", "Apify + TypeSafe Jev") as rec:
+        out = run_picks(run.name[:10])
+        rec.notes.extend(out["notes"])
+        rec.counts.update(candidates=out["candidates"], picks=len(out["picks"]))
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story,
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story, "picks": cmd_picks,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
             "table-referee": cmd_table_referee, "table-script": cmd_table_script, "table-voice": cmd_table_voice,
             "table-assemble": cmd_table_assemble, "table-page": cmd_table_page, "table-publish": cmd_table_publish,
@@ -547,7 +564,7 @@ def cmd_build(hour: str | None) -> None:
     first_hour = int(load_prefs().station.first_newscast.split(":")[0])
     extra = ({"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour  # daily video after the last newscast
              else {"steps": [*[s for st in build_mod.STEPS for s in (["corrections", st] if st == "rundown" else [st])],
-                             "table"]} if when.hour == first_hour  # Corrections, then The Table from yesterday
+                             "table", "picks"]} if when.hour == first_hour  # Corrections, The Table, music picks
              else {})
     result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
@@ -562,6 +579,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.step == "table" and args.day:
         run_table(args.day)
+        return 0
+    if args.step == "picks" and args.day:
+        print(json.dumps(run_picks(args.day), indent=1))
         return 0
     if args.step == "video" and args.day and args.run is None:
         runs = sorted(Path(os.environ.get("STATION_RUNS", "data/runs")).glob(f"{args.day}T??"))

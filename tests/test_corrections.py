@@ -138,4 +138,4 @@ def test_first_build_of_day_runs_corrections_before_rundown(monkeypatch):
     monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append(kw.get("steps")))
     main(["build", "--hour", "2026-11-27T07"])
     steps = got[0]
-    assert steps.index("corrections") == steps.index("rundown") - 1 and steps[-1] == "table"
+    assert steps.index("corrections") == steps.index("rundown") - 1 and steps[-2:] == ["table", "picks"]
