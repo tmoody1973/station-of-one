@@ -52,7 +52,8 @@ Content is organized into beats; each beat has about five public sources.
 | Milwaukee | Local news RSS, city subreddit | Newscast |
 | Music business and industry | Trade press RSS (added Nov 26, Tarik) | Newscast |
 | Arts and culture | Arts and culture RSS (added Nov 26, Tarik) | Newscast |
-| Music | Bandcamp tags and labels, YouTube channels | Music picks only |
+| Music | Music news RSS (Stereogum, Consequence, Bandcamp Daily, NPR Music; Nov 27) | Newscast |
+| Music picks | Bandcamp labels and YouTube channels (`music_picks` in preferences; Nov 27, decision 007) | Music picks section, daily |
 
 Specific sources and Apify Actors are chosen during the Thursday checks. Each hourly run
 pulls only what is new since the last run. Store link, author, time, text, engagement.

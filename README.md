@@ -29,7 +29,7 @@ Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and th
 10. **Page, publish, archive.** Static pages and audio go to the Tigris bucket; a zip of the hour (scripts, rundown, audio, every Jev answer) goes to Box.
 11. **Finish.** The control room is refreshed and the Sprite takes a checkpoint. If any step fails, the station manager (headless Claude through the Anthropic connector) picks retry or skip from a fixed menu and writes one sentence for the control room.
 
-**Once a day:** after the 7 am newscast, The Table (yesterday's pettiest low-stakes dispute, two agents, Jev scores every claim, code declares the winner) and Corrections (last week's aired calls, checked for follow-up); after the 7 pm newscast, a 30–45 s captioned vertical video of the day's top story (Deepgram word timings, Remotion).
+**Once a day:** after the 7 am newscast, The Table (yesterday's pettiest low-stakes dispute, two agents, Jev scores every claim, code declares the winner) and Corrections (last week's aired calls, checked for follow-up); after the 7 pm newscast, a 30–45 s captioned vertical video of the day's top story (Deepgram word timings, Remotion). Also after the 7 am newscast: **music picks**, three new releases from chosen Bandcamp labels and YouTube channels, ranked by Jev and shown as the artists' official players, which load only when you tap Play (`docs/decisions/007-music-picks.md`).
 
 ## Connectors (Sprites connector gateway)
 
@@ -64,7 +64,7 @@ The Sprite holds the state (SQLite, run folders); the code is plain Python, one 
 
 ```bash
 uv sync
-uv run pytest -q                                              # 307 tests
+uv run pytest -q                                              # 330 tests
 uv run python -m station scrape   --run data/runs/2026-11-27T09   # one step
 uv run python -m station judge    --run data/runs/2026-11-27T09
 uv run python -m station build    --hour 2026-11-27T09            # a whole newscast
