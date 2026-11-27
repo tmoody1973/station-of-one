@@ -69,6 +69,38 @@
     timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
   });
 
+  // Page swaps (decision 010): fetch the next page and replace only <main>, so the player bar, the
+  // masthead and the strip never reload and audio keeps playing. Anything unusual is a normal page load.
+  const NORMAL = /\.(xml|mp3|mp4|m4a|png|jpg|jpeg|zip|pdf)$/i;
+  const swappable = (a) => a.origin === location.origin && !a.target && !a.hasAttribute("download") &&
+    !a.hasAttribute("data-no-swap") && !NORMAL.test(a.pathname) &&
+    !(a.hash && a.pathname === location.pathname && a.search === location.search);
+  async function go(url, push) {
+    try {
+      const r = await fetch(url, { headers: { Accept: "text/html" } });
+      if (!r.ok) throw new Error(String(r.status));
+      const doc = new DOMParser().parseFromString(await r.text(), "text/html");
+      const next = doc.querySelector("main"), here = document.querySelector("main");
+      if (!next || !here) throw new Error("no main");
+      here.replaceWith(document.adoptNode(next));
+      document.title = doc.title;
+      const line = doc.querySelector("header.site .line"), mine = document.querySelector("header.site .line");
+      if (mine) mine.textContent = line ? line.textContent : "";
+      if (push) history.pushState({ wone: true }, "", url);
+      window.scrollTo(0, 0);
+      document.dispatchEvent(new CustomEvent("wone:page", { detail: { url } }));
+    } catch (err) {
+      location.href = url;  // never leave a blank page
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[href]");
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !swappable(a)) return;
+    e.preventDefault();
+    go(a.href, true);
+  });
+  addEventListener("popstate", () => go(location.href, false));
+
   const d = JSON.parse(root.dataset.default || "{}");  // show what ▶ will play, without playing it
   if (d.label) label.textContent = d.label;
   const t = location.hash.match(/t=(\d+)/);  // /index.html#t=95 starts the newscast at 95 s
