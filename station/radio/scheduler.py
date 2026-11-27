@@ -129,8 +129,10 @@ def schedule_hour(station: StationConfig, db: sqlite3.Connection, hour_start_loc
     start = hour_start_local.astimezone(UTC)
     end = start + timedelta(hours=1)
     done = _existing(db, station.id, start, end)
-    if done:
+    if any(it.kind == "song" for it in done):
         return done
+    if done:  # spoken items only (scheduled while the rotation was empty): fill it properly now (review I3)
+        db.execute("DELETE FROM queue WHERE station_id = ? AND starts_at >= ? AND starts_at < ?", (station.id, start.isoformat(), end.isoformat()))
     clock = station.clock_for(hour_start_local.hour)  # local wall-clock hour: daylight saving can't double a clock
     songs = _songs(db, station.id)
     codes = [c.code for c in station.rotation.categories]

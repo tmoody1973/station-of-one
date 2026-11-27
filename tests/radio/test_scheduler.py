@@ -155,3 +155,14 @@ def test_short_songs_fill_the_hour():  # a 9-minute "break" is dead air: extra s
     breaks = [it.duration_ms for it in items if it.kind == "break"]
     assert breaks and max(breaks) <= 25000 + 240000
     assert items[-1].kind == "backsell" and len(music(items)) > 11
+
+
+def test_an_hour_without_songs_is_refilled():  # review I3: scheduled before the library was loaded
+    db = station_db()
+    st = load_station("uk-jazz")
+    empty = schedule_hour(st, db, NOON)
+    assert not music(empty)
+    stock(db)
+    again = schedule_hour(st, db, NOON)
+    assert len(music(again)) >= 11
+    assert db.execute("SELECT COUNT(*) FROM queue WHERE kind = 'id' AND starts_at = ?", (again[0].starts_at,)).fetchone()[0] == 1

@@ -99,7 +99,7 @@ def test_every_decision_logged_with_reason():
     music_meeting(Jev(lambda kind, s: 0.9 if kind != "burned" else 0.1), load_station("uk-jazz"), db, NOW)
     asked = {(r[0], r[1]) for r in db.execute("SELECT post_id, question_id FROM decisions")}
     assert {("radio:new1", "meeting:add"), ("radio:c1", "meeting:up"), ("radio:a1", "meeting:burned")} <= asked
-    rows = db.execute("SELECT candidate_id, action, from_cat, to_cat, p, reason FROM meeting").fetchall()
+    rows = db.execute("SELECT candidate_id, action, from_cat, to_cat, p, reason FROM meeting WHERE action IS NOT NULL").fetchall()
     assert ("new1", "add", None, "C") == rows[[r[0] for r in rows].index("new1")][:4]
     assert all(r[5] for r in rows) and all(r[4] is not None for r in rows)
 
@@ -120,3 +120,35 @@ def test_first_week_meets_daily_then_weekly():
     assert not meeting_due(db, st, wed)              # after the first week: Mondays only
     mon = datetime(2026, 12, 7, 13, 0, tzinfo=UTC)
     assert meeting_due(db, st, mon) and not meeting_due(db, st, mon.replace(hour=11))   # 5 am Chicago: too early
+
+
+def test_a_meeting_that_changes_nothing_still_counts_as_held():  # review I1: no Jev loop every hour
+    db = station_db()
+    member(db, "c1", "C")
+    jev = Jev(lambda kind, s: 0.1)            # Jev says no to everything
+    st = load_station("uk-jazz")
+    assert meeting_due(db, st, NOW)
+    music_meeting(jev, st, db, NOW)
+    assert not meeting_due(db, st, NOW + timedelta(hours=1)) and len(jev.calls) == 1
+
+
+def test_moves_need_room_like_adds():  # review I2
+    db = station_db()
+    for i in range(14):
+        member(db, f"b{i}", "B", artist=f"B{i}")   # B full (14)
+    member(db, "c1", "C")
+    r = music_meeting(Jev(lambda kind, s: 0.95 if s["id"] == "c1" else 0.1), load_station("uk-jazz"), db, NOW)
+    assert cats(db)["c1"] == "C" and any("no room" in n for n in r.notes)
+
+
+def test_library_songs_are_never_dropped():  # review I2: Tarik's most-played records
+    from dataclasses import replace
+
+    from station.radio.model import Rotation
+    db = station_db()
+    rl = load_station("rhythm-lab")
+    small = replace(rl, id="uk-jazz", rotation=Rotation(tuple(replace(c, size=2) if c.code == "M" else c for c in rl.rotation.categories)))
+    for i in range(3):
+        member(db, f"lib:RLT0000{i}", "M", artist=f"M{i}")
+    r = music_meeting(Jev(lambda kind, s: 0.1), small, db, NOW)
+    assert len(cats(db)) == 3 and r.drops == []

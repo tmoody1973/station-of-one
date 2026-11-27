@@ -76,6 +76,8 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
         res.notes.append("no meeting rules for this station")
         return res
     sid, held = station.id, now.isoformat()
+    db.execute("INSERT INTO meeting (station_id, held_at) VALUES (?, ?)", (sid, held))  # held, even if nothing changes (review I1)
+    db.commit()
     members = [_song(db, station, r[:6], now, r[6], r[7]) for r in db.execute(
         "SELECT c.id, c.matched_artist, c.matched_title, c.release_date, sc.fit_score, COALESCE(fi.feed, 'library'), "
         "ro.category, COALESCE(ro.moved_at, ro.added_at) FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id "
@@ -107,6 +109,12 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
     def move(cid, frm, to, prob, reason):
         if not can_leave(frm):
             res.notes.append(f"{cid}: stays in {frm} ({reason}; churn cap or floor)")
+            return
+        if to is not None and count.get(to, 0) >= size.get(to, 0):  # like adds: a full category waits (review I2)
+            res.notes.append(f"{cid}: stays in {frm} ({reason}; no room in {to})")
+            return
+        if to is None and cid.startswith("lib:"):  # Tarik's library is never dropped from the rotation
+            res.notes.append(f"{cid}: kept in {frm} (library song; {reason})")
             return
         if to is None:
             db.execute("DELETE FROM rotation WHERE station_id = ? AND candidate_id = ?", (sid, cid))
