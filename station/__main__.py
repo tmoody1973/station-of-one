@@ -509,9 +509,20 @@ def cmd_corrections(run: Path) -> None:
         rec.counts.update(called=report["called"], held=report["held"], faded=report["faded"])
 
 
+def cmd_story(run: Path) -> None:
+    from station.steps.story import make_stories
+
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("story", "Ollama + Apify + Gemini") as rec:
+        with closing(_db()) as db:
+            _, counts = make_stories(Gateway(), run, load_prefs(), db)
+        rec.notes.extend(counts.pop("notes"))
+        rec.counts.update(counts)
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video,
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
             "table-referee": cmd_table_referee, "table-script": cmd_table_script, "table-voice": cmd_table_voice,
             "table-assemble": cmd_table_assemble, "table-page": cmd_table_page, "table-publish": cmd_table_publish,
