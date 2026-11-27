@@ -236,6 +236,12 @@
       if (!next || !here || !nextBar) throw new Error("not a shell page");  // e.g. an archive page built before the shell
       root.dataset.default = nextBar.dataset.default || "{}";  // the bar's ▶ plays this page's own audio
       if (!item) label.textContent = JSON.parse(root.dataset.default).label || "ONE 1.0 FM";
+      // Each page carries its own layout rules in <style>: swap them with the content, or the new content is drawn
+      // with the previous page's layout (Tarik, Nov 27). Stylesheet links already loaded (fonts) are kept as they are.
+      document.head.querySelectorAll("style").forEach((n) => n.remove());
+      const have = new Set([...document.head.querySelectorAll("link[rel=stylesheet]")].map((l) => l.href));
+      doc.head.querySelectorAll("link[rel=stylesheet]").forEach((l) => { if (!have.has(l.href)) document.head.append(document.adoptNode(l)); });
+      doc.head.querySelectorAll("style").forEach((n) => document.head.append(document.adoptNode(n)));
       here.replaceWith(document.adoptNode(next));
       document.title = doc.title;
       const line = doc.querySelector("header.site .line"), mine = document.querySelector("header.site .line");

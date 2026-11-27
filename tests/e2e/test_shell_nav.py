@@ -115,7 +115,8 @@ def test_more_station_info_panel(page):
     assert page.locator("#wone-strip .strip-panel").is_hidden()
     page.locator("#wone-strip [data-strip-more]").click()
     panel = page.locator("#wone-strip .strip-panel")
-    assert panel.is_visible() and "five minutes on the hour" in panel.inner_text() and "Next up" in panel.inner_text()
+    text = panel.text_content()   # raw text: the panel's styling lowercases headings
+    assert panel.is_visible() and "five minutes on the hour" in text and "Next up" in text and "Rhythm Lab" in text
 
 
 def test_strip_now_links_to_station_page(page):
@@ -168,3 +169,16 @@ def test_phone_page_clears_a_docked_embed(page):  # review I5
     page.wait_for_timeout(500)
     pad, bar = page.evaluate("() => [parseFloat(getComputedStyle(document.body).paddingBottom), document.getElementById('wone-player').offsetHeight]")
     assert pad >= bar
+
+
+LAYOUT = """() => [...document.querySelectorAll('main, main > *, main > * > *')].slice(0, 40).map(e => {
+    const c = getComputedStyle(e); return [e.tagName, e.className, c.display, c.gridTemplateColumns, c.backgroundColor, c.fontSize].join('|'); })"""
+
+
+def test_swapped_page_looks_like_a_fresh_load(page):  # Tarik, 4:54 pm: the layout went funky after changing pages
+    fresh = page.evaluate(LAYOUT)                                 # the front page, loaded fresh
+    page.goto(f"{BASE}/radio/uk-jazz/index.html", wait_until="networkidle")   # start somewhere else, fresh
+    page.evaluate("() => { window.__marker = 1 }")
+    _click(page, "header.site nav a:has-text('News')")            # then reach the front page by a swap
+    assert page.evaluate("() => window.__marker") == 1            # a swap, not a reload
+    assert page.evaluate(LAYOUT) == fresh
