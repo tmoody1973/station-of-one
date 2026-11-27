@@ -101,31 +101,35 @@ def _upload_strip(gw, prefs: Prefs, radio_root: Path) -> None:
                "application/json", cache_control("data/stations.json"))
 
 
-def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, prefs: Prefs, out_root: Path = OUT_ROOT) -> dict:
+def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, prefs: Prefs, out_root: Path = OUT_ROOT,
+                discover: bool = True) -> dict:
     station = load_station(station_id)
     open_radio(db)
     counts: dict = {"items": 0, "extracted": 0, "fit_scored": 0, "resolved": 0, "held": 0, "not_on_apple": 0}
-    new_items, notes = poll(gw, station, db, now)
-    items = {it.id: it for it in [*new_items, *_pending_items(db, station.id)]}
-    counts["items"] = len(new_items)
-    found, ex_notes = extract(gw, prefs.writer.model, list(items.values()))
-    notes += ex_notes
-    counts["extracted"] = sum(len(v) for v in found.values())
-    _store_candidates(db, station.id, found, items, now)
-    seeds, seed_notes = seed_candidates(gw, station, db, now)  # the core, when the feeds run thin (Tarik, Nov 27)
-    notes += seed_notes
-    counts["seeds"] = len(seeds)
-    cands = _unscored(db, station.id)
-    if cands:
-        scores, raw, model, fit_notes = fit_scores(gw, station, cands)
-        notes += fit_notes
-        for cid, score in scores.items():
-            db.execute("INSERT OR REPLACE INTO station_candidates (station_id, candidate_id, fit_score, decided_at) VALUES (?,?,?,?)",
-                       (station.id, cid, score, now.isoformat()))
-            record_decision(db, f"radio:{cid}", f"fit:{station.id}", raw[cid], model or "", now.isoformat())
-        counts["fit_scored"] = len(scores)
-        db.commit()
-    _resolve_some(gw, station, db, now, counts, notes)
+    notes: list[str] = []
+    if discover:  # overnight runs only schedule and publish (plan B1 Task 7)
+        new_items, poll_notes = poll(gw, station, db, now)
+        notes += poll_notes
+        items = {it.id: it for it in [*new_items, *_pending_items(db, station.id)]}
+        counts["items"] = len(new_items)
+        found, ex_notes = extract(gw, prefs.writer.model, list(items.values()))
+        notes += ex_notes
+        counts["extracted"] = sum(len(v) for v in found.values())
+        _store_candidates(db, station.id, found, items, now)
+        seeds, seed_notes = seed_candidates(gw, station, db, now)  # the core, when the feeds run thin (Tarik, Nov 27)
+        notes += seed_notes
+        counts["seeds"] = len(seeds)
+        cands = _unscored(db, station.id)
+        if cands:
+            scores, raw, model, fit_notes = fit_scores(gw, station, cands)
+            notes += fit_notes
+            for cid, score in scores.items():
+                db.execute("INSERT OR REPLACE INTO station_candidates (station_id, candidate_id, fit_score, decided_at) VALUES (?,?,?,?)",
+                           (station.id, cid, score, now.isoformat()))
+                record_decision(db, f"radio:{cid}", f"fit:{station.id}", raw[cid], model or "", now.isoformat())
+            counts["fit_scored"] = len(scores)
+            db.commit()
+        _resolve_some(gw, station, db, now, counts, notes)
     if station.programmer == "clock":  # the program director: a 24/7 queue (plan B1)
         from station.radio.onair import run_clock
         counts["notes"] = notes

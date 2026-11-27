@@ -292,21 +292,42 @@ def test_page_cli_control_room_reflects_saved_log(tmp_path, monkeypatch):
     assert html.count("Build the page") == 1 and "build 1:30" in html
 
 
-def test_build_cli_skips_outside_broadcast_hours(monkeypatch, capsys):
+def _at(hour, minute=48):
     from datetime import datetime as real_dt
 
+    class At(real_dt):
+        @classmethod
+        def now(cls, tz=None):
+            return real_dt(2026, 11, 27, hour, minute, tzinfo=tz)
+    return At
+
+
+def test_overnight_build_runs_radio_only(monkeypatch, capsys):  # plan B1 Task 7: 24 hours a day
+    import sqlite3
+
+    import station.__main__ as cli
+    import station.radio.run as run_mod
+    from station import build as build_mod
+
+    monkeypatch.setattr(cli, "datetime", _at(21))  # 9:48 pm Central: no 10 pm newscast
+    monkeypatch.setattr(build_mod, "build", lambda *a, **kw: (_ for _ in ()).throw(AssertionError("newscast built")))
+    monkeypatch.setattr(cli, "_db", lambda: sqlite3.connect(":memory:"))
+    ran = []
+    monkeypatch.setattr(run_mod, "run_station", lambda gw, sid, db, now, prefs, **kw: (ran.append((sid, kw.get("discover"))), {"notes": []})[1])
+    assert main(["build"]) == 0
+    assert ran == [("rhythm-lab", False)]          # clock stations only; schedule and publish, no feed reading
+    assert "music stations only" in capsys.readouterr().out
+
+
+def test_day_build_unchanged(monkeypatch):
     import station.__main__ as cli
     from station import build as build_mod
 
-    class Late(real_dt):
-        @classmethod
-        def now(cls, tz=None):
-            return real_dt(2026, 11, 27, 21, 48, tzinfo=tz)  # 9:48 pm Central -> 10 pm newscast
-
-    monkeypatch.setattr(cli, "datetime", Late)
-    monkeypatch.setattr(build_mod, "build", lambda *a, **kw: (_ for _ in ()).throw(AssertionError("built")))
+    monkeypatch.setattr(cli, "datetime", _at(11))
+    got = []
+    monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append((hour.hour, kw.get("steps"))))
     assert main(["build"]) == 0
-    assert "outside broadcast hours" in capsys.readouterr().out
+    assert got == [(12, None)]                     # the noon newscast, every step as before
 
 
 def test_build_adds_video_after_the_last_newscast(monkeypatch):

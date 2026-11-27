@@ -85,3 +85,15 @@ def test_sampler_shows_on_now(tmp_path, monkeypatch):
     latest = json.loads((tmp_path / RL / "latest.json").read_text())
     assert latest["block"]["tracks"][0]["title"] == on[1]          # the station strip shows what's on now
     assert f"radio/{RL}/meeting/index.html" in uploads and "radio/how-it-works/index.html" in uploads
+
+
+def test_schedule_only_run_reads_no_feeds(tmp_path, monkeypatch):  # overnight runs skip discovery
+    db = rl_db()
+    monkeypatch.setattr(run_mod, "poll", lambda *a: (_ for _ in ()).throw(AssertionError("polled")))
+    monkeypatch.setattr(onair, "meeting_due", lambda db, st, n: False)
+    uploads = {}
+    put = lambda gw, bucket, key, data, *a: uploads.__setitem__(key, data)
+    monkeypatch.setattr(run_mod, "put_object", put)
+    monkeypatch.setattr(onair, "put_object", put)
+    run_mod.run_station(object(), RL, db, NOW, load_prefs(), out_root=tmp_path, discover=False)
+    assert f"data/radio/{RL}/queue.json" in uploads

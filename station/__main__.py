@@ -547,6 +547,23 @@ def cmd_meeting(station_id: str) -> None:
     print(json.dumps(asdict(res), indent=1))
 
 
+def cmd_radio_overnight() -> None:
+    """Outside newscast hours: the clock stations (plan B1) schedule ahead and publish. No feed reading overnight."""
+    from station.radio.model import STATIONS_ROOT, load_station
+    from station.radio.run import run_station
+    notes: list[str] = []
+    for sid in sorted(p.stem for p in STATIONS_ROOT.glob("*.json")):
+        if load_station(sid).programmer != "clock":
+            continue
+        try:
+            with closing(_db()) as db:
+                out = run_station(Gateway(), sid, db, datetime.now(UTC), load_prefs(), discover=False)
+            notes += [f"{sid}: {n}" for n in out.pop("notes", [])]
+        except Exception as e:  # noqa: BLE001
+            notes.append(f"{sid}: {type(e).__name__}: {str(e)[:160]}")
+    print(json.dumps({"overnight": True, "notes": notes}, indent=1))
+
+
 def cmd_radio(run: Path, station_id: str | None = None) -> None:
     """Build step after finish: update every music station (or one, by hand), each a note on failure."""
     from station.radio.model import STATIONS_ROOT
@@ -600,7 +617,8 @@ def cmd_build(hour: str | None) -> None:
     from station.steps.finish import in_broadcast_hours
 
     if not hour and not in_broadcast_hours(datetime.now(ZoneInfo(tz)), load_prefs()):
-        print(f"build {when:%Y-%m-%dT%H}: outside broadcast hours, nothing to do")
+        cmd_radio_overnight()  # no newscast and no Sprite checkpoint: the 24/7 stations stay 2 hours ahead
+        print(f"build {when:%Y-%m-%dT%H}: outside broadcast hours, music stations only")
         return
     last_hour = int(load_prefs().station.last_newscast.split(":")[0])
     first_hour = int(load_prefs().station.first_newscast.split(":")[0])
