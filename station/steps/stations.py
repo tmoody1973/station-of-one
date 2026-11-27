@@ -32,7 +32,10 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
     configs = [load_station(p.stem, stations_root) for p in sorted(Path(stations_root).glob("*.json"))]
     for st in sorted(configs, key=lambda s: (s.type != "flagship", s.name)):  # the flagship first
         latest = Path(radio_root) / st.id / "latest.json"
-        tracks = json.loads(latest.read_text())["block"]["tracks"] if latest.exists() else []
+        try:  # a half-written or odd file shows the station quietly; it never stops the front page
+            tracks = json.loads(latest.read_text())["block"]["tracks"] if latest.exists() else []
+        except (OSError, ValueError, KeyError, TypeError):
+            tracks = []
         out.append({"id": st.id, "kind": "music", "name": st.name, "on_now": _line(tracks[0]) if tracks else "",
                     "next": [_line(t) for t in tracks[1:3]], "description": st.brief, "page": f"/radio/{st.id}/index.html"})
     return {"updated": datetime.now(UTC).isoformat(timespec="seconds"), "stations": out}

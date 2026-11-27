@@ -170,3 +170,14 @@ def test_new_set_updates_the_station_strip(db, tmp_path, monkeypatch):  # site s
     latest = json.loads((tmp_path / "uk-jazz" / "latest.json").read_text())
     first = latest["block"]["tracks"][0]
     assert jazz["on_now"] == f"{first['artist']} · {first['title']}"   # the set just built, from this run's folder
+
+
+def test_failed_strip_upload_still_schedules(db, tmp_path, monkeypatch):  # review I4
+    _quiet(monkeypatch)
+    _seed_pool(db, 20)
+    def put(gw, bucket, key, *a):
+        if key == "data/stations.json":
+            raise RuntimeError("bucket said no")
+    monkeypatch.setattr(run_mod, "put_object", put)
+    out = run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
+    assert out["scheduled"] > 0 and any("strip" in n for n in out["notes"])

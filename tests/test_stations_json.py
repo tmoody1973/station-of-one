@@ -22,3 +22,11 @@ def test_station_without_a_set_is_listed_quietly(tmp_path):
     out = stations_json(load_prefs(), _newscast(), radio_root=tmp_path)
     jazz = next(s for s in out["stations"] if s["id"] == "uk-jazz")
     assert jazz["on_now"] == "" and jazz["next"] == []
+
+
+def test_torn_latest_json_is_listed_quietly(tmp_path):  # review I4: a half-written file never stops the front page
+    (tmp_path / "uk-jazz").mkdir()
+    (tmp_path / "uk-jazz" / "latest.json").write_text('{"station": "uk-ja')
+    out = stations_json(load_prefs(), _newscast(), radio_root=tmp_path)
+    jazz = next(s for s in out["stations"] if s["id"] == "uk-jazz")
+    assert jazz["on_now"] == "" and out["stations"][0]["id"] == "news"

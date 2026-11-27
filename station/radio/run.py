@@ -142,7 +142,10 @@ def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, pref
     for key, body, ctype in ((f"data/radio/{station.id}.json", json.dumps(data).encode(), "application/json"),
                              (sampler_path(station.id), html.encode(), "text/html; charset=utf-8")):
         put_object(gw, prefs.hosting.bucket, key, body, ctype, cache_control(key))
-    _upload_strip(gw, prefs, Path(out_root))  # the station strip shows the new set
     mark_scheduled(db, block, now)  # only after the upload: a failed upload burns nothing
     counts["scheduled"] = len(block.tracks)
+    try:  # the strip is a nicety: its failure never fails the set
+        _upload_strip(gw, prefs, Path(out_root))
+    except Exception as e:  # noqa: BLE001
+        notes.append(f"station strip not updated: {e}")
     return counts
