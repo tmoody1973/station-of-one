@@ -1,0 +1,7 @@
+{# Shared masthead (site shell, Nov 27): logo, page line, nav, and the station strip filled by shell.js from /data/stations.json. #}
+<header class="site"><div class="wrap">
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
+    {% if masthead_line %}<span class="line">{{ masthead_line }}</span>{% endif %}</div>
+  <nav><a href="/index.html">News</a><a href="/radio/uk-jazz/index.html">Music</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav>
+</div></header>
+<nav class="strip" id="wone-strip" aria-label="Stations"><div class="wrap strip-row"></div></nav>

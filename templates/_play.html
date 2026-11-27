@@ -1,0 +1,4 @@
+{# data-play: everything the shared player needs, as JSON (escaped by tojson for an HTML attribute). #}
+{% macro play(src, title, label, start=0, chapters=[], kind="newscast") -%}
+data-play='{{ {"src": src, "title": title, "label": label, "start": start, "chapters": chapters, "kind": kind} | tojson }}'
+{%- endmacro %}

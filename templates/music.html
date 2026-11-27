@@ -35,11 +35,7 @@ footer{grid-column:1/-1}
 </style>
 </head>
 <body>
-<header class="site"><div class="wrap">
-  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
-    <span class="line">{{ station.name }} · music picks</span></div>
-  <nav><a href="/index.html">Front page</a><a href="/index.html#music">All picks</a></nav>
-</div></header>
+{% set masthead_line = station.name ~ " · music picks" %}{% include "_masthead.html" %}
 <main class="wrap">
 <article>
   <span class="tag kicker">Music pick · {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} · {{ p.source }}</span>
@@ -82,5 +78,6 @@ document.querySelectorAll(".tap").forEach(b => b.addEventListener("click", () =>
   b.replaceWith(f);
 }));
 </script>
+{% set player_default = {} %}{% include "_player.html" %}
 </body>
 </html>

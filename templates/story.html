@@ -40,11 +40,7 @@ footer{grid-column:1/-1}
 </style>
 </head>
 <body>
-<header class="site"><div class="wrap">
-  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
-    <span class="line">{{ station.name }} · {{ station.show_name }}</span></div>
-  <nav><a href="/index.html">Front page</a><a href="{{ n.page }}">{{ n.hour_label }} newscast</a><a href="/control-room/index.html">Control room</a></nav>
-</div></header>
+{% set masthead_line = station.name ~ " · " ~ station.show_name %}{% include "_masthead.html" %}
 <main class="wrap">
 <article>
   <span class="tag kicker">{{ beats[s.beat_id].name if s.beat_id in beats else s.beat_id }}</span>
@@ -90,5 +86,6 @@ footer{grid-column:1/-1}
 const a = document.getElementById("story-audio"), b = document.getElementById("listen");
 b.addEventListener("click", () => { if (!a.paused) { a.pause(); return; } if (a.currentTime === 0) a.currentTime = b.dataset.startMs / 1000; a.play(); });
 </script>
+{% set player_default = {"src": n.audio_url, "title": s.headline, "label": n.hour_label ~ " newscast", "start": (s.chapter_start_ms or 0) / 1000, "chapters": n.chapters, "kind": "story"} %}{% include "_player.html" %}
 </body>
 </html>

@@ -30,11 +30,7 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
 </style>
 </head>
 <body>
-<header class="site"><div class="wrap">
-  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
-    <span class="line">{{ st.name }} · machine-programmed</span></div>
-  <nav><a href="/index.html">Newscast</a><a href="/control-room/index.html">Control room</a></nav>
-</div></header>
+{% set masthead_line = st.name ~ " · machine-programmed" %}{% include "_masthead.html" %}
 <main class="wrap">
 <section class="intro">
   <span class="tag kicker">Music station · sampler</span>
@@ -88,5 +84,6 @@ document.querySelectorAll(".pv").forEach(b => b.addEventListener("click", () => 
 }));
 audio.addEventListener("pause", () => { if (current) { current.classList.remove("on"); current.textContent = "▶ Preview"; } });
 </script>
+{% set player_default = {} %}{% include "_player.html" %}
 </body>
 </html>

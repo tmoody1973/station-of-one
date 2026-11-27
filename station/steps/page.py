@@ -327,8 +327,8 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
         mp.parent.mkdir(parents=True, exist_ok=True)
         mp.write_text(render_pick(picks, pk, prefs))
         story_pages.append(mp)
-    player = site / "player.js"
-    player.write_text((TEMPLATES / "player.js").read_text())
+    player = site / "shell.js"  # the site shell: one player for every page (decision 010)
+    player.write_text((TEMPLATES / "shell.js").read_text())
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
     feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0, episodes))

@@ -46,8 +46,8 @@ def test_play_from_story_uses_chapter_start():
     n = newscast()
     html = render_front(n, [n], PREFS)
     lead = n["stories"][0]
-    assert f'data-start-ms="{lead["chapter_start_ms"]}"' in html
-    assert "Play from this story" in html and f'src="/audio/{n["id"]}.mp3"' in html
+    assert f'"start": {lead["chapter_start_ms"] / 1000}' in html  # the shared player starts at the chapter
+    assert "Play from this story" in html and f'/audio/{n["id"]}.mp3' in html
 
 
 def test_today_list_newest_first():
@@ -82,7 +82,7 @@ def test_page_writes_front_and_hour_files(tmp_path):
         (runs / h / "newscast.json").write_text(json.dumps(newscast(h)))
     written = page(runs / "2026-11-26T17", PREFS, runs_root=runs)
     names = sorted(str(p.relative_to(runs / "2026-11-26T17" / "site")) for p in written)
-    assert names == ["feed.xml", "h/2026-11-26/1700/index.html", "index.html", "player.js"]
+    assert names == ["feed.xml", "h/2026-11-26/1700/index.html", "index.html", "shell.js"]
 
 
 def test_only_http_links_render():  # scraped URLs are untrusted

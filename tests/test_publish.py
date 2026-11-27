@@ -20,7 +20,7 @@ class RecordingGateway:
 
 def make_run(tmp_path):
     run = tmp_path / "2026-11-26T17"
-    for rel in ["site/index.html", "site/h/2026-11-26/1700/index.html", "site/player.js",
+    for rel in ["site/index.html", "site/h/2026-11-26/1700/index.html", "site/shell.js",
                 "site/control-room/index.html", "site/settings/index.html"]:
         (run / rel).parent.mkdir(parents=True, exist_ok=True)
         (run / rel).write_text("<p>x</p>")
@@ -41,7 +41,7 @@ def test_content_types():
 def test_hour_pages_and_index_keys(tmp_path):
     gw = RecordingGateway()
     keys = publish(gw, make_run(tmp_path), "b")
-    assert set(keys) == {"index.html", "h/2026-11-26/1700/index.html", "player.js", "control-room/index.html",
+    assert set(keys) == {"index.html", "h/2026-11-26/1700/index.html", "shell.js", "control-room/index.html",
                          "settings/index.html", "audio/2026-11-26T17.mp3", "data/2026-11-26T17.json"}
     assert keys[-1] == "index.html"  # front page last, so it never links to audio that isn't up yet
     assert keys.index("audio/2026-11-26T17.mp3") < keys.index("h/2026-11-26/1700/index.html")
