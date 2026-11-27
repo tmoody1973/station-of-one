@@ -319,23 +319,68 @@
           "type": "rss",
           "ref": "https://www.theguardian.com/us/culture/rss",
           "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://news.artnet.com/feed",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.dezeen.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.openculture.com/feed",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.artforum.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://lithub.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://www.smithsonianmag.com/rss/arts-culture/",
+          "visibility": "public"
         }
       ]
     },
     {
       "id": "music",
       "name": "Music",
-      "used_in": "music_picks",
+      "used_in": "newscast",
       "color": "#5b2a86",
       "sources": [
         {
-          "type": "bandcamp_tag",
-          "ref": "REPLACE_ME",
+          "type": "rss",
+          "ref": "https://pitchfork.com/feed/feed-news/rss",
           "visibility": "public"
         },
         {
-          "type": "youtube_channel",
-          "ref": "REPLACE_ME",
+          "type": "rss",
+          "ref": "https://www.stereogum.com/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://consequence.net/feed/",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://daily.bandcamp.com/feed",
+          "visibility": "public"
+        },
+        {
+          "type": "rss",
+          "ref": "https://feeds.npr.org/1039/rss.xml",
           "visibility": "public"
         }
       ]
