@@ -295,8 +295,20 @@ def todays_newscasts(run: Path, runs_root: Path = RUNS_ROOT) -> list[dict]:
     return out
 
 
+MUSICKIT_TOKEN = Path("data/musickit_token")  # Tarik's origin-locked web token (Plan C, decision 012); git-ignored
+
+
+def musickit_config(token_path: Path) -> dict | None:
+    """MusicKit on the Web's settings for the browser, or None until Tarik has placed the web token."""
+    try:
+        token = Path(token_path).read_text().strip()
+    except OSError:
+        return None
+    return {"developerToken": token, "app": {"name": "ONE 1.0 FM", "build": "2026.11.27"}} if token else None
+
+
 def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict | None = None,
-         control_room: bool = True) -> list[Path]:
+         control_room: bool = True, musickit_token: Path = MUSICKIT_TOKEN) -> list[Path]:
     current = json.loads((run / "newscast.json").read_text())
     today = todays_newscasts(run, runs_root) or [current]
     site = run / "site"
@@ -340,6 +352,11 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
     written = [front, hour, player, strip, feed, *story_pages]
+    mk = musickit_config(musickit_token)
+    if mk:  # public by design: MusicKit on the Web needs it in the browser; Apple honours it only from our origin
+        mk_path = site / "data" / "musickit.json"
+        mk_path.write_text(json.dumps(mk))
+        written.append(mk_path)
     if control_room and (run / "run_log.json").exists() and (run / "rundown.json").exists():
         written += write_control_room(run, prefs, current)
     if beat_counts is not None:
