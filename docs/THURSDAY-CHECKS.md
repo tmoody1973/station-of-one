@@ -330,3 +330,10 @@ Original notes:
 ### 14. Hourly trigger, take two (Nov 26)
 - GitHub Actions' schedule (`48 * * * *` UTC, active) fired **zero** times across the 1:48, 2:48 and 3:12 pm checks. Moved to a Cloudflare Worker Cron Trigger (`trigger/`, no public URL, token as a Worker secret).
 - First Cloudflare run: build 2026-11-26T16 started **15:48:31 Central** (31 s after the minute), all 11 steps done by 15:50:30. Unattended.
+
+### 15. Story images (Nov 27)
+Spike `spikes/check15_story_images.py`, run on the Sprite.
+- **Apify `apify~cheerio-scraper`** refused at first: `HTTP 403 full-permission-actor-not-approved` (the actor runs custom page code, so Apify asks the account owner to approve it). Tarik approved it in the Apify console. Rerun: 7 publisher links in **8.7 s for $0.0009**; **6 of 7 returned an `og:image`** (EFF, The Art Newspaper, BBC, Radio Ink, Milwaukee NNS, Urban Milwaukee); a personal blog had none.
+- **Gemini `gemini-3.1-flash-image`** via `/v1beta/models/gemini-3.1-flash-image:generateContent`, `responseModalities: ["IMAGE"]`, `imageConfig: {aspectRatio: "16:9", imageSize: "1K"}`: one **JPEG, 1376×768, ~800 KB, 8.0 s**; 88 prompt tokens, 1,120 image tokens. Google's pricing page gives both **$0.034** and **$0.067** per 1K image for this model; at most ~65 a day that is $2.20–4.40.
+- Dry run of the `story` step on a copy of run 2026-11-27T10 (before photos were approved): 19 s; 4 of 5 articles (84–110 words, attributed; one dropped after a retry for an unattributed paragraph); 5 illustrations, all abstract, no people or text.
+- Assumption: the illustration prompt keeps people and text out. Held for 6 of 6 images so far; not guaranteed.
