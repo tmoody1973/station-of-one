@@ -111,6 +111,31 @@
   });
   addEventListener("popstate", () => go(location.href, false));
 
+  // Station strip (Task 5): News and every music station, what is on now, re-read every minute. Text only:
+  // headlines come from scraped posts, so nothing here is ever inserted as HTML.
+  const stripEl = document.getElementById("wone-strip");
+  async function drawStrip() {
+    const row = stripEl && stripEl.querySelector(".strip-row");
+    if (!row) return;
+    try {
+      const r = await fetch(stripEl.dataset.src, { cache: "no-cache" });
+      if (!r.ok) return;  // keep whatever is showing
+      const chips = (await r.json()).stations.map((st) => {
+        const c = document.createElement(st.play ? "button" : "a");
+        c.className = "chip";
+        if (st.play) c.dataset.play = JSON.stringify(st.play); else c.href = st.page;
+        c.title = st.description || "";
+        const b = document.createElement("b"); b.textContent = st.name;
+        const n = document.createElement("span"); n.textContent = st.on_now || "warming up";
+        c.append(b, n);
+        return c;
+      });
+      row.replaceChildren(...chips);
+    } catch (err) { /* the strip is a nicety: a failed read leaves the page as it is */ }
+  }
+  drawStrip();
+  setInterval(drawStrip, 60000);
+
   const d = JSON.parse(root.dataset.default || "{}");  // show what ▶ will play, without playing it
   if (d.label) label.textContent = d.label;
   const t = location.hash.match(/t=(\d+)/);  // /index.html#t=95 starts the newscast at 95 s

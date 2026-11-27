@@ -97,3 +97,14 @@ def test_controls_work_after_swap(page):
     page.wait_for_timeout(800)
     t = page.evaluate("() => document.getElementById('wone-audio').currentTime")
     assert start <= t <= start + 5 and page.evaluate("() => window.__marker") == 1
+
+
+def test_station_strip(page):
+    page.wait_for_function("() => document.querySelectorAll('#wone-strip .chip').length >= 2", timeout=10000)
+    names = page.locator("#wone-strip .chip b").all_inner_texts()
+    assert names[0] == "News" and "ONE Jazz" in names
+    page.locator("#wone-strip .chip", has_text="News").click()
+    page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
+    _click(page, "#wone-strip .chip:has-text('ONE Jazz')")
+    s = page.evaluate(STATE)
+    assert s["path"].endswith("/radio/uk-jazz/index.html") and not s["paused"] and s["marker"]

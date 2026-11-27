@@ -55,6 +55,10 @@ footer{border-top:7px solid var(--ink);padding-top:18px;display:flex;flex-wrap:w
 .strip{background:var(--ink);color:var(--paper)}
 .strip-row{display:flex;gap:18px;align-items:center;overflow-x:auto;padding-top:8px;padding-bottom:8px;font-size:14px;scrollbar-width:none}
 .strip-row:empty{display:none}
+.strip .chip{display:flex;flex-direction:column;gap:1px;flex:none;max-width:280px;padding:4px 12px 4px 10px;border:0;border-left:4px solid var(--yellow);background:transparent;color:var(--paper);text-align:left;font:inherit;cursor:pointer;text-decoration:none}
+.strip .chip b{font-size:13px;letter-spacing:.12em;text-transform:lowercase;color:var(--yellow)}
+.strip .chip span{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.strip .chip:hover span{text-decoration:underline}
 body{padding-bottom:96px}
 .player{background:var(--ink);color:var(--paper);position:fixed;left:0;right:0;bottom:0;z-index:20;border-top:4px solid var(--yellow)}
 .player .wrap{padding-top:10px;padding-bottom:10px;display:flex;flex-wrap:wrap;gap:16px;align-items:center}

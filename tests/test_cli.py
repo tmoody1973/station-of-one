@@ -270,7 +270,7 @@ def test_page_cli_writes_site(tmp_path, monkeypatch):
     assert main(["page", "--run", str(run)]) == 0
     assert (run / "site/index.html").exists() and (run / "site/h/2026-11-26/1700/index.html").exists()
     assert (run / "site/settings/index.html").exists()
-    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"pages": 5}
+    assert json.loads((run / "run_log.json").read_text())["steps"][-1]["counts"] == {"pages": 6}  # + data/stations.json for the station strip
 
 
 def test_page_cli_control_room_reflects_saved_log(tmp_path, monkeypatch):

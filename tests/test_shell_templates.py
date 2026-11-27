@@ -94,3 +94,8 @@ def test_controls_say_what_to_play():
 def test_data_play_attributes_escaped():
     h = _with_content()
     assert "T\\u0027s" in h["sampler"] and "Is it \\u0027good\\u0027?" in h["table"]
+
+
+def test_strip_knows_where_its_data_is():
+    for name, html in pages().items():
+        assert 'id="wone-strip" data-src="/data/stations.json"' in html, name

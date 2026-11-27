@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import UTC, datetime
 
@@ -156,3 +157,16 @@ def test_agent_log_counts_seed_matches():  # review minor 6
 
 def test_no_preview_button_without_a_preview():  # review minor 7
     assert 'class="pv"' not in page([{**TRACK, "preview_url": ""}])
+
+
+def test_new_set_updates_the_station_strip(db, tmp_path, monkeypatch):  # site shell Task 5
+    _quiet(monkeypatch)
+    _seed_pool(db, 20)
+    uploads = {}
+    monkeypatch.setattr(run_mod, "put_object", lambda gw, bucket, key, data, *a: uploads.__setitem__(key, data))
+    run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
+    strip = json.loads(uploads["data/stations.json"])
+    jazz = next(s for s in strip["stations"] if s["id"] == "uk-jazz")
+    latest = json.loads((tmp_path / "uk-jazz" / "latest.json").read_text())
+    first = latest["block"]["tracks"][0]
+    assert jazz["on_now"] == f"{first['artist']} · {first['title']}"   # the set just built, from this run's folder
