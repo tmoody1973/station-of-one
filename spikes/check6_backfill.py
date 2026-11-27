@@ -10,6 +10,7 @@ Run:  sprite exec -s brave-indigo-lion -- bash -c 'cd ~/spikes && python3 check6
 import json
 import os
 import sqlite3
+import sys
 import time
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -17,8 +18,10 @@ from zoneinfo import ZoneInfo
 from gw import call, connection
 
 CENTRAL = ZoneInfo("America/Chicago")
-DAY_START = datetime(2026, 11, 19, tzinfo=CENTRAL)
-DAY_END = datetime(2026, 11, 20, tzinfo=CENTRAL)
+# Day to backfill (Central), e.g. 2026-11-20; default is the original Nov 19 run.
+DAY = sys.argv[1] if len(sys.argv) > 1 else "2026-11-19"
+DAY_START = datetime.fromisoformat(DAY).replace(tzinfo=CENTRAL)
+DAY_END = datetime.fromtimestamp(DAY_START.timestamp() + 86400, CENTRAL)
 ACTOR = "constructive_calm~hacker-news-scraper"
 ACTOR_INPUT = {
     "mode": "search", "searchQuery": "AI", "searchTags": ["story"], "sortSearchBy": "relevance",
@@ -41,7 +44,7 @@ QUESTIONS = {
                        "instructions": "Is the central claim in `post` supported by a linked primary source?"},
     "private_harm": {"type": "noul", "instructions": "Could airing `post` harm a private individual?"},
 }
-DB = os.path.expanduser("~/spikes/check6/backfill.db")
+DB = os.path.expanduser("~/spikes/check6/backfill.db" if DAY == "2026-11-19" else f"~/spikes/check6/backfill-{DAY}.db")
 os.makedirs(os.path.dirname(DB), exist_ok=True)
 
 db = sqlite3.connect(DB)
