@@ -31,6 +31,18 @@ Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and th
 
 **Once a day:** after the 7 am newscast, The Table (yesterday's pettiest low-stakes dispute, two agents, Jev scores every claim, code declares the winner) and Corrections (last week's aired calls, checked for follow-up); after the 7 pm newscast, a 30–45 s captioned vertical video of the day's top story (Deepgram word timings, Remotion). Also after the 7 am newscast: **music picks**, three new releases from chosen Bandcamp labels and YouTube channels, ranked by Jev and shown as the artists' official players, which load only when you tap Play (`docs/decisions/007-music-picks.md`).
 
+## Music stations (in progress)
+
+The same agent programs music stations heard through each listener's own Apple Music subscription (`config/stations/`, `station/radio/`). Each hour, as the last build step, the UK jazz station:
+
+1. reads its feeds (UK Vibe, Brownswood, Bandcamp Daily, r/Jazz);
+2. has Ollama list the music each item names;
+3. has Jev rate every find against the station brief (the core artists from the station's seed list are added and rated too);
+4. matches the finds on Apple Music (matches under 80% confidence are held; originals beat remasters and live takes);
+5. programs a 50-minute set (no artist twice in 3 hours, a mix of new, recent and older records).
+
+The sampler page (https://patient-mountain-3400.fly.storage.tigris.dev/radio/uk-jazz/index.html) shows the set: each track's note and source link, Apple's 30-second preview (plays only when tapped, never advancing on its own) and a "Listen on Apple Music" link. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: a persistent player across the site, voice breaks with cited facts, and full songs through MusicKit.
+
 ## Connectors (Sprites connector gateway)
 
 No API key is in the Sprite, the code, the config or this repo. Every call goes through the gateway.
