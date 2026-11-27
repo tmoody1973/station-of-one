@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS rotation (
 CREATE TABLE IF NOT EXISTS queue (
   station_id TEXT, starts_at TEXT, kind TEXT, candidate_id TEXT, song_id TEXT, duration_ms INTEGER, category TEXT,
   note TEXT, source_url TEXT, PRIMARY KEY (station_id, starts_at));
+CREATE TABLE IF NOT EXISTS library_pairs (a TEXT, b TEXT, count INTEGER, PRIMARY KEY (a, b));
 CREATE TABLE IF NOT EXISTS meeting (
   station_id TEXT, held_at TEXT, candidate_id TEXT, action TEXT, from_cat TEXT, to_cat TEXT, p REAL, reason TEXT);
 """
