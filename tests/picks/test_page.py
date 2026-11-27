@@ -22,7 +22,7 @@ def test_picks_escape_text_and_build_embed_from_id():  # Review Focus 1
     n = _newscast()
     html = render_front(n, [n], load_prefs(), picks=PICKS)
     assert "Patti &lt;b&gt;&#34;Smith&#34;&lt;/b&gt;" in html or "Patti &lt;b&gt;&quot;Smith&quot;&lt;/b&gt;" in html
-    assert 'data-embed="https://www.youtube-nocookie.com/embed/lN96f4SwJyk?autoplay=1"' in html
+    assert '"src": "https://www.youtube-nocookie.com/embed/lN96f4SwJyk?autoplay=1"' in html  # in the shared player's data-play
     assert "javascript:alert" not in html
 
 

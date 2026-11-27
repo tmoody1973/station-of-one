@@ -53,3 +53,44 @@ def test_front_play_buttons_carry_what_to_play():
 def test_no_old_player_left_on_front():
     html = pages()["front"]
     assert 'id="time"' not in html and 'id="player"' not in html and html.count('data-skip="-15"') == 1
+
+
+def _with_content() -> dict[str, str]:
+    from station.steps.page import render_pick
+    from station.table.build import render_table
+    prefs = load_prefs()
+    out = dict(pages())
+    track = {"candidate_id": "c", "song_id": "1", "artist": "A", "title": "T's", "album": "Al", "release_date": "2024-01-01",
+             "duration_ms": 1, "preview_url": "https://audio-ssl.itunes.apple.com/p.m4a", "apple_url": "https://music.apple.com/x",
+             "artwork_url": "https://a", "fit": 0.9, "note": "n", "source_url": "https://s", "era": "new"}
+    out["sampler"] = render_sampler(load_station("uk-jazz"), Block("uk-jazz", "b", "2026-11-27T18:00:00+00:00", [track]), {}, prefs)
+    pick = {"source": "Ninja Tune", "kind": "bandcamp", "embed_id": "3626022129", "title": "Chaos Theory", "artist": "Amon Tobin",
+            "url": "https://x", "score": 0.7, "paragraphs": None}
+    out["pick"] = render_pick({"day": "2026-11-27", "picks": [pick]}, pick, prefs)
+    ep = {"day": "2026-11-26", "question": "Is it 'good'?", "positions": {"anchor": "a", "uncle": "u"},
+          "thread": {"title": "t", "source": "Hacker News", "url": "https://x"}, "rounds": [],
+          "verdict": {"winner": "draw", "anchor": 1.0, "uncle": 1.0}, "record": {"anchor": 0, "uncle": 0, "draw": 1},
+          "chapters": [{"title": "The question", "start_ms": 0, "end_ms": 21000}, {"title": "Round 1", "start_ms": 41000, "end_ms": 71000}],
+          "audio": {"duration_ms": 150000, "bytes": 1, "key": "audio/table-2026-11-26-abc.mp3"}}
+    out["table"] = render_table(ep, prefs)
+    return out
+
+
+def test_no_inline_page_scripts_left():
+    for name, html in _with_content().items():
+        scripts = re.findall(r"<script[^>]*>", html)
+        assert scripts == ['<script src="/shell.js" defer>'], (name, scripts)
+        assert html.count("<audio") == 1, name   # only the player bar's
+
+
+def test_controls_say_what_to_play():
+    h = _with_content()
+    assert '"kind": "preview"' in h["sampler"] and "audio-ssl.itunes.apple.com/p.m4a" in h["sampler"]
+    assert '"kind": "table"' in h["table"] and '"start": 41.0' in h["table"]
+    assert '"kind": "story"' in h["story"] and '"start": 9.0' in h["story"]
+    assert "data-stage-embed=" in h["pick"] and '"kind": "embed"' in h["pick"]
+
+
+def test_data_play_attributes_escaped():
+    h = _with_content()
+    assert "T\\u0027s" in h["sampler"] and "Is it \\u0027good\\u0027?" in h["table"]

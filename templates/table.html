@@ -1,4 +1,4 @@
-<!doctype html>
+{% from "_play.html" import play %}<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -36,8 +36,7 @@ footer{flex-direction:column;gap:6px}
     The Anchor argues: {{ ep.positions.anchor }} The Uncle argues: {{ ep.positions.uncle }}</p>
 </div>
 <section class="player">
-  <audio id="table-audio" controls preload="metadata" src="/{{ ep.audio.key }}"></audio>
-  <div class="chapters">{% for c in ep.chapters %}<button data-start-ms="{{ c.start_ms }}">{{ c.title }} · {{ c.start_ms | duration }}</button>{% endfor %}</div>
+  <div class="chapters">{% for c in ep.chapters %}<button {{ play("/" ~ ep.audio.key, ep.question, "The Table", c.start_ms / 1000, ep.chapters, "table") }}>{{ c.title }} · {{ c.start_ms | duration }}</button>{% endfor %}</div>
   <span class="muted" style="font-size:13px">{{ duration }} · voices are synthetic</span>
 </section>
 {% for r in ep.rounds %}
@@ -64,10 +63,6 @@ footer{flex-direction:column;gap:6px}
   <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
 </footer>
 </main>
-<script>
-const a = document.getElementById("table-audio");
-document.querySelectorAll("[data-start-ms]").forEach(b => b.addEventListener("click", () => { a.currentTime = b.dataset.startMs / 1000; a.play(); }));
-</script>
 {% set player_default = {"src": "/" ~ ep.audio.key, "title": ep.question, "label": "The Table", "chapters": ep.chapters, "kind": "table"} %}{% include "_player.html" %}
 </body>
 </html>

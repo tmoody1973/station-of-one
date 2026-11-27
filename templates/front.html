@@ -190,8 +190,7 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
           <span class="tag">{{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} · {{ p.source }}</span>
           <h3>{% if p.page %}<a href="{{ p.page }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}</h3>
           <span style="font-weight:600">{{ p.artist }}</span>
-          <div class="player-slot" data-kind="{{ p.kind }}"></div>
-          <div class="row"><button class="btn-line" data-embed="{{ p.embed }}" data-kind="{{ p.kind }}" data-title="{{ p.artist }}: {{ p.title }}">Play here</button>
+          <div class="row"><button class="btn-line" {{ play(p.embed, p.artist ~ ": " ~ p.title, "Music pick · " ~ p.source, 0, [], "embed") }}>Play here</button>
             <a href="{{ p.url | safe_url }}" rel="noopener" target="_blank">on {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }}</a></div>
         </div>
       </article>
@@ -209,20 +208,6 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
   <a href="/feed.xml">Podcast feed (RSS)</a>
 </footer>
 </main>
-{% if picks and picks.picks %}<script>
-// Music picks: nothing loads from Bandcamp or YouTube until the reader taps Play.
-document.querySelectorAll("[data-embed]").forEach(b => b.addEventListener("click", () => {
-  const slot = b.closest(".body").querySelector(".player-slot");
-  if (slot.firstChild) return;
-  const f = document.createElement("iframe");
-  f.src = b.dataset.embed; f.title = b.dataset.title; f.loading = "lazy";
-  f.allow = "autoplay; encrypted-media"; f.referrerPolicy = "strict-origin-when-cross-origin"; // YouTube error 153 without a referrer
-  f.style.border = "0"; f.style.width = "100%";
-  f.style.height = b.dataset.kind === "bandcamp" ? "120px" : "";
-  if (b.dataset.kind !== "bandcamp") f.style.aspectRatio = "16/9";
-  slot.appendChild(f); b.remove();
-}));
-</script>{% endif %}
 {% set player_default = {"src": n.audio_url, "title": "Press play", "label": "On air · " ~ n.hour_label ~ " newscast", "chapters": n.chapters, "kind": "newscast"} %}{% include "_player.html" %}
 </body>
 </html>

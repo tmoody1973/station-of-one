@@ -1,4 +1,4 @@
-<!doctype html>
+{% from "_play.html" import play %}<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -47,8 +47,7 @@ footer{grid-column:1/-1}
   <h1>{{ s.headline }}</h1>
   <p class="dek">{{ s.summary }}</p>
   <div class="byline"><span><b>ONE newsroom</b> · written and voiced by machine · {{ n.hour_label }}, {{ date_label }}</span>
-    <button class="btn-dark" id="listen" data-start-ms="{{ s.chapter_start_ms }}">Listen · {{ ((s.seconds or 0) * 1000) | duration }}</button>
-    <audio id="story-audio" preload="none" src="{{ n.audio_url }}"></audio></div>
+    <button class="btn-dark" {{ play(n.audio_url, s.headline, n.hour_label ~ " newscast", (s.chapter_start_ms or 0) / 1000, n.chapters, "story") }}>Listen · {{ ((s.seconds or 0) * 1000) | duration }}</button></div>
 
   <div class="art" style="background:{{ beats[s.beat_id].color if s.beat_id in beats else '#1f3a5f' }}"><i></i><span>{{ beats[s.beat_id].name if s.beat_id in beats else s.beat_id }}</span>
     {% if image %}<img src="{{ image.src | safe_url if image.kind == 'photo' else image.src }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</div>
@@ -82,10 +81,6 @@ footer{grid-column:1/-1}
   <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
 </footer>
 </main>
-<script>
-const a = document.getElementById("story-audio"), b = document.getElementById("listen");
-b.addEventListener("click", () => { if (!a.paused) { a.pause(); return; } if (a.currentTime === 0) a.currentTime = b.dataset.startMs / 1000; a.play(); });
-</script>
 {% set player_default = {"src": n.audio_url, "title": s.headline, "label": n.hour_label ~ " newscast", "start": (s.chapter_start_ms or 0) / 1000, "chapters": n.chapters, "kind": "story"} %}{% include "_player.html" %}
 </body>
 </html>

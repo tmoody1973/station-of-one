@@ -27,7 +27,7 @@ def page(tracks=(TRACK,)):
 def test_previews_never_autoplay_next():  # Review Focus 5
     html = page([TRACK, {**TRACK, "candidate_id": "c2", "song_id": "2"}])
     assert "autoplay" not in html and "ended" not in html
-    assert html.count('data-preview="https://audio-ssl.itunes.apple.com/p.m4a"') == 2
+    assert html.count('"src": "https://audio-ssl.itunes.apple.com/p.m4a"') == 2 and html.count('"kind": "preview"') == 2
 
 
 def test_every_track_has_source_and_apple_link():

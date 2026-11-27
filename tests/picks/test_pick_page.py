@@ -24,7 +24,7 @@ def test_big_embeds():
 def test_pick_page_has_big_player_on_tap_writeup_and_score():
     html = render_pick(PICKS, PICKS["picks"][0], load_prefs())
     assert "<iframe" not in html.split("<script")[0]
-    assert f'data-embed="{embed_url(PICKS["picks"][0], big=True)}"' in html
+    assert f'data-stage-embed="{embed_url(PICKS["picks"][0], big=True)}"' in html
     assert "&lt;b&gt;reissue&lt;/b&gt;" in html and "73%" in html
     assert "Hermanos Gutiérrez" in html   # more picks
     assert 'href="https://amontobin.bandcamp.com/album/chaos-theory"' in html

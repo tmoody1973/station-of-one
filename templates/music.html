@@ -1,4 +1,4 @@
-<!doctype html>
+{% from "_play.html" import play %}<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -42,10 +42,11 @@ footer{grid-column:1/-1}
   <h1>{{ p.title }}</h1>
   <p class="artist">{{ p.artist }}</p>
   <div class="stage {{ p.kind }}">
-    <button class="tap" data-embed="{{ big }}" data-title="{{ p.artist }}: {{ p.title }}" aria-label="Play {{ p.artist }}: {{ p.title }}">
+    <button class="tap" data-stage-embed="{{ big }}" data-title="{{ p.artist }}: {{ p.title }}" aria-label="Play {{ p.artist }}: {{ p.title }}">
       <b><svg aria-hidden="true" width="34" height="34" viewBox="0 0 18 18"><path d="M4 2l12 7-12 7z" fill="#fff"/></svg></b>
       <span>tap to load the official {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} player</span></button>
   </div>
+  <p><button class="btn-line" {{ play(p.embed or big, p.artist ~ ": " ~ p.title, "Music pick · " ~ p.source, 0, [], "embed") }}>Keep it playing as you browse</button></p>
   <div class="body">
   {% if p.paragraphs %}
     {% for para in p.paragraphs %}<p>{{ para }}</p>{% endfor %}
@@ -70,14 +71,6 @@ footer{grid-column:1/-1}
   <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
 </footer>
 </main>
-<script>
-document.querySelectorAll(".tap").forEach(b => b.addEventListener("click", () => {
-  const f = document.createElement("iframe");
-  f.src = b.dataset.embed; f.title = b.dataset.title; f.allow = "autoplay; encrypted-media; fullscreen";
-  f.referrerPolicy = "strict-origin-when-cross-origin";
-  b.replaceWith(f);
-}));
-</script>
 {% set player_default = {} %}{% include "_player.html" %}
 </body>
 </html>

@@ -82,3 +82,18 @@ def test_failed_fetch_falls_back(page):
     page.wait_for_load_state("load")
     assert page.evaluate("() => window.__marker") is None   # a real page load happened, not a blank page
     assert "deliberately has no main" in page.content()
+
+
+def test_controls_work_after_swap(page):
+    _click(page, "header.site nav a:has-text('Music')")          # reached by a swap, not a page load
+    page.locator("main .pv").first.click()
+    page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('itunes.apple.com') }", timeout=15000)
+    assert "preview" in page.locator("#wone-label").inner_text().lower()
+    page.go_back()
+    page.wait_for_function("() => document.querySelector('main [data-play]') !== null", timeout=10000)
+    start = page.evaluate("() => JSON.parse(document.querySelector('main [data-play]').dataset.play).start")
+    page.locator("main [data-play]").first.click()
+    page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
+    page.wait_for_timeout(800)
+    t = page.evaluate("() => document.getElementById('wone-audio').currentTime")
+    assert start <= t <= start + 5 and page.evaluate("() => window.__marker") == 1

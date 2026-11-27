@@ -20,7 +20,8 @@
       audio.pause();
       const f = document.createElement("iframe");
       f.src = next.src; f.title = next.title || ""; f.allow = "autoplay; encrypted-media; fullscreen";
-      f.referrerPolicy = "strict-origin-when-cross-origin"; f.style.height = next.height || "152px";
+      f.referrerPolicy = "strict-origin-when-cross-origin";
+      f.style.height = next.height || (/youtube/.test(next.src) ? "202px" : "120px");  // Bandcamp's small player is 120 px
       embed.replaceChildren(f); embed.hidden = false;
     } else {
       embed.replaceChildren(); embed.hidden = true;
@@ -50,6 +51,15 @@
 
   $("wone-play").addEventListener("click", () => (audio.paused ? play() : audio.pause()));
   document.addEventListener("click", (e) => {  // delegated: works on first loads and after page swaps
+    const stage = e.target.closest("[data-stage-embed]");  // a big player that lives on its page (music picks)
+    if (stage) {
+      audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one thing at a time
+      const f = document.createElement("iframe");
+      f.src = stage.dataset.stageEmbed; f.title = stage.dataset.title || "";
+      f.allow = "autoplay; encrypted-media; fullscreen"; f.referrerPolicy = "strict-origin-when-cross-origin";
+      stage.replaceWith(f);
+      return;
+    }
     const p = e.target.closest("[data-play]");
     if (p) { e.preventDefault(); play(JSON.parse(p.dataset.play)); return; }
     const s = e.target.closest("[data-skip]");
