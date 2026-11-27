@@ -537,9 +537,41 @@ def cmd_picks(run: Path) -> None:
         rec.counts.update(candidates=out["candidates"], picks=len(out["picks"]))
 
 
+def cmd_radio(run: Path, station_id: str | None = None) -> None:
+    """Build step after finish: update every music station (or one, by hand), each a note on failure."""
+    from station.radio.model import STATIONS_ROOT
+    from station.radio.run import run_station
+
+    ids = [station_id] if station_id else sorted(p.stem for p in STATIONS_ROOT.glob("*.json"))
+
+    def run_all() -> tuple[dict, list[str]]:
+        totals: dict = {}
+        notes: list[str] = []
+        for sid in ids:  # a station that fails is a note; it never stops the build (review I1)
+            try:
+                with closing(_db()) as db:
+                    out = run_station(Gateway(), sid, db, datetime.now(UTC), load_prefs())
+            except Exception as e:  # noqa: BLE001
+                notes.append(f"{sid}: {type(e).__name__}: {str(e)[:160]}")
+                continue
+            notes += [f"{sid}: {n}" for n in out.pop("notes", [])]
+            totals[sid] = out
+        return totals, notes
+
+    if run is None:
+        totals, notes = run_all()
+        print(json.dumps({"stations": totals, "notes": notes}, indent=1))
+        return
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
+    with log.step("radio", "Apify + Ollama + Jev + Apple Music") as rec:
+        totals, notes = run_all()
+        rec.notes.extend(notes)
+        rec.counts.update({k: sum(t.get(k, 0) for t in totals.values()) for k in ("items", "extracted", "resolved", "seeds", "scheduled")})
+
+
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
             "write": cmd_write, "voice": cmd_voice, "assemble": cmd_assemble, "page": cmd_page,
-            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story, "picks": cmd_picks,
+            "publish": cmd_publish, "archive": cmd_archive, "finish": cmd_finish, "video": cmd_video, "story": cmd_story, "picks": cmd_picks, "radio": cmd_radio,
             "table-topic": cmd_table_topic, "table-argue": cmd_table_argue,
             "table-referee": cmd_table_referee, "table-script": cmd_table_script, "table-voice": cmd_table_voice,
             "table-assemble": cmd_table_assemble, "table-page": cmd_table_page, "table-publish": cmd_table_publish,
@@ -562,9 +594,10 @@ def cmd_build(hour: str | None) -> None:
         return
     last_hour = int(load_prefs().station.last_newscast.split(":")[0])
     first_hour = int(load_prefs().station.first_newscast.split(":")[0])
-    extra = ({"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour  # daily video after the last newscast
-             else {"steps": [*[s for st in build_mod.STEPS for s in (["corrections", st] if st == "rundown" else [st])],
-                             "table", "picks"]} if when.hour == first_hour  # Corrections, The Table, music picks
+    news = [s for s in build_mod.STEPS if s != "radio"]  # the music stations always run last (review I1)
+    extra = ({"steps": [*news, "video", "radio"]} if when.hour == last_hour  # daily video after the last newscast
+             else {"steps": [*[s for st in news for s in (["corrections", st] if st == "rundown" else [st])],
+                             "table", "picks", "radio"]} if when.hour == first_hour  # Corrections, The Table, music picks
              else {})
     result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
@@ -576,9 +609,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run", type=Path, help="run folder for one step, e.g. data/runs/2026-11-27T09")
     parser.add_argument("--hour", help="build: newscast hour YYYY-MM-DDTHH (local); default = next top of the hour")
     parser.add_argument("--day", help="video: YYYY-MM-DD; uses that day's last run folder")
+    parser.add_argument("--station", help="radio: one music station id (config/stations/<id>.json)")
     args = parser.parse_args(argv)
     if args.step == "table" and args.day:
         run_table(args.day)
+        return 0
+    if args.step == "radio" and args.run is None:
+        cmd_radio(None, args.station)
         return 0
     if args.step == "picks" and args.day:
         print(json.dumps(run_picks(args.day), indent=1))

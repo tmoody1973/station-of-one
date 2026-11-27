@@ -178,7 +178,7 @@ def render_story(newscast: dict, story: dict, extra: dict | None, prefs: Prefs) 
 
 STEP_LABELS = {"scrape": "Scrape sources", "dedupe": "Find duplicates", "judge": "Judge every post",
                "rundown": "Build the rundown", "write": "Write the scripts", "voice": "Voice the newscast",
-               "assemble": "Assemble audio", "story": "Write story pages", "page": "Build the page", "publish": "Publish", "archive": "Archive",
+               "assemble": "Assemble audio", "story": "Write story pages", "radio": "Music station", "page": "Build the page", "publish": "Publish", "archive": "Archive",
                "finish": "Finish"}
 DOTS = {"done": "green", "repaired": "amber", "failed": "red", "running": "white"}
 
@@ -199,6 +199,7 @@ def _detail(name: str, c: dict) -> str:
         "finish": "control room updated, Sprite checkpoint",
         "video": f"{g('seconds', 0):.0f} s video, {g('words', 0)} captioned words",
         "table": "The Table, from yesterday's threads",
+        "radio": f"{g('items', 0)} feed items, {g('resolved', 0)} matched, {g('scheduled', 0)} in the set",
         "story": f"{g('articles', 0)} articles, {g('photos', 0)} photos, {g('illustrations', 0)} illustrations",
     }.get(name, "")
 

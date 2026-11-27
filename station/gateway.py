@@ -44,8 +44,10 @@ class Gateway:
         if self._bases is None:
             with self._urlopen(self._list_url, timeout=30) as r:
                 listing = json.loads(r.read())
-            self._bases = {c["provider"]: c["gateway_base_url"].rstrip("/")
-                           for c in listing.get("connections", [])}
+            conns = listing.get("connections", [])
+            self._bases = {c["provider"]: c["gateway_base_url"].rstrip("/") for c in conns}
+            # a connection id also works, for providers with more than one connector (custom_api)
+            self._bases.update({c["id"]: c["gateway_base_url"].rstrip("/") for c in conns if c.get("id")})
         if provider not in self._bases:
             raise GatewayError(provider, 0, f"no '{provider}' connector is visible to this Sprite; "
                                             f"add it in the Fly dashboard and grant access")

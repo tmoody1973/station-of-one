@@ -11,3 +11,6 @@ spikes/output/
 .claude/settings.local.json
 .remember/
 docs/Station of One PRD.md
+
+# Apple MusicKit private keys never belong in the repo
+*.p8

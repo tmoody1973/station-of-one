@@ -26,6 +26,7 @@ FALLBACKS: dict[str, list[str]] = {
     "publish": ["retry"], "archive": ["retry", "skip"], "finish": ["retry", "skip"], "video": ["retry", "skip"], "table": ["retry", "skip"], "corrections": ["retry", "skip"],
     "story": ["retry", "skip"],
     "picks": ["retry", "skip"],
+    "radio": ["retry", "skip"],
 }
 SKIP_MEANS = {
     "scrape": "continue with no new posts; the rundown still considers recent unaired stories",
@@ -38,6 +39,7 @@ SKIP_MEANS = {
     "corrections": "skip today's Corrections segment; the newscast runs with a longer lead",
     "story": "publish story pages without articles or new images this hour; the newscast is unaffected",
     "picks": "skip today's music picks; yesterday's stay on the page and the newscasts are unaffected",
+    "radio": "skip the music station's update this hour; its last set stays on the page and the newscast is unaffected",
 }
 
 
