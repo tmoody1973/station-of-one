@@ -411,5 +411,18 @@
   "hosting": {
     "bucket": "patient-mountain-3400",
     "public_base": "https://patient-mountain-3400.fly.storage.tigris.dev"
+  },
+  "music_picks": {
+    "bandcamp_labels": [
+      "stonesthrow",
+      "subpop",
+      "ninjatune"
+    ],
+    "youtube_channels": [
+      "UC4eYXhJI4-7wSWc8UNRwD4A",
+      "UC3I2GFN_F8WudD_2jUZbojA",
+      "UC2Qw1dzXDBAZPwS7zm37g8g"
+    ],
+    "count": 3
   }
 }

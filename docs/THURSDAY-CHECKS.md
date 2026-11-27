@@ -339,3 +339,9 @@ Spike `spikes/check15_story_images.py`, run on the Sprite.
 - Assumption: the illustration prompt keeps people and text out. Held for 6 of 6 images so far; not guaranteed.
 - **First live run, 11 am newscast (run 2026-11-27T11, by hand after a blocked code update):** story step 20.5 s; 4 of 5 articles (one dropped at 361 words, cap 350); 3 publisher photos (pressgazette.co.uk, completemusicupdate.com, theverge.com) and 2 illustrations; Apify $0.0004. All 5 story pages and every image return HTTP 200 from the bucket.
 - **Found on the way:** the Sprite's `git pull` had been failing since ~10:15 because a hand-copied spike file blocked it, so the 10:48 build ran old code (no story step). `start_build.sh` only printed the failure to the trigger's reply; it now also writes it to `data/builds.log`.
+
+### 16. Music picks (Nov 27)
+Spike `spikes/check16_music_picks.py`, run on the Sprite. Starter sources chosen by Claude; Tarik can edit `music_picks` in preferences.
+- **YouTube channel RSS** (`https://www.youtube.com/feeds/videos.xml?channel_id=…`) through the existing RSS reader actor: NPR Music, KEXP, COLORS → 44 items in **1.7 s, $0.0000**. `item_link` is `watch?v=<id>` or `shorts/<id>`; Shorts are vertical clips, mostly not music, and are left out.
+- **Bandcamp label `/music` pages** through the Cheerio Scraper: each grid item is `li[data-item-id="album-<id>"]` with `p.title` and `.artist-override`. Stones Throw and Sub Pop: 6 albums each in **5.2 s, $0.0003**. **Warp's `/music` redirects to a single album page (no grid)**, so Warp was replaced by Ninja Tune (16 grid albums). The grid carries no release dates; labels list newest first.
+- Embeds respond: `https://bandcamp.com/EmbeddedPlayer/album=<id>/…` HTTP 200; `https://www.youtube-nocookie.com/embed/<id>` HTTP 200. Playback in a browser not checked yet (Task 6).
