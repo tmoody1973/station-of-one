@@ -34,11 +34,13 @@
 - [ ] **Step 1: Failing tests:** `test_changing_files_are_private_no_cache` (`index.html`, `data/stations.json`, `feed.xml`, `shell.js` → `"private, no-cache"`; an immutable asset and the MP4 unchanged); `test_music_link_goes_to_the_flagship`.
 - [ ] **Step 2:** Run. Expected: FAIL. **Step 3:** Implement. **Step 4:** Run, plus the e2e suite (tests that reached ONE Jazz through "Music" now go through its strip chip). Expected: PASS. Commit.
 
-### Task 2: Strip chips open pages; a separate ▶ tunes in; on-now from the schedule (fixes a, d)
+### Task 2: A KCRW-pattern station strip that follows the player (fixes a, c for the strip, d)
 
-**Files:** `station/steps/stations.py` (clock stations add `"schedule": [{"starts_at", "ends_at", "line"}]` for the next 3 hours of songs); `templates/shell.js` (chip = a link with the name and on-now line, plus a `▶` button when the entry has `play`; a clock station's line is picked from `schedule` by the clock, or by the player when this browser plays it); `templates/_bauhaus.css`; tests in `tests/test_stations_json.py`, e2e.
+Tarik's KCRW screenshots (structure only, in our Bauhaus look; no real outlet's design is copied): an "on air" pill; per station a **name box with ▶ that plays it**, then **what's on now** (a link to the station page); at the right **"More station info"**, opening a panel with one column per station: name, on-air pill, artwork, start time, what's on, description, **Next up** with its time, and links to the station page (and for clock stations, the program director's page).
 
-- [ ] **Step 1: Failing tests:** `test_clock_station_publishes_its_schedule`; e2e `test_chip_name_opens_station_page`, `test_chip_play_button_tunes_in` (replaces `test_strip_chip_tunes_in`), `test_sampler_chip_opens_page` (Focus 4), and `test_station_strip` updated to the ▶ button for News.
+**Files:** `station/radio/onair.py` (`latest.json` tracks for clock stations cover 3 hours, each with `starts_at`, `ends_at`, `at`, `song_id`, `title`, `artist`, `artwork_url`); `station/steps/stations.py` (every entry: `now` and `next` as `{at, title, art}`; clock stations add `schedule`; News: the current newscast and the next one's time); `templates/shell.js` (renders the strip and panel; a clock station's now/next come from `schedule` by the clock, **or from the player's own song while this browser plays that station**; redrawn on every song change); `templates/_bauhaus.css`; tests in `tests/test_stations_json.py` and e2e.
+
+- [ ] **Step 1: Failing tests:** `test_strip_entries_have_now_next_and_description`, `test_clock_station_publishes_its_schedule`, `test_news_next_is_the_next_newscast`; e2e `test_strip_name_box_plays` (News ▶ plays the newscast; Rhythm Lab ▶ tunes in), `test_strip_now_links_to_station_page`, `test_more_station_info_panel`, `test_strip_follows_the_player` (Focus 1: the player plays a song the schedule doesn't have now; Rhythm Lab's strip text names the player's song), `test_sampler_chip_opens_page` (Focus 4).
 - [ ] **Step 2:** Run. Expected: FAIL. **Step 3:** Implement. **Step 4:** Run. Expected: PASS. Commit.
 
 ### Task 3: The station page as a live playlist (fixes c, e)
