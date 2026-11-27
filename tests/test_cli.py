@@ -350,3 +350,15 @@ def test_radio_runs_last_and_never_stops_the_build(monkeypatch, tmp_path):  # re
     import json
     step = [s for s in json.loads((run / "run_log.json").read_text())["steps"] if s["name"] == "radio"][0]
     assert step["status"] == "done" and any("KeyError" in n for n in step["notes"])
+
+
+def test_radio_meeting_by_hand(monkeypatch, capsys):  # plan B1 Task 4: radio --station uk-jazz --meeting
+    import sqlite3
+    import station.__main__ as cli
+    import station.radio.meeting as meeting_mod
+    seen = []
+    monkeypatch.setattr(cli, "_db", lambda: sqlite3.connect(":memory:"))
+    monkeypatch.setattr(meeting_mod, "music_meeting",
+                        lambda gw, st, db, now: (seen.append(st.id), meeting_mod.MeetingResult(adds=["c1"]))[1])
+    assert main(["radio", "--station", "uk-jazz", "--meeting"]) == 0
+    assert seen == ["uk-jazz"] and '"adds": [\n  "c1"' in capsys.readouterr().out

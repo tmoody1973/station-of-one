@@ -70,6 +70,7 @@ class StationConfig:
     rotation: Rotation = Rotation(())
     clocks: tuple[Clock, ...] = ()
     separation: dict[str, Any] | None = None
+    meeting: dict[str, Any] | None = None  # the station's ladder: new, catalog, top, up, burn, age, down
 
     def clock_for(self, local_hour: int) -> Clock:
         return next(c for c in self.clocks if c.covers(local_hour))
@@ -84,7 +85,7 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
                          rotation=Rotation(tuple(Category(c["code"], c["name"], c["size"], c["rest_hours"]) for c in d.get("rotation", []))),
                          clocks=tuple(Clock(c["name"], c["from_hour"], c["to_hour"],
                                             tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
-                         separation=d.get("separation"))
+                         separation=d.get("separation"), meeting=d.get("meeting"))
 
 
 SCHEMA = """

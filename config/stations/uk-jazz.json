@@ -184,5 +184,24 @@
     "artist_hours": 3,
     "long_ms": 420000,
     "max_energy_step": 1
+  },
+  "meeting": {
+    "new": "C",
+    "catalog": "G",
+    "top": "A",
+    "up": {
+      "C": "B",
+      "B": "A"
+    },
+    "burn": {
+      "A": "R"
+    },
+    "age": {
+      "R": "G"
+    },
+    "down": {
+      "A": "B",
+      "B": "C"
+    }
   }
 }
