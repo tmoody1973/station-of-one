@@ -251,3 +251,11 @@ def test_strip_follows_the_player(make_page):  # live-playlist Focus 1: the head
     pg.locator("#wone-skip-song").click()
     pg.wait_for_function("""() => [...document.querySelectorAll('#wone-strip .st')].some(s =>
         s.textContent.includes('Rhythm Lab') && s.querySelector('.st-now').textContent.includes('Song s2'))""", timeout=5000)
+
+
+def test_label_follows_the_song_even_without_an_event(make_page):  # Tarik, 5:04 pm: the bar named a song that wasn't playing
+    pg = make_page()
+    tune(pg)
+    pg.wait_for_function("() => document.getElementById('wone-now').textContent.includes('Song s1')", timeout=5000)
+    pg.evaluate("() => { MusicKit.getInstance().idx += 1 }")      # Apple moved on to the next song, and said nothing
+    pg.wait_for_function("() => document.getElementById('wone-now').textContent.includes('Song s2')", timeout=3000)

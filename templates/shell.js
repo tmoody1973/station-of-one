@@ -57,13 +57,7 @@
     }
     await MusicKit.configure(cfg);
     mk = MusicKit.getInstance();
-    mk.addEventListener("nowPlayingItemDidChange", ({ item: song }) => {
-      if (station && song) {
-        errors = 0;
-        nowEl.textContent = [song.title, song.artistName].filter(Boolean).join(" · ");
-        document.dispatchEvent(new CustomEvent("wone:song"));  // the strip and the station page follow what plays
-      }
-    });
+    mk.addEventListener("nowPlayingItemDidChange", () => showSong());
     mk.addEventListener("mediaPlaybackError", () => station && failed());
     return mk;
   }
@@ -133,6 +127,7 @@
     root.classList.add("station");
     label.textContent = next.label || next.title || "Live";
     nowEl.textContent = next.title || "";
+    shownSong = null;
     lastStart = 0;
     rejoinAt = 0;
     await join(false, my);
@@ -145,8 +140,19 @@
     item = null;
     root.classList.remove("station");
   }
+  let shownSong = null;
+  function showSong() {  // name what Apple says is playing now; its change event can come late or not at all
+    const song = mk && mk.nowPlayingItem;
+    const id = song ? String(song.id) : null;
+    if (!station || !song || id === shownSong) return;
+    shownSong = id;
+    errors = 0;
+    nowEl.textContent = [song.title, song.artistName].filter(Boolean).join(" · ");
+    document.dispatchEvent(new CustomEvent("wone:song"));  // the strip and the station page follow what plays
+  }
   setInterval(() => {  // the station's clock, progress and end of queue
     if (!station || !mk) return;
+    showSong();
     const t = mk.currentPlaybackTime || 0, d = mk.currentPlaybackDuration || 0;
     fill.style.width = d ? `${(t / d) * 100}%` : "0";
     timeEl.textContent = `${fmt(t)} / ${fmt(d)}`;
