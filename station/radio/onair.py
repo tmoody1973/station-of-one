@@ -110,8 +110,10 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
         schedule_hour(station, db, local, news if station.clock_for(local.hour).name == "day" else 0)
     items = window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1))
-    for it in items:  # the listener's clock: start times in the station's time zone
-        it["at"] = datetime.fromisoformat(it["starts_at"]).astimezone(tz).strftime("%-I:%M %p").lower()
+    for it in items:  # the listener's clock: start times in the station's time zone; end times for the browser
+        start_dt = datetime.fromisoformat(it["starts_at"])
+        it["at"] = start_dt.astimezone(tz).strftime("%-I:%M %p").lower()
+        it["ends_at"] = (start_dt + timedelta(milliseconds=it["duration_ms"] or 0)).isoformat()
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
     upcoming = [s for s in songs if s["starts_at"] > now.isoformat() and s["starts_at"] < (now + timedelta(hours=1)).isoformat()]
@@ -121,7 +123,8 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     out.mkdir(parents=True, exist_ok=True)
     tracks = [t for t in [on_now, *upcoming] if t]
     (out / "latest.json").write_text(json.dumps({"station": station.id, "block": {"tracks": tracks}}, indent=1))
-    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), upcoming)
+    on_page = [s for s in songs if s["ends_at"] > now.isoformat()]  # the browser picks what's on from these (shell.js)
+    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), on_page)
     queue = {"station": station.id, "updated": now.isoformat(), "items": [{k: v for k, v in it.items() if k != "candidate_id"} for it in items]}
     pages = ((f"data/radio/{station.id}/queue.json", json.dumps(queue).encode(), "application/json"),
              (sampler_path(station.id), render_sampler(station, block, counts, prefs, on_now=on_now).encode(), "text/html; charset=utf-8"),

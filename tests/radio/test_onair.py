@@ -81,7 +81,7 @@ def test_sampler_shows_on_now(tmp_path, monkeypatch):
     on = db.execute("SELECT q.candidate_id, c.matched_title FROM queue q JOIN candidates c ON c.id = q.candidate_id "
                     "WHERE q.station_id = ? AND q.kind = 'song' AND q.starts_at <= ? ORDER BY q.starts_at DESC LIMIT 1",
                     (RL, NOW.isoformat())).fetchone()
-    assert "On now" in html and on[1] in html and "Next hour" in html
+    assert "On now" in html and on[1] in html and "Coming up" in html
     latest = json.loads((tmp_path / RL / "latest.json").read_text())
     assert latest["block"]["tracks"][0]["title"] == on[1]          # the station strip shows what's on now
     assert f"radio/{RL}/meeting/index.html" in uploads and "radio/how-it-works/index.html" in uploads
@@ -124,3 +124,14 @@ def test_next_hour_shows_local_start_times(tmp_path, monkeypatch):
     from zoneinfo import ZoneInfo
     local = datetime.fromisoformat(nxt["starts_at"]).astimezone(ZoneInfo("America/Chicago"))
     assert f'<span class="at">{local:%-I:%M %p}' .lower() in html.lower()
+
+
+def test_page_lets_the_browser_pick_on_now(tmp_path, monkeypatch):  # review minor 3, re-graded: On now was frozen for an hour
+    import re
+    db = rl_db()
+    _, uploads = run(db, tmp_path, monkeypatch)
+    html = uploads[f"radio/{RL}/index.html"].decode()
+    rows = re.findall(r'<div class="trk" data-starts="([^"]+)" data-ends="([^"]+)" data-title="[^"]+" data-by="[^"]*" data-apple="[^"]*"', html)
+    assert len(rows) >= 20                                       # this song through the next two hours
+    assert rows[0][0] <= NOW.isoformat() < rows[0][1]            # the first row is the song on when the page was built
+    assert 'id="onnow"' in html and '<span class="tag kicker lbl">On now</span>' in html

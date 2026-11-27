@@ -23,6 +23,7 @@ main.wrap{padding-top:34px;padding-bottom:56px;display:grid;grid-template-column
 .pv{background:var(--card);border:2px solid var(--ink);padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 .pv.on{background:var(--yellow)}
 .am{font-size:13px;font-weight:700;white-space:nowrap}
+.trk.past{display:none}.trk.now{background:var(--card);box-shadow:inset 6px 0 0 var(--red);padding-left:10px}
 .at{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--red);margin-right:6px}
 .onnow{background:var(--ink);color:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--red);padding:18px 20px;margin-bottom:28px;display:flex;flex-direction:column;gap:6px}
 .onnow h2{margin:0;font-size:30px;line-height:1.1}.onnow .by{color:#d9d2bf}.onnow .am{color:var(--yellow)}
@@ -44,11 +45,11 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
   <button class="connect" disabled title="Full songs need Apple Music sign-in, coming next">Connect Apple Music for full songs · coming soon</button>
 </section>
 <div class="list">
-  {% if on_now %}<div class="onnow"><span class="tag kicker">On now</span><h2>{{ on_now.title }}</h2><div class="by">{{ on_now.artist }}{% if on_now.note %} · {{ on_now.note }}{% endif %}</div>
+  {% if on_now %}<div class="onnow" id="onnow"><span class="tag kicker lbl">On now</span><h2>{{ on_now.title }}</h2><div class="by">{{ on_now.artist }}{% if on_now.note %} · {{ on_now.note }}{% endif %}</div>
     <a class="am" href="{{ on_now.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a></div>{% endif %}
-  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">{% if st.programmer == "clock" %}Next hour{% else %}This set{% endif %}</span></h2>
+  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">{% if st.programmer == "clock" %}Coming up{% else %}This set{% endif %}</span></h2>
   {% for t in block.tracks %}
-  <div class="trk">
+  <div class="trk"{% if t.ends_at %} data-starts="{{ t.starts_at }}" data-ends="{{ t.ends_at }}" data-title="{{ t.title }}" data-by="{{ t.artist }}{% if t.note %} · {{ t.note }}{% endif %}" data-apple="{{ t.apple_url | safe_url }}"{% endif %}>
     <img src="{{ t.artwork_url | safe_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div><h3>{% if t.at %}<span class="at">{{ t.at }}</span> {% endif %}{{ t.title }}</h3><div class="by">{{ t.artist }} · {{ t.album }}{% if t.release_date %} · {{ t.release_date[:4] }}{% endif %}</div>
       <div class="note">{% if t.source_url %}<a href="{{ t.source_url | safe_url }}" rel="noopener" target="_blank">{{ t.note }}</a>{% else %}{{ t.note }}{% endif %}</div></div>
