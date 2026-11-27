@@ -30,9 +30,11 @@ Three beats and a sting. Each beat shows the agent deciding, not just the output
 
 Keep the clips real: record from the live pages, not mockups. The 89 is from the first meeting (Nov 27, 3:48 pm build); if a later meeting is shown, say its own number.
 
-## Post text (X, Bluesky, LinkedIn or Reddit)
+## Post text
 
-> I've been on the radio for 20 years. For #Hacksgiving I built a station with exactly one listener: an agent on a @flydotio Sprite reads the internet every hour, makes me a newscast, grades its own calls, and programs my show's 13 years of playlists like a program director. Live: https://patient-mountain-3400.fly.storage.tigris.dev/index.html
+Fits X (280 with the link shortened) and Bluesky (300); LinkedIn and Reddit can take the longer story from the description.
+
+> 20 years on the radio. For #Hacksgiving I built a station with one listener: an agent on a @flydotio Sprite makes my hourly newscast, grades its own calls, and programs my 13 years of playlists like a program director. https://patient-mountain-3400.fly.storage.tigris.dev/index.html
 
 ## Before posting
 
