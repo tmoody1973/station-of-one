@@ -99,3 +99,19 @@ def test_data_play_attributes_escaped():
 def test_strip_knows_where_its_data_is():
     for name, html in pages().items():
         assert 'id="wone-strip" data-src="/data/stations.json"' in html, name
+
+
+def test_settings_has_apple_music_connect():  # Plan C Task 4
+    html = pages()["settings"]
+    assert 'data-apple="connect"' in html and 'data-apple="disconnect"' in html and "data-apple-status" in html
+    assert "stores nothing about you" in html
+
+
+def test_clock_station_has_listen_live_sampler_does_not():
+    import json as _json
+    from station.radio.model import load_station
+    rl = render_sampler(load_station("rhythm-lab"), Block("rhythm-lab", "b", "2026-11-27T18:00:00+00:00", []), {}, load_prefs())
+    play = _json.loads(re.search(r"data-play='([^']+)'[^>]*>Listen live", rl).group(1))
+    assert play["kind"] == "station" and play["src"] == "/data/radio/rhythm-lab/queue.json"
+    jazz = render_sampler(load_station("uk-jazz"), Block("uk-jazz", "b", "2026-11-27T18:00:00+00:00", []), {}, load_prefs())
+    assert '"kind": "station"' not in jazz and "Full songs come when this station runs around the clock" in jazz

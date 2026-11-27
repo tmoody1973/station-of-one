@@ -38,6 +38,9 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
             tracks = json.loads(latest.read_text())["block"]["tracks"] if latest.exists() else []
         except (OSError, ValueError, KeyError, TypeError):
             tracks = []
-        out.append({"id": st.id, "kind": "music", "name": st.name, "on_now": _line(tracks[0]) if tracks else "",
-                    "next": [_line(t) for t in tracks[1:3]], "description": st.brief, "page": f"/radio/{st.id}/index.html"})
+        entry = {"id": st.id, "kind": "music", "name": st.name, "on_now": _line(tracks[0]) if tracks else "",
+                 "next": [_line(t) for t in tracks[1:3]], "description": st.brief, "page": f"/radio/{st.id}/index.html"}
+        if st.programmer == "clock":  # the chip tunes in live (Plan C); sampler stations link to their page
+            entry["play"] = {"kind": "station", "src": f"/data/radio/{st.id}/queue.json", "title": st.name, "label": f"{st.name} · live"}
+        out.append(entry)
     return {"updated": datetime.now(UTC).isoformat(timespec="seconds"), "stations": out}

@@ -155,3 +155,22 @@ def test_musickit_not_loaded_until_tap(make_page):
     pg = make_page(stub=False)
     pg.wait_for_timeout(1000)
     assert pg.apple_requests == []
+
+
+def test_connect_from_settings(make_page):
+    pg = make_page()
+    pg.locator("header.site nav a:has-text('Settings')").first.click()
+    pg.wait_for_selector("main [data-apple='connect']", timeout=10000)
+    pg.locator("main [data-apple='connect']").click()
+    pg.wait_for_function("() => document.querySelector('[data-apple-status]').textContent.includes('Connected')", timeout=5000)
+    assert calls(pg, "authorize")
+    pg.locator("main [data-apple='disconnect']").click()
+    pg.wait_for_function("() => document.querySelector('[data-apple-status]').textContent.includes('Not connected')", timeout=5000)
+    assert calls(pg, "unauthorize")
+
+
+def test_strip_chip_tunes_in(make_page):
+    pg = make_page()
+    pg.wait_for_function("() => [...document.querySelectorAll('#wone-strip .chip')].some(c => c.textContent.includes('Rhythm Lab'))", timeout=10000)
+    pg.locator("#wone-strip .chip", has_text="Rhythm Lab").click()
+    pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)

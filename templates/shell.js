@@ -60,6 +60,21 @@
     mk.addEventListener("mediaPlaybackError", () => station && failed());
     return mk;
   }
+  // Connect / Disconnect in settings. The status comes from a flag this browser keeps, so visiting settings
+  // never loads Apple's script (MusicKit loads only after a tap).
+  const showApple = () => document.querySelectorAll("[data-apple-status]").forEach((el) => {
+    el.textContent = localStorage.getItem("wone-apple") === "1" ? "Connected" : "Not connected";
+  });
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-apple]");
+    if (!b) return;
+    if (b.dataset.apple === "connect") { if (await signIn()) localStorage.setItem("wone-apple", "1"); }
+    else { await window.wone.disconnect(); localStorage.removeItem("wone-apple"); }
+    showApple();
+  });
+  document.addEventListener("pointerdown", (e) => { if (e.target.closest("[data-apple='connect']")) getMK().catch(() => {}); });
+  document.addEventListener("wone:page", showApple);
+  showApple();
   const getMK = () => (mkReady = mkReady || musicKit().catch((e) => { mkReady = null; throw e; }));
 
   async function signIn() {
@@ -91,6 +106,7 @@
     audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time
     say("");
     if (!(await signIn())) return;
+    localStorage.setItem("wone-apple", "1");
     station = next; item = next;
     root.classList.add("station");
     label.textContent = next.label || next.title || "Live";

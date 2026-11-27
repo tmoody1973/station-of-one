@@ -37,3 +37,13 @@ def test_torn_latest_json_is_listed_quietly(tmp_path):  # review I4: a half-writ
     out = stations_json(load_prefs(), _newscast(), radio_root=tmp_path)
     jazz = next(s for s in out["stations"] if s["id"] == "uk-jazz")
     assert jazz["on_now"] == "" and out["stations"][0]["id"] == "news"
+
+
+def test_clock_station_chip_tunes_in(tmp_path):  # Plan C Task 4
+    for sid in ("uk-jazz", "rhythm-lab"):
+        (tmp_path / sid).mkdir()
+        (tmp_path / sid / "latest.json").write_text(json.dumps({"block": {"tracks": [{"artist": "A", "title": "T"}]}}))
+    out = {s["id"]: s for s in stations_json(load_prefs(), _newscast(), radio_root=tmp_path)["stations"]}
+    assert out["rhythm-lab"]["play"] == {"kind": "station", "src": "/data/radio/rhythm-lab/queue.json", "title": "Rhythm Lab",
+                                         "label": "Rhythm Lab · live"}
+    assert "play" not in out["uk-jazz"]
