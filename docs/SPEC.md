@@ -147,7 +147,8 @@ picks section with Bandcamp and YouTube embeds that load on tap.
 
 Images: never copy a source's photo. The lead shows the publisher's own preview image straight from its
 address (linked, not re-hosted), credited and linked to the story, when the scrape supplies one; otherwise
-the beat-colored card. (Decided Nov 26, docs/decisions/004.)
+the beat-colored card. (Decided Nov 26, docs/decisions/004.) Nov 27: every aired story also gets its own page, and a story with
+no publisher photo gets a labeled machine illustration (docs/decisions/006).
 
 ## 8. Control room page
 

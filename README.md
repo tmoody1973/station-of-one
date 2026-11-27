@@ -18,15 +18,16 @@ Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and th
 ## What happens each hour
 
 1. **At :48** a Cloudflare Worker cron calls the Sprites exec API. The Sprite wakes and starts the build; a lock stops two builds overlapping, and a Tasks API hold keeps the Sprite awake until it finishes.
-2. **Scrape.** Apify Actors read Hacker News, Reddit, RSS feeds, Bluesky and Google News for five news beats.
+2. **Scrape.** Apify Actors read Hacker News, Reddit, RSS feeds, Bluesky and Google News for six news beats.
 3. **Find duplicates.** Link matching, title overlap, and Pinecone similarity against earlier hours; Jev's "same story?" question makes the merge.
 4. **Judge.** Jev answers five typed questions per post (likely to matter in a week? new or a reaction? which part of the show? primary source? could it harm a private person?), each with a probability. Every answer is logged.
 5. **Rundown.** Code applies the thresholds: drop anything 20%+ likely to harm a private person, air the best story per beat and then the top scores at 40%+, up to five. A language model never chooses what airs.
 6. **Write.** Ollama Cloud writes scripts only from the posts that passed, attributed to where they were posted, in the show's own words.
 7. **Voice.** Gemini TTS: a host and a reporter (two-speaker on the lead).
 8. **Assemble.** ffmpeg joins the chapters with a sting, normalizes loudness and writes chapter markers into one MP3.
-9. **Page, publish, archive.** Static pages and audio go to the Tigris bucket; a zip of the hour (scripts, rundown, audio, every Jev answer) goes to Box.
-10. **Finish.** The control room is refreshed and the Sprite takes a checkpoint. If any step fails, the station manager (headless Claude through the Anthropic connector) picks retry or skip from a fixed menu and writes one sentence for the control room.
+9. **Story pages.** Each aired story gets its own page: a short article written only from its own posts (attributed in every paragraph, sized to the source material), its sources, Jev's score and a Listen button. The image is the publisher's own preview photo, shown from their address and credited; if there is none, Gemini draws an abstract Bauhaus illustration, labeled as a machine illustration.
+10. **Page, publish, archive.** Static pages and audio go to the Tigris bucket; a zip of the hour (scripts, rundown, audio, every Jev answer) goes to Box.
+11. **Finish.** The control room is refreshed and the Sprite takes a checkpoint. If any step fails, the station manager (headless Claude through the Anthropic connector) picks retry or skip from a fixed menu and writes one sentence for the control room.
 
 **Once a day:** after the 7 am newscast, The Table (yesterday's pettiest low-stakes dispute, two agents, Jev scores every claim, code declares the winner) and Corrections (last week's aired calls, checked for follow-up); after the 7 pm newscast, a 30–45 s captioned vertical video of the day's top story (Deepgram word timings, Remotion).
 
@@ -36,10 +37,10 @@ No API key is in the Sprite, the code, the config or this repo. Every call goes 
 
 | Connector | Its job here | Where to see it |
 | --- | --- | --- |
-| **Apify** | Scrapes every source each hour (5 Actors) | Control room, "Scrape sources" |
+| **Apify** | Scrapes every source each hour (5 Actors), and reads each story's preview photo (Cheerio Scraper) | Control room, "Scrape sources"; story pages |
 | **TypeSafe AI (Jev)** | Every editorial decision, as typed answers with probabilities: what airs, duplicates, airtime, hot topics, The Table's topic and every claim's ruling, Corrections | Control room decision log; Table rulings |
 | **Ollama Cloud** | Writes the newscast scripts and The Table's claims (`deepseek-v4.1-flash`) | Any newscast; Table page |
-| **Google Gemini** | Voices: host/reporter for the news, Anchor/Uncle for The Table (`gemini-3.8-flash-tts`) | The audio |
+| **Google Gemini** | Voices: host/reporter for the news, Anchor/Uncle for The Table (`gemini-3.8-flash-tts`); Bauhaus illustrations for stories with no photo (`gemini-3.1-flash-image`) | The audio; story pages |
 | **Pinecone** | Same-story detection across hours, and the memory Corrections searches for follow-ups | Control room, "Find duplicates"; Corrections box |
 | **Box** | Archive of every newscast and Table episode with its full decision log | "Station of One archive" folder |
 | **Tigris** | Public hosting of pages, audio, feed and video | Every link above |
@@ -55,7 +56,7 @@ The hourly trigger itself runs on a Cloudflare Worker (`trigger/`), after GitHub
 - Posts likely to harm a private individual are dropped and never shown, anywhere.
 - Public sources only. No licensed music. Voices are synthetic, and every page and the feed say so.
 - The daily video and The Table skip elections, contested policy, religion and health (a Jev screen). The Table never names or quotes a commenter.
-- Story photos are shown from the publisher's own address, credited and linked, never copied (`docs/decisions/004-story-photos.md`).
+- Story photos are shown from the publisher's own address, credited to the publisher and linked, never copied (`docs/decisions/004-story-photos.md`). Stories without one get an abstract illustration with no people, text or logos, labeled "Illustration generated by machine for this story. Not a photograph." (`docs/decisions/006-story-pages-and-images.md`).
 
 ## Run it yourself
 
@@ -63,7 +64,7 @@ The Sprite holds the state (SQLite, run folders); the code is plain Python, one 
 
 ```bash
 uv sync
-uv run pytest -q                                              # 271 tests
+uv run pytest -q                                              # 307 tests
 uv run python -m station scrape   --run data/runs/2026-11-27T09   # one step
 uv run python -m station judge    --run data/runs/2026-11-27T09
 uv run python -m station build    --hour 2026-11-27T09            # a whole newscast
