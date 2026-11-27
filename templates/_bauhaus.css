@@ -69,7 +69,9 @@ body{padding-bottom:96px}
 .player .bar{flex:2 1 200px;height:8px;background:#3a3833;cursor:pointer}
 .player .bar div{width:0;height:8px;background:var(--yellow)}
 .player .time{font-size:13px;color:#d9d2bf;font-family:var(--mono)}
-.player .skip{background:transparent;border:2px solid var(--paper);color:var(--paper);padding:6px 10px;font-size:13px;font-weight:700}
+.player .skip,.player .ctl{background:transparent;border:2px solid var(--paper);color:var(--paper);padding:6px 10px;font-size:13px;font-weight:700}
+.player .station-only{display:none}.player.station .station-only{display:inline-block}.player.station .skip{display:none}
+.player .now .msg{font-size:13px;color:var(--yellow)}
 .player .embed{flex-basis:100%}
 .player .embed iframe{width:100%;border:0;display:block}
 @media (max-width:640px){body{padding-bottom:132px}.player .skip{display:none}.player .bar{order:5;flex-basis:100%}}
