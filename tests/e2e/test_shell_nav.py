@@ -211,3 +211,17 @@ def test_strip_keeps_its_buttons_between_redraws(page):  # review I2: no lost ta
     page.wait_for_timeout(300)
     assert page.evaluate("() => document.activeElement && document.activeElement.hasAttribute('data-strip-more')")
     assert page.locator("#wone-strip .strip-panel").is_visible()
+
+
+def test_older_page_gets_the_strip_styles(page):  # Tarik, 5:27 pm: ONE Jazz built at 4:48 drew an unstyled strip
+    import re as _re
+    normal = page.evaluate("() => getComputedStyle(document.querySelector('#wone-strip .st-name')).backgroundColor")
+    def old(route):
+        html = route.fetch().text()
+        html = _re.sub(r"/\* wone-shell-css \*/.*?/\* /wone-shell-css \*/", "", html, flags=_re.S)   # as built before shell.css
+        route.fulfill(body=html, headers={"content-type": "text/html"})
+    page.route("**/_checks/shell-e2e/index.html", old)
+    page.goto(f"{BASE}/index.html", wait_until="networkidle")
+    page.wait_for_selector("#wone-strip .st-name", timeout=10000)
+    page.wait_for_timeout(500)
+    assert page.evaluate("() => getComputedStyle(document.querySelector('#wone-strip .st-name')).backgroundColor") == normal
