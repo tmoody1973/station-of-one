@@ -38,7 +38,7 @@ def test_finish_rerenders_control_room_and_checkpoints(tmp_path):
                    subprocess.CompletedProcess(cmd, 0, "", ""), has_sprite_env=True)
     (method, provider, path, body, headers), = gw.puts
     assert (method, provider, path) == ("PUT", "tigris", "/patient-mountain-3400/control-room/index.html")
-    assert b"Archive" in body and headers["Cache-Control"] == "max-age=60"  # archive row now on the public page
+    assert b"Archive" in body and headers["Cache-Control"] == "private, no-cache"  # archive row now on the public page
     assert ran == [checkpoint_command("2026-11-26T17")] and notes == ["Checkpoint saved."]
 
 

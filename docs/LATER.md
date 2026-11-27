@@ -16,3 +16,10 @@ Tarik, Nov 27: "let's do it after everything is built and tested."
 - **Start from:** the static export (pages stay files in the bucket, so they load while the Sprite sleeps)
   before considering server routes on Vercel. Keep the e2e tests in `tests/e2e/test_shell_nav.py` as the
   bar the new site must pass. Write it up as a decision-log entry when it starts.
+
+## A native iPhone app, for crossfades
+
+Tarik, Nov 27. Apple's native MusicKit (Swift) has a crossfade transition between songs
+(`MusicPlayer.Transition.crossfade`); MusicKit on the Web has none, Web Audio can't mix Apple's protected streams,
+and Apple's license allows songs only "as rendered by MusicKit JS". Check the API's iOS availability first. Apple's
+terms still apply in an app: our audio never plays over a song.

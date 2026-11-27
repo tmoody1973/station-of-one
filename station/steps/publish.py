@@ -21,7 +21,9 @@ IMMUTABLE = {".mp3", ".png", ".jpg"}  # audio and story art keys carry a content
 def cache_control(key: str) -> str:
     if Path(key).suffix == ".mp4":
         return "max-age=300"  # the daily video may be re-rendered under the same name
-    return "public, max-age=31536000, immutable" if Path(key).suffix in IMMUTABLE else "max-age=60"
+    # Pages, JSON, the feed and scripts change: "private" keeps Tigris's regional cache from serving an overwritten copy
+    # (its docs: private/no-store objects aren't cached); "no-cache" makes browsers check for a newer one each time.
+    return "public, max-age=31536000, immutable" if Path(key).suffix in IMMUTABLE else "private, no-cache"
 
 
 def put_object(gw, bucket: str, key: str, data: bytes, content_type: str, cache: str) -> None:

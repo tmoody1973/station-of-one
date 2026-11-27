@@ -14,6 +14,7 @@
   const BASE = new URL(".", (document.currentScript && document.currentScript.src) || location.href);
   const MUSICKIT = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
   const msgEl = $("wone-msg");
+  document.head.querySelectorAll("style").forEach((n) => { n.dataset.wonePage = "1"; });  // the page's own styles, before any script adds one
   let mk = null, mkReady = null, station = null, errors = 0, joining = false;
   let gen = 0, lastStart = 0, rejoinAt = 0;  // gen: a newer tap or sound cancels a tune-in still in progress (review I2)
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
@@ -56,9 +57,7 @@
     }
     await MusicKit.configure(cfg);
     mk = MusicKit.getInstance();
-    mk.addEventListener("nowPlayingItemDidChange", ({ item: song }) => {
-      if (station && song) { errors = 0; nowEl.textContent = [song.title, song.artistName].filter(Boolean).join(" · "); }
-    });
+    mk.addEventListener("nowPlayingItemDidChange", () => showSong());
     mk.addEventListener("mediaPlaybackError", () => station && failed());
     return mk;
   }
@@ -128,6 +127,7 @@
     root.classList.add("station");
     label.textContent = next.label || next.title || "Live";
     nowEl.textContent = next.title || "";
+    shownSong = null;
     lastStart = 0;
     rejoinAt = 0;
     await join(false, my);
@@ -140,8 +140,19 @@
     item = null;
     root.classList.remove("station");
   }
+  let shownSong = null;
+  function showSong() {  // name what Apple says is playing now; its change event can come late or not at all
+    const song = mk && mk.nowPlayingItem;
+    const id = song ? String(song.id) : null;
+    if (!station || !song || id === shownSong) return;
+    shownSong = id;
+    errors = 0;
+    nowEl.textContent = [song.artistName, song.title].filter(Boolean).join(" · ");  // Artist · Title, as in the strip
+    document.dispatchEvent(new CustomEvent("wone:song"));  // the strip and the station page follow what plays
+  }
   setInterval(() => {  // the station's clock, progress and end of queue
     if (!station || !mk) return;
+    showSong();
     const t = mk.currentPlaybackTime || 0, d = mk.currentPlaybackDuration || 0;
     fill.style.width = d ? `${(t / d) * 100}%` : "0";
     timeEl.textContent = `${fmt(t)} / ${fmt(d)}`;
@@ -224,14 +235,21 @@
     !(a.hash && a.pathname === location.pathname && a.search === location.search);
   async function go(url, push) {
     try {
-      const r = await fetch(url, { headers: { Accept: "text/html" } });
+      const r = await fetch(url, { headers: { Accept: "text/html" }, cache: "no-cache" });
       if (!r.ok) throw new Error(String(r.status));
       const doc = new DOMParser().parseFromString(await r.text(), "text/html");
       const next = doc.querySelector("main"), here = document.querySelector("main");
       const nextBar = doc.getElementById("wone-player");
-      if (!next || !here || !nextBar) throw new Error("not a shell page");  // e.g. an archive page built before the shell
+      if (!next || !here || !nextBar) throw new Error("not a shell page");
+      if (!doc.querySelector(".strip-panel")) throw new Error("older page");  // its old styles would restyle the bar and strip  // e.g. an archive page built before the shell
       root.dataset.default = nextBar.dataset.default || "{}";  // the bar's ▶ plays this page's own audio
       if (!item) label.textContent = JSON.parse(root.dataset.default).label || "ONE 1.0 FM";
+      // Each page carries its own layout rules in <style>: swap them with the content, or the new content is drawn
+      // with the previous page's layout (Tarik, Nov 27). Stylesheet links already loaded (fonts) are kept as they are.
+      document.head.querySelectorAll("style[data-wone-page]").forEach((n) => n.remove());  // ours only, never MusicKit's
+      const have = new Set([...document.head.querySelectorAll("link[rel=stylesheet]")].map((l) => l.href));
+      doc.head.querySelectorAll("link[rel=stylesheet]").forEach((l) => { if (!have.has(l.href)) document.head.append(document.adoptNode(l)); });
+      doc.head.querySelectorAll("style").forEach((n) => { n.dataset.wonePage = "1"; document.head.append(document.adoptNode(n)); });
       here.replaceWith(document.adoptNode(next));
       document.title = doc.title;
       const line = doc.querySelector("header.site .line"), mine = document.querySelector("header.site .line");
@@ -251,30 +269,104 @@
   });
   addEventListener("popstate", () => go(location.href, false));
 
-  // Station strip (Task 5): News and every music station, what is on now, re-read every minute. Text only:
-  // headlines come from scraped posts, so nothing here is ever inserted as HTML.
+  // Station strip (KCRW pattern, structure only): an "on air" mark; per station a name box with ▶ that plays it
+  // (or opens its page when it has no live stream) and what's on now (a link to its page); "More station info"
+  // opens a panel with each station's description and what's next. A clock station's now/next come from its
+  // schedule by the clock, or from the player's own song while this browser plays it, so the strip always names
+  // what you hear. Text only: titles come from feeds and Apple, so nothing here is inserted as HTML.
   const stripEl = document.getElementById("wone-strip");
-  async function drawStrip() {
+  let stripData = null, panelOpen = false, stripSig = "";
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const songLine = (s) => [s.artist, s.title].filter(Boolean).join(" · ");
+  function stationNow(st) {
+    if (!st.schedule) return { now: st.now || { title: st.on_now || "" }, next: st.next };
+    const sched = st.schedule, t = Date.now();
+    const here = station && st.play && st.play.src === station.src && mk && mk.nowPlayingItem;
+    let i = here ? sched.findIndex((s) => s.song_id === String(mk.nowPlayingItem.id)) : -1;
+    if (here && i < 0) {  // the player is ahead of the published schedule: name what's actually playing
+      const it = mk.nowPlayingItem;
+      return { now: { at: "", title: [it.artistName, it.title].filter(Boolean).join(" · "), art: "" }, next: null };
+    }
+    if (i < 0) i = sched.findIndex((s) => Date.parse(s.starts_at) <= t && t < Date.parse(s.ends_at));
+    if (i < 0) {
+      const n = sched.find((s) => Date.parse(s.starts_at) > t);
+      return { now: n ? { at: n.at, title: "Up next: " + songLine(n), art: n.art } : { at: "", title: "Nothing scheduled right now" }, next: null };
+    }
+    const nx = sched[i + 1];
+    return { now: { at: sched[i].at, title: songLine(sched[i]), art: sched[i].art }, next: nx ? { at: nx.at, title: songLine(nx), art: nx.art } : null };
+  }
+  function renderStrip() {
     const row = stripEl && stripEl.querySelector(".strip-row");
-    if (!row) return;
+    if (!row || !stripData) return;
+    let panel = stripEl.querySelector(".strip-panel");
+    if (!panel) { panel = el("div", "wrap strip-panel"); stripEl.append(panel); }  // pages built before this change
+    const sig = JSON.stringify((stripData.stations || []).map((st) => [st.id, st.name, st.page, st.play && st.play.src, stationNow(st)]));
+    if (sig === stripSig && row.childElementCount) return;  // nothing changed: keep the buttons (and any tap or focus on them)
+    stripSig = sig;
+    const items = [el("span", "onair", "on air")], cols = [];
+    let schedulePage = null;
+    for (const st of stripData.stations || []) {
+      const { now, next } = stationNow(st);
+      const box = el(st.play ? "button" : "a", "st-name");
+      if (st.play) box.dataset.play = JSON.stringify(st.play); else box.href = st.page;
+      box.append(el("span", "nm", st.name), el("span", "tri", st.play ? "▶" : "→"));
+      box.setAttribute("aria-label", st.play ? `Play ${st.name}` : `Open ${st.name}`);
+      const nowLink = el("a", "st-now", now.title || "");
+      nowLink.href = st.page;
+      const wrap = el("div", "st");
+      wrap.append(box, nowLink);
+      items.push(wrap);
+      const col = el("div", "sp");
+      const h = el("h3", null, st.name);
+      h.append(el("span", "pill", "on air"));
+      col.append(h);
+      if (now.art) { const img = el("img"); img.src = now.art; img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer"; col.append(img); }
+      if (now.at) col.append(el("span", "at", now.at));
+      const title = el("a", "sp-title", now.title || "");
+      title.href = st.page;
+      col.append(title, el("p", null, st.description || ""));
+      if (next) col.append(el("h4", null, "Next up"), el("span", "at", next.at || ""), el("span", "sp-next", next.title || ""));
+      const links = el("div", "sp-links");
+      const page = el("a", null, "Station page"); page.href = st.page; links.append(page);
+      if (st.schedule) {
+        schedulePage = st.page.replace(/index\.html$/, "meeting/index.html");
+        const pd = el("a", null, "The program director"); pd.href = schedulePage; links.append(pd);
+      }
+      col.append(links);
+      cols.push(col);
+    }
+    const more = el("button", "more", panelOpen ? "▴ Less station info" : "▾ More station info");
+    more.dataset.stripMore = "1";
+    more.setAttribute("aria-expanded", String(panelOpen));
+    items.push(more);
+    if (stripData.playlists) { const a = el("a", "strip-link", "Playlists"); a.href = stripData.playlists; items.push(a); }
+    if (schedulePage) { const a = el("a", "strip-link", "Schedule"); a.href = schedulePage; items.push(a); }
+    row.replaceChildren(...items);
+    panel.replaceChildren(...cols);
+    panel.hidden = !panelOpen;
+  }
+  async function drawStrip() {
+    if (!stripEl) return;
     try {
       const r = await fetch(stripEl.dataset.src, { cache: "no-cache" });
       if (!r.ok) return;  // keep whatever is showing
-      const chips = (await r.json()).stations.map((st) => {
-        const c = document.createElement(st.play ? "button" : "a");
-        c.className = "chip";
-        if (st.play) c.dataset.play = JSON.stringify(st.play); else c.href = st.page;
-        c.title = st.description || "";
-        const b = document.createElement("b"); b.textContent = st.name;
-        const n = document.createElement("span"); n.textContent = st.on_now || "warming up";
-        c.append(b, n);
-        return c;
-      });
-      row.replaceChildren(...chips);
+      stripData = await r.json();
+      renderStrip();
     } catch (err) { /* the strip is a nicety: a failed read leaves the page as it is */ }
   }
+  document.addEventListener("click", (e) => {
+    const more = e.target.closest("[data-strip-more]");
+    if (!more) return;
+    panelOpen = !panelOpen;  // toggle in place: focus stays on the button
+    more.textContent = panelOpen ? "▴ Less station info" : "▾ More station info";
+    more.setAttribute("aria-expanded", String(panelOpen));
+    const panel = stripEl.querySelector(".strip-panel");
+    if (panel) panel.hidden = !panelOpen;
+  });
+  document.addEventListener("wone:song", () => renderStrip());
   drawStrip();
   setInterval(drawStrip, 60000);
+  setInterval(renderStrip, 15000);  // the clock moves on between reads
 
   // A clock station's page lists its songs with start and end times; the browser marks what's on now and hides
   // what has finished, so "On now" stays true between the hourly rebuilds. Text only (titles are Apple's data).

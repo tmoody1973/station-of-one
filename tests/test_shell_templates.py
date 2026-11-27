@@ -115,3 +115,8 @@ def test_clock_station_has_listen_live_sampler_does_not():
     assert play["kind"] == "station" and play["src"] == "/data/radio/rhythm-lab/queue.json"
     jazz = render_sampler(load_station("uk-jazz"), Block("uk-jazz", "b", "2026-11-27T18:00:00+00:00", []), {}, load_prefs())
     assert '"kind": "station"' not in jazz and "Full songs come when this station runs around the clock" in jazz
+
+
+def test_music_link_goes_to_the_flagship():
+    for name, html in pages().items():
+        assert '<a href="/radio/rhythm-lab/index.html">Music</a>' in html, name

@@ -47,11 +47,12 @@ def test_hour_pages_and_index_keys(tmp_path):
     assert keys.index("audio/2026-11-26T17.mp3") < keys.index("h/2026-11-26/1700/index.html")
 
 
-def test_index_short_cache():
-    assert cache_control("index.html") == "max-age=60"
-    assert cache_control("h/2026-11-26/1700/index.html") == "max-age=60"  # lists today's newscasts, changes hourly
-    assert cache_control("data/2026-11-26T17.json") == "max-age=60"
+def test_changing_files_are_private_no_cache():  # live-playlist Task 1: Tigris's regional cache kept overwritten pages
+    for key in ("index.html", "h/2026-11-26/1700/index.html", "data/2026-11-26T17.json", "data/stations.json", "feed.xml",
+                "shell.js", "live.js", "radio/rhythm-lab/index.html"):
+        assert cache_control(key) == "private, no-cache", key
     assert cache_control("audio/2026-11-26T17.mp3") == "public, max-age=31536000, immutable"
+    assert cache_control("video/2026-11-26.mp4") == "max-age=300"
 
 
 def test_failed_put_raises_and_stops(tmp_path):

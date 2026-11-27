@@ -38,7 +38,7 @@ def test_navigation_keeps_audio_playing(page):
     _start(page)
     t0 = page.evaluate(STATE)["t"]
     _click(page, "main a[href*='/s/']")                        # a story page
-    _click(page, "header.site nav a:has-text('Music')")        # the jazz sampler
+    _click(page, "#wone-strip a:has-text('ONE Jazz')")        # the jazz sampler
     _click(page, "header.site nav a:has-text('Settings')")
     s = page.evaluate(STATE)
     assert s["marker"] and not s["paused"] and s["t"] > t0 + 2
@@ -46,7 +46,7 @@ def test_navigation_keeps_audio_playing(page):
 
 def test_back_forward_keeps_playing(page):
     _start(page)
-    _click(page, "header.site nav a:has-text('Music')")
+    _click(page, "#wone-strip a:has-text('ONE Jazz')")
     _click(page, "header.site nav a:has-text('Settings')")
     for step in ("back", "back", "forward"):
         getattr(page, f"go_{step}")()
@@ -85,7 +85,7 @@ def test_failed_fetch_falls_back(page):
 
 
 def test_controls_work_after_swap(page):
-    _click(page, "header.site nav a:has-text('Music')")          # reached by a swap, not a page load
+    _click(page, "#wone-strip a:has-text('ONE Jazz')")          # reached by a swap, not a page load
     page.locator("main .pv").first.click()
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('itunes.apple.com') }", timeout=15000)
     assert "preview" in page.locator("#wone-label").inner_text().lower()
@@ -99,15 +99,31 @@ def test_controls_work_after_swap(page):
     assert start <= t <= start + 5 and page.evaluate("() => window.__marker") == 1
 
 
-def test_station_strip(page):
-    page.wait_for_function("() => document.querySelectorAll('#wone-strip .chip').length >= 2", timeout=10000)
-    names = page.locator("#wone-strip .chip b").all_text_contents()  # raw text; the chip styling lowercases it
+def test_station_strip(page):  # KCRW pattern: a name box with play, what's on now, More station info
+    page.wait_for_function("() => document.querySelectorAll('#wone-strip .st-name').length >= 2", timeout=10000)
+    names = page.locator("#wone-strip .st-name .nm").all_text_contents()
     assert names[0] == "News" and "ONE Jazz" in names
-    page.locator("#wone-strip .chip", has_text="News").click()
+    page.locator("#wone-strip .st-name", has_text="News").click()           # the name box plays
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
-    _click(page, "#wone-strip .chip:has-text('ONE Jazz')")
+    _click(page, "#wone-strip a.st-name:has-text('ONE Jazz')")               # a station with no live stream opens its page
     s = page.evaluate(STATE)
     assert s["path"].endswith("/radio/uk-jazz/index.html") and not s["paused"] and s["marker"]
+
+
+def test_more_station_info_panel(page):
+    page.wait_for_selector("#wone-strip [data-strip-more]", timeout=10000)
+    assert page.locator("#wone-strip .strip-panel").is_hidden()
+    page.locator("#wone-strip [data-strip-more]").click()
+    panel = page.locator("#wone-strip .strip-panel")
+    text = panel.text_content()   # raw text: the panel's styling lowercases headings
+    assert panel.is_visible() and "five minutes on the hour" in text and "Next up" in text and "Rhythm Lab" in text
+
+
+def test_strip_now_links_to_station_page(page):
+    page.wait_for_selector("#wone-strip .st-now", timeout=10000)
+    hrefs = page.locator("#wone-strip .st-now").evaluate_all("els => els.map(e => e.getAttribute('href'))")
+    assert any(h.endswith("/radio/rhythm-lab/index.html") for h in hrefs) and any(h.endswith("/radio/uk-jazz/index.html") for h in hrefs)
+
 
 
 def _inject(page, html):
@@ -153,3 +169,45 @@ def test_phone_page_clears_a_docked_embed(page):  # review I5
     page.wait_for_timeout(500)
     pad, bar = page.evaluate("() => [parseFloat(getComputedStyle(document.body).paddingBottom), document.getElementById('wone-player').offsetHeight]")
     assert pad >= bar
+
+
+LAYOUT = """() => [...document.querySelectorAll('main, main > *, main > * > *')].slice(0, 40).map(e => {
+    const c = getComputedStyle(e); return [e.tagName, e.className, c.display, c.gridTemplateColumns, c.backgroundColor, c.fontSize].join('|'); })"""
+
+
+def test_swapped_page_looks_like_a_fresh_load(page):  # Tarik, 4:54 pm: the layout went funky after changing pages
+    fresh = page.evaluate(LAYOUT)                                 # the front page, loaded fresh
+    page.goto(f"{BASE}/radio/uk-jazz/index.html", wait_until="networkidle")   # start somewhere else, fresh
+    page.evaluate("() => { window.__marker = 1 }")
+    _click(page, "header.site nav a:has-text('News')")            # then reach the front page by a swap
+    assert page.evaluate("() => window.__marker") == 1            # a swap, not a reload
+    assert page.evaluate(LAYOUT) == fresh
+
+
+def test_swap_keeps_styles_added_by_scripts(page):  # MusicKit adds its own <style>; a swap must not remove it
+    page.evaluate("() => { const s = document.createElement('style'); s.id = 'injected'; s.textContent = '.x{color:red}'; document.head.append(s); }")
+    _click(page, "header.site nav a:has-text('Settings')")
+    assert page.evaluate("() => !!document.getElementById('injected')")
+
+
+def test_older_page_without_the_new_strip_loads_fresh(page):  # review I1: its old styles would restyle the bar and strip
+    def old(route):
+        html = route.fetch().text().replace('<div class="wrap strip-panel" hidden></div>', "")
+        route.fulfill(body=html, headers={"content-type": "text/html"})
+    page.route("**/_checks/shell-e2e/settings/index.html", old)
+    _click_nav = page.locator("header.site nav a:has-text('Settings')").first
+    _click_nav.click()
+    page.wait_for_url("**/settings/index.html", timeout=10000)
+    page.wait_for_load_state("load")
+    assert page.evaluate("() => window.__marker") is None      # a full load: the page looks as it was built
+
+
+def test_strip_keeps_its_buttons_between_redraws(page):  # review I2: no lost taps, focus stays put
+    page.wait_for_selector("#wone-strip [data-strip-more]", timeout=10000)
+    page.evaluate("() => { document.querySelector('#wone-strip [data-strip-more]').__kept = 1; document.dispatchEvent(new CustomEvent('wone:song')); }")
+    assert page.evaluate("() => document.querySelector('#wone-strip [data-strip-more]').__kept") == 1
+    page.locator("#wone-strip [data-strip-more]").focus()
+    page.keyboard.press("Enter")
+    page.wait_for_timeout(300)
+    assert page.evaluate("() => document.activeElement && document.activeElement.hasAttribute('data-strip-more')")
+    assert page.locator("#wone-strip .strip-panel").is_visible()
