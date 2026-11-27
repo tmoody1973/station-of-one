@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo.png" type="image/png">
+<title>{{ p.artist }}: {{ p.title }} · Music pick · {{ station.name }}</title>
+<meta name="description" content="A music pick from {{ p.source }}, chosen by {{ station.name }}.">
+<meta property="og:title" content="{{ p.artist }}: {{ p.title }}">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&display=swap">
+<style>
+{% include "_bauhaus.css" %}
+.wrap{max-width:1100px}
+main.wrap{padding-top:34px;padding-bottom:56px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:40px 48px;align-items:start}
+article{display:flex;flex-direction:column;gap:18px;min-width:0}
+article h1{margin:0;font-size:46px;line-height:1.05;font-weight:800}
+.artist{margin:0;font-size:24px;font-weight:600;color:var(--ink-2)}
+.stage{border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);background:var(--ink);position:relative}
+.stage.youtube{aspect-ratio:16/9}.stage.bandcamp{height:680px;background:#fff}
+.stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:var(--blue);color:var(--paper);border:0;font:inherit;cursor:pointer}
+.tap::before{content:"";position:absolute;width:38%;aspect-ratio:1;border-radius:50%;background:var(--yellow);right:6%;top:10%;opacity:.9}
+.tap::after{content:"";position:absolute;width:18%;aspect-ratio:1;background:var(--red);left:8%;bottom:12%}
+.tap b{position:relative;z-index:1;width:96px;height:96px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;border:3px solid var(--paper)}
+.tap span{position:relative;z-index:1;font-size:15px;font-weight:700;letter-spacing:.12em;text-transform:lowercase;background:var(--ink);padding:6px 12px}
+.body p{margin:0 0 1em;font-size:19px;line-height:1.65;max-width:65ch}
+.note{font-size:14px;color:var(--muted)}
+aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
+.box .big{font-size:44px;font-weight:800;line-height:1;color:var(--blue)}
+.more{display:flex;flex-direction:column;gap:10px}
+.more a{font-weight:700;text-decoration:none;border-top:2px solid var(--ink);padding-top:8px}.more a:hover{text-decoration:underline}
+footer{grid-column:1/-1}
+@media (max-width:900px){main.wrap{grid-template-columns:minmax(0,1fr)}aside{position:static}article h1{font-size:34px}.stage.bandcamp{height:620px}}
+</style>
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
+    <span class="line">{{ station.name }} · music picks</span></div>
+  <nav><a href="/index.html">Front page</a><a href="/index.html#music">All picks</a></nav>
+</div></header>
+<main class="wrap">
+<article>
+  <span class="tag kicker">Music pick · {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} · {{ p.source }}</span>
+  <h1>{{ p.title }}</h1>
+  <p class="artist">{{ p.artist }}</p>
+  <div class="stage {{ p.kind }}">
+    <button class="tap" data-embed="{{ big }}" data-title="{{ p.artist }}: {{ p.title }}" aria-label="Play {{ p.artist }}: {{ p.title }}">
+      <b><svg aria-hidden="true" width="34" height="34" viewBox="0 0 18 18"><path d="M4 2l12 7-12 7z" fill="#fff"/></svg></b>
+      <span>tap to load the official {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} player</span></button>
+  </div>
+  <div class="body">
+  {% if p.paragraphs %}
+    {% for para in p.paragraphs %}<p>{{ para }}</p>{% endfor %}
+  {% else %}
+    <p class="note">No write-up for this pick: the {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} page gave too little text to write from, and the station only writes from its sources.</p>
+  {% endif %}
+  </div>
+</article>
+<aside>
+  <div class="box"><h3>Why it was picked</h3>
+    <span class="big">{{ p.score | pct }}</span>
+    <p>Jev rated this {{ p.score | pct }} likely to interest a public-radio listener who follows independent music. Code keeps the top three each day, one per source.</p></div>
+  <div class="box"><h3>Source</h3>
+    <p><a href="{{ p.url | safe_url }}" rel="noopener" target="_blank">{{ p.artist }} on {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }}</a>, via {{ p.source }}. Buy or follow the artist there.</p></div>
+  {% if others %}
+  <div class="box more"><h3>More picks · {{ picks_day }}</h3>
+    {% for o in others %}<a href="{{ o.page }}">{{ o.artist }}: {{ o.title }}</a>{% endfor %}</div>
+  {% endif %}
+</aside>
+<footer>
+  <span>Music appears only as the artists' official players, loaded when you tap. The station plays no licensed music on air.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+</footer>
+</main>
+<script>
+document.querySelectorAll(".tap").forEach(b => b.addEventListener("click", () => {
+  const f = document.createElement("iframe");
+  f.src = b.dataset.embed; f.title = b.dataset.title; f.allow = "autoplay; encrypted-media; fullscreen";
+  f.referrerPolicy = "strict-origin-when-cross-origin";
+  b.replaceWith(f);
+}));
+</script>
+</body>
+</html>

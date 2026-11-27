@@ -7,14 +7,15 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 from station.config import Prefs
 from station.picks.choose import choose, key, rank
-from station.picks.sources import bandcamp_candidates, youtube_candidates
-from station.store import record_decision
+from station.picks.sources import Pick, album_notes, bandcamp_candidates, clean_url, youtube_candidates
+from station.steps.article import write_article
+from station.store import Post, record_decision
 
 REPEAT_DAYS = 7
 
@@ -30,6 +31,19 @@ def recent_keys(picks_root: Path, day: str) -> set[str]:
     return out
 
 
+def _writeup(gw, model: str, p: Pick) -> tuple[list[str] | None, str | None]:
+    """A short write-up from the release's own notes only (the story-page writer, same rules and guard)."""
+    if not p.description:
+        return None, None
+    post = Post(f"pick:{p.kind}:{p.embed_id}", "the Bandcamp page" if p.kind == "bandcamp" else "the YouTube page",
+                "music", "story", p.artist, f"{p.artist}: {p.title}", p.url, p.description, p.published_at, {}, "public")
+    story = {"id": post.id, "headline": f"{p.artist}: {p.title}", "summary": f"A new release from {p.source}."}
+    try:
+        return write_article(gw, model, story, [post])
+    except Exception as e:  # noqa: BLE001 - a failed write-up costs only this pick's write-up
+        return None, f"write-up dropped for {post.id}: {type(e).__name__}"
+
+
 def make_picks(gw, prefs: Prefs, db: sqlite3.Connection, day: str, picks_root: Path,
                now: datetime | None = None) -> dict:
     mp = prefs.music_picks
@@ -41,8 +55,16 @@ def make_picks(gw, prefs: Prefs, db: sqlite3.Connection, day: str, picks_root: P
     for pick in candidates:  # every Jev answer is logged with its probability
         record_decision(db, f"pick:{key(pick)}", "interest", raw[key(pick)], model or "", asked_at)
     chosen = choose(ranked, mp.count, recent_keys(picks_root, day))
-    out = {"day": day, "picks": [{**asdict(p), "score": s} for p, s in chosen], "model": model,
-           "candidates": len(candidates), "notes": yt_notes + bc_notes}
+    notes = album_notes(gw, [clean_url(p.url) for p, _ in chosen if p.kind == "bandcamp"])
+    chosen = [(replace(p, description=notes.get(clean_url(p.url), "")), s) for p, s in chosen]
+    writeups, write_notes = [], []
+    for p, _ in chosen:
+        paragraphs, note = _writeup(gw, prefs.writer.model, p)
+        writeups.append(paragraphs)
+        if note:
+            write_notes.append(note)
+    out = {"day": day, "picks": [{**asdict(p), "score": s, "paragraphs": w} for (p, s), w in zip(chosen, writeups)],
+           "model": model, "candidates": len(candidates), "notes": yt_notes + bc_notes + write_notes}
     picks_root.mkdir(parents=True, exist_ok=True)
     tmp = picks_root / f"{day}.json.tmp"
     tmp.write_text(json.dumps(out, indent=1))

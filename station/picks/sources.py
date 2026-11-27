@@ -41,6 +41,31 @@ class Pick:
     artist: str
     url: str
     published_at: str
+    description: str = ""
+
+
+NOTES_FUNCTION = """async function pageFunction(context) {
+  const { $, request } = context;
+  return { url: request.url, text: $('.tralbumData.tralbum-about').text().trim() };
+}"""
+
+
+def clean_url(url: str) -> str:
+    return (url or "").split("?")[0]
+
+
+def album_notes(gw, urls: list[str]) -> dict[str, str]:
+    """The 'about' notes of Bandcamp album pages (one Cheerio run). YouTube pages give the scraper no
+    description (consent wall, Nov 27), so YouTube picks get no write-up."""
+    if not urls:
+        return {}
+    try:
+        run = run_actor(gw, "apify~cheerio-scraper", {
+            "startUrls": [{"url": u} for u in urls], "pageFunction": NOTES_FUNCTION, "maxCrawlingDepth": 0,
+            "linkSelector": "", "proxyConfiguration": {"useApifyProxy": True}}, cap_usd=0.05, timeout_s=120)
+    except (ScrapeError, GatewayError):
+        return {}
+    return {clean_url(it.get("url") or ""): (it.get("text") or "")[:4000] for it in run.items}
 
 
 def youtube_id(url: str) -> str | None:

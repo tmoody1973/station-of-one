@@ -76,3 +76,18 @@ def test_first_hour_runs_picks_after_table(monkeypatch):
 def test_prefs_load_music_picks():
     mp = load_prefs().music_picks
     assert mp.count == 3 and "subpop" in mp.bandcamp_labels and len(mp.youtube_channels) == 3
+
+
+def test_chosen_bandcamp_picks_get_notes_and_a_writeup(tmp_path, db):
+    notes = "Sebadoh reissue the 1996 album Harmacy with demos and live tracks. " * 4
+    gw = _gw()
+    gw.routes[("POST", "apify", "/v2/actors/apify~cheerio-scraper/runs")] = [
+        ok({"data": {"id": "r", "status": "SUCCEEDED", "defaultDatasetId": "bc", "usageTotalUsd": 0.0003}}),
+        ok({"data": {"id": "r2", "status": "SUCCEEDED", "defaultDatasetId": "about", "usageTotalUsd": 0.0004}})]
+    gw.routes[("GET", "apify", "/v2/datasets/about/items")] = [ok([{"url": "https://sebadoh.bandcamp.com/album/harmacy", "text": notes}])]
+    gw.routes[("POST", "ollama", "/api/chat")] = [ok({"message": {"content": "According to the Bandcamp page, Sebadoh reissue Harmacy.\n\nIt is not yet clear when."}})]
+    out = make_picks(gw, load_prefs(), db, "2026-11-27", tmp_path / "picks", now=NOW)
+    bc = next(p for p in out["picks"] if p["kind"] == "bandcamp")
+    yt = next(p for p in out["picks"] if p["kind"] == "youtube")
+    assert bc["description"].startswith("Sebadoh reissue") and bc["paragraphs"][0].startswith("According to the Bandcamp page")
+    assert yt["paragraphs"] is None   # no description to write from

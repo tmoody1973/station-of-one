@@ -54,12 +54,19 @@ def hour_path(newscast_id: str) -> str:
     return f"h/{d:%Y-%m-%d}/{d:%H}00/index.html"
 
 
+def _slug(text: str, fallback: str) -> str:
+    plain = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()  # Citroën -> Citroen
+    return re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")[:60].rstrip("-") or fallback
+
+
 def story_path(newscast_id: str, index: int, headline: str) -> str:
     """One page per aired story; the position prefix keeps two identical headlines apart."""
     d = datetime.strptime(newscast_id, "%Y-%m-%dT%H")
-    plain = unicodedata.normalize("NFKD", headline or "").encode("ascii", "ignore").decode()  # Citroën -> Citroen
-    slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")[:60].rstrip("-") or "story"
-    return f"s/{d:%Y-%m-%d}/{d:%H}00/{index + 1}-{slug}/index.html"
+    return f"s/{d:%Y-%m-%d}/{d:%H}00/{index + 1}-{_slug(headline, 'story')}/index.html"
+
+
+def pick_path(day: str, index: int, artist: str, title: str) -> str:
+    return f"m/{day}/{index + 1}-{_slug(f'{artist} {title}', 'pick')}/index.html"
 
 
 def _with_links(newscast: dict, extras: dict | None) -> list[dict]:
@@ -74,14 +81,15 @@ YOUTUBE_ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 ALBUM_ID = re.compile(r"^\d{1,12}$")
 
 
-def embed_url(pick: dict) -> str:
-    """Official player address, built from a validated id only; "" when the id is not valid."""
+def embed_url(pick: dict, big: bool = False) -> str:
+    """Official player address, built from a validated id only; "" when the id is not valid.
+    big: the pick page's player (Bandcamp with large artwork and the tracklist)."""
     eid = str(pick.get("embed_id") or "")
     if pick.get("kind") == "youtube" and YOUTUBE_ID.match(eid):
         return f"https://www.youtube-nocookie.com/embed/{eid}?autoplay=1"
     if pick.get("kind") == "bandcamp" and ALBUM_ID.match(eid):
-        return (f"https://bandcamp.com/EmbeddedPlayer/album={eid}/size=large/bgcol=ffffff/linkcol=d62d20/"
-                "tracklist=false/artwork=small/transparent=true/")
+        style = "tracklist=true/transparent=true/" if big else "tracklist=false/artwork=small/transparent=true/"
+        return f"https://bandcamp.com/EmbeddedPlayer/album={eid}/size=large/bgcol=ffffff/linkcol=d62d20/{style}"
     return ""
 
 
@@ -95,7 +103,9 @@ def latest_picks(picks_root: Path, today: str | None = None) -> dict | None:
             data = json.loads(f.read_text())
         except (OSError, ValueError):
             continue
-        playable = [{**p, "embed": embed_url(p)} for p in data.get("picks") or [] if embed_url(p)]
+        day = data.get("day") or f.stem
+        playable = [{**p, "embed": embed_url(p), "page": "/" + pick_path(day, i, p.get("artist", ""), p.get("title", ""))}
+                    for i, p in enumerate(data.get("picks") or []) if embed_url(p)]
         if playable:
             return {**data, "picks": playable}
     return None
@@ -142,6 +152,14 @@ def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None, extras: dict | None = None) -> str:
     return env().get_template("front.html").render(**_context(newscast, today or [newscast], prefs, "hour", extras))
+
+
+def render_pick(picks: dict, pick: dict, prefs: Prefs) -> str:
+    day = picks.get("day", "")
+    others = [{**p, "page": p.get("page") or "/" + pick_path(day, i, p.get("artist", ""), p.get("title", ""))}
+              for i, p in enumerate(picks.get("picks", [])) if p.get("embed_id") != pick.get("embed_id")]
+    return env().get_template("music.html").render(p=pick, big=embed_url(pick, big=True), picks_day=day, others=others,
+                                                   station=prefs.station)
 
 
 def render_story(newscast: dict, story: dict, extra: dict | None, prefs: Prefs) -> str:
@@ -288,12 +306,13 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     has_video = (TEMPLATES.parent / "video" / "out" / f"{day}.mp4").exists()  # rendered after the last newscast
     episodes = table_episodes(Path(os.environ.get("STATION_TABLE", "data/table")))
     graded = sorted(runs_root.glob(f"{day}T??/corrections.json"))  # written by the day's first build
+    picks = latest_picks(Path(os.environ.get("STATION_PICKS", "data/picks")), today=day)
     extras_file = run / "stories.json"  # written by the story step; absent when it was skipped
     extras = json.loads(extras_file.read_text()) if extras_file.exists() else None
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
                                   table=episodes[0] if episodes else None,
                                   corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras,
-                                  picks=latest_picks(Path(os.environ.get("STATION_PICKS", "data/picks")), today=day)))
+                                  picks=picks))
     hour.write_text(render_hour(current, prefs, today, extras=extras))
     story_pages = []
     if extras is not None:
@@ -302,6 +321,11 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
             sp.parent.mkdir(parents=True, exist_ok=True)
             sp.write_text(render_story(current, st, extras.get(st["id"]), prefs))
             story_pages.append(sp)
+    for i, pk in enumerate((picks or {}).get("picks", [])):  # one page per music pick, rebuilt each hour
+        mp = site / pk["page"].lstrip("/")
+        mp.parent.mkdir(parents=True, exist_ok=True)
+        mp.write_text(render_pick(picks, pk, prefs))
+        story_pages.append(mp)
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())
     feed = site / "feed.xml"
