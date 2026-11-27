@@ -362,3 +362,5 @@ Spike `spikes/check19_shell.py` (Playwright, system Chrome) against `_checks/she
 - **(a) Turbo 8.0.12, player marked `data-turbo-permanent`:** audio kept playing through all 9 moves (same element, time rising 1.9 → 12.9 s), but **the embed reloaded on every move (9 loads)**. Turbo moves permanent elements into the new page, and browsers reload a moved iframe.
 - **(b) Swap only `<main>`** (~30 lines, `shell-b.js`): audio kept playing through all 9 moves **and the embed loaded once**. Titles, addresses and Back/Forward correct.
 - Decision 010: approach (b).
+- **Built (Nov 27, branch `site-shell`):** `tests/e2e/test_shell_nav.py`, 7 tests in system Chrome against a test copy (`spikes/shell_e2e_publish.py` → `_checks/shell-e2e/`) built from the 1 pm newscast: audio keeps playing across story, sampler and settings pages and Back/Back/Forward; the RSS feed and outside links are left to the browser; a page with no `<main>` falls back to a normal load; controls on a swapped-in page play through the bar at the right start; the station strip lists News and ONE Jazz. **7 passed.**
+- **Live:** not yet checked (waits for the merge).
