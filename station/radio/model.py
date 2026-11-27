@@ -24,6 +24,35 @@ class Feed:
 
 
 @dataclass(frozen=True)
+class Category:
+    code: str
+    name: str
+    size: int
+    rest_hours: float
+
+
+@dataclass(frozen=True)
+class Rotation:
+    categories: tuple[Category, ...]
+
+    def by_code(self, code: str) -> Category:
+        return next(c for c in self.categories if c.code == code)
+
+
+@dataclass(frozen=True)
+class Clock:
+    name: str
+    from_hour: int  # local hours, inclusive; overnight wraps past midnight (19 → 6)
+    to_hour: int
+    segments: tuple[tuple[int, tuple[str, ...]], ...]  # (minute the segment starts, slots in order)
+
+    def covers(self, hour: int) -> bool:
+        if self.from_hour <= self.to_hour:
+            return self.from_hour <= hour <= self.to_hour
+        return hour >= self.from_hour or hour <= self.to_hour
+
+
+@dataclass(frozen=True)
 class StationConfig:
     id: str
     name: str
@@ -38,6 +67,12 @@ class StationConfig:
     news: bool
     storefront: str
     apple_connection: str
+    rotation: Rotation = Rotation(())
+    clocks: tuple[Clock, ...] = ()
+    separation: dict[str, Any] | None = None
+
+    def clock_for(self, local_hour: int) -> Clock:
+        return next(c for c in self.clocks if c.covers(local_hour))
 
 
 def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
@@ -45,7 +80,11 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
     return StationConfig(id=d["id"], name=d["name"], type=d["type"], brief=d["brief"],
                          feeds=tuple(Feed(f["type"], f["ref"]) for f in d["feeds"]), seeds=d.get("seeds", {}),
                          era_mix=d["era_mix"], flow=d["flow"], talk=d["talk"], voice=d["voice"], news=bool(d["news"]),
-                         storefront=d["storefront"], apple_connection=d["apple_connection"])
+                         storefront=d["storefront"], apple_connection=d["apple_connection"],
+                         rotation=Rotation(tuple(Category(c["code"], c["name"], c["size"], c["rest_hours"]) for c in d.get("rotation", []))),
+                         clocks=tuple(Clock(c["name"], c["from_hour"], c["to_hour"],
+                                            tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
+                         separation=d.get("separation"))
 
 
 SCHEMA = """
@@ -60,6 +99,15 @@ CREATE TABLE IF NOT EXISTS candidates (
 CREATE TABLE IF NOT EXISTS station_candidates (
   station_id TEXT, candidate_id TEXT, fit_score REAL, decided_at TEXT, scheduled_at TEXT,
   PRIMARY KEY (station_id, candidate_id));
+CREATE TABLE IF NOT EXISTS rotation (
+  station_id TEXT, candidate_id TEXT, category TEXT, energy INTEGER, vocal INTEGER, added_at TEXT, moved_at TEXT,
+  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT,
+  PRIMARY KEY (station_id, candidate_id));
+CREATE TABLE IF NOT EXISTS queue (
+  station_id TEXT, starts_at TEXT, kind TEXT, candidate_id TEXT, song_id TEXT, duration_ms INTEGER, category TEXT,
+  note TEXT, source_url TEXT, PRIMARY KEY (station_id, starts_at));
+CREATE TABLE IF NOT EXISTS meeting (
+  station_id TEXT, held_at TEXT, candidate_id TEXT, action TEXT, from_cat TEXT, to_cat TEXT, p REAL, reason TEXT);
 """
 
 
