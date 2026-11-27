@@ -316,7 +316,7 @@ def test_build_adds_video_after_the_last_newscast(monkeypatch):
     monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append((hour.hour, kw.get("steps"))))
     main(["build", "--hour", "2026-11-27T19"])
     main(["build", "--hour", "2026-11-27T18"])
-    assert got == [(19, [*build_mod.STEPS, "video"]), (18, None)]
+    assert got == [(19, [*[s for s in build_mod.STEPS if s != "radio"], "video", "radio"]), (18, None)]
 
 
 def test_video_day_uses_that_days_last_run(tmp_path, monkeypatch):
@@ -328,3 +328,25 @@ def test_video_day_uses_that_days_last_run(tmp_path, monkeypatch):
     seen = []
     monkeypatch.setitem(cli.COMMANDS, "video", lambda run: seen.append(run.name))
     assert main(["video", "--day", "2026-11-26"]) == 0 and seen == ["2026-11-26T19"]
+
+
+def test_radio_runs_last_and_never_stops_the_build(monkeypatch, tmp_path):  # review I1
+    from station import build as build_mod
+    import station.__main__ as cli
+    import station.radio.run as run_mod
+
+    got = []
+    monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append(kw.get("steps")))
+    main(["build", "--hour", "2026-11-27T19"])
+    main(["build", "--hour", "2026-11-27T07"])
+    assert got[0][-2:] == ["video", "radio"] and got[1][-3:] == ["table", "picks", "radio"]
+
+    def boom(*a, **k):
+        raise KeyError("brief")
+    monkeypatch.setattr(run_mod, "run_station", boom)
+    run = tmp_path / "2026-11-27T12"
+    run.mkdir()
+    cli.cmd_radio(run)
+    import json
+    step = [s for s in json.loads((run / "run_log.json").read_text())["steps"] if s["name"] == "radio"][0]
+    assert step["status"] == "done" and any("KeyError" in n for n in step["notes"])

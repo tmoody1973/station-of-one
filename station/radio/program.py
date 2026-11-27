@@ -38,7 +38,7 @@ def _recent_artists(db: sqlite3.Connection, station_id: str, since: datetime) ->
     return {normalize(r[0]) for r in rows}
 
 
-def program_block(station: StationConfig, db: sqlite3.Connection, now: datetime) -> Block:
+def program_block(station: StationConfig, db: sqlite3.Connection, now: datetime, mark: bool = True) -> Block:
     rows = db.execute(
         "SELECT c.id, c.song_id, c.matched_artist, c.matched_title, c.album, c.release_date, c.duration_ms, c.preview_url, "
         "c.apple_url, c.artwork_url, sc.fit_score, fi.feed, fi.title, fi.link FROM station_candidates sc "
@@ -49,7 +49,7 @@ def program_block(station: StationConfig, db: sqlite3.Connection, now: datetime)
     for r in rows:
         t = {"candidate_id": r[0], "song_id": r[1], "artist": r[2], "title": r[3], "album": r[4], "release_date": r[5],
              "duration_ms": r[6], "preview_url": r[7], "apple_url": r[8], "artwork_url": r[9], "fit": r[10],
-             "note": f"Found in {r[11]}: {r[12]}", "source_url": r[13], "era": era(r[5], now.date())}
+             "note": f"Found in {r[11]}: {r[12]}", "source_url": r[13] or r[8], "era": era(r[5], now.date())}
         pools[t["era"]].append(t)
     used = _recent_artists(db, station.id, now - timedelta(hours=station.flow.get("artist_gap_hours", 3)))
     target = station.flow.get("block_minutes", 50) * 60000
@@ -67,7 +67,13 @@ def program_block(station: StationConfig, db: sqlite3.Connection, now: datetime)
         tracks.append(t)
         used.add(normalize(t["artist"]))
         total += t["duration_ms"]
+    block = Block(station.id, f"{station.id}-{now:%Y%m%dT%H%M}", now.isoformat(), tracks)
+    if mark:
+        mark_scheduled(db, block, now)
+    return block
+
+
+def mark_scheduled(db: sqlite3.Connection, block: Block, now: datetime) -> None:
     db.executemany("UPDATE station_candidates SET scheduled_at = ? WHERE station_id = ? AND candidate_id = ?",
-                   [(now.isoformat(), station.id, t["candidate_id"]) for t in tracks])
+                   [(now.isoformat(), block.station_id, t["candidate_id"]) for t in block.tracks])
     db.commit()
-    return Block(station.id, f"{station.id}-{now:%Y%m%dT%H%M}", now.isoformat(), tracks)

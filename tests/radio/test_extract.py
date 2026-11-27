@@ -51,3 +51,9 @@ def test_extract_batches_by_eight():
     gw = FakeGateway({("POST", "ollama", "/api/chat"): [reply]})
     extract(gw, "m", [item(str(i)) for i in range(17)])
     assert len(gw.calls) == 3
+
+
+def test_items_left_out_of_the_reply_count_as_no_music():  # review I6
+    gw = FakeGateway({("POST", "ollama", "/api/chat"): [chat({"items": [{"id": "a", "music": []}]})]})
+    got, notes = extract(gw, "m", [item("a"), item("b")])
+    assert got == {"a": [], "b": []} and notes == []

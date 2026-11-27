@@ -80,7 +80,8 @@ def extract(gw, model: str, items: list[FeedItem]) -> tuple[dict[str, list[Extra
             try:
                 reply = gw.json("POST", "ollama", "/api/chat", {"model": model, "messages": messages, "stream": False,
                                                                 "think": False, "options": {"temperature": 0}})["message"]["content"]
-                found.update(parse_reply(reply, ids))
+                parsed = parse_reply(reply, ids)
+                found.update({i: parsed.get(i, []) for i in ids})  # an item left out of the reply names no music (review I6)
                 break
             except GatewayError as e:
                 last = f"writer error {e.status}"

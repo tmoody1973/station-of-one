@@ -16,7 +16,7 @@ from station.gateway import GatewayError
 from station.radio.extract import Extracted
 from station.radio.model import StationConfig, candidate_id, normalize
 from station.radio.poll import FeedItem
-from station.radio.resolve import AppleRefused, _get, _match
+from station.radio.resolve import AppleRefused, _get, _match, has_version
 
 SEED_FEED = "the station's seed list"
 MIN_UNUSED = 2
@@ -46,9 +46,10 @@ def seed_candidates(gw, station: StationConfig, db: sqlite3.Connection, now: dat
         except GatewayError as e:
             notes.append(f"seed lookup failed for {artist}: {e.status}")
             continue
-        mine = [s for s in songs if normalize(s.get("attributes", {}).get("artistName", "")).startswith(normalize(artist))]
+        mine = [s for s in songs if normalize(s.get("attributes", {}).get("artistName", "")).startswith(normalize(artist))
+                and not has_version(s.get("attributes", {}).get("name", ""))]  # originals only (review I3)
         item = FeedItem(hashlib.sha1(f"seed|{station.id}|{artist}".encode()).hexdigest()[:16], SEED_FEED, f"seed:{artist}",
-                        f"{artist}, a core artist of this station", mine[0]["attributes"].get("url", "") if mine else "", "",
+                        f"{artist}, a core artist of this station", "", "",  # each track links to its own Apple page
                         station.brief)
         added = 0
         for s in mine:

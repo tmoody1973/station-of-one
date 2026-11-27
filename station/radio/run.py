@@ -17,7 +17,7 @@ from station.radio.fit import fit_scores
 from station.radio.model import candidate_id, load_station, open_radio
 from station.radio.page import render_sampler, sampler_path
 from station.radio.poll import FeedItem, poll
-from station.radio.program import FIT_MIN, program_block
+from station.radio.program import FIT_MIN, mark_scheduled, program_block
 from station.radio.resolve import AppleRefused, resolve
 from station.radio.seeds import seed_candidates
 from station.steps.publish import cache_control, put_object
@@ -25,12 +25,24 @@ from station.store import record_decision
 
 OUT_ROOT = Path("data/radio")
 RESOLVE_LIMIT = 40  # per run: Apple lookups only for candidates Jev rated a fit
+MIN_FILL = 0.5  # publish a set only when it fills at least half of block_minutes (review I2)
+UNSCORED_LIMIT = 200
 
 
 def _pending_items(db: sqlite3.Connection, station_id: str, limit: int = 64) -> list[FeedItem]:
     rows = db.execute("SELECT id, feed, guid, title, link, published_at, excerpt FROM feed_items "
                       "WHERE station_id = ? AND extracted_at IS NULL ORDER BY seen_at LIMIT ?", (station_id, limit)).fetchall()
     return [FeedItem(*r) for r in rows]
+
+
+def _unscored(db: sqlite3.Connection, station_id: str) -> list[tuple[str, Extracted, FeedItem]]:
+    """Every candidate from this station's items that Jev has not rated yet, so a failed hour is retried (review I5)."""
+    rows = db.execute(
+        "SELECT c.id, c.kind, c.artist, c.title, c.release, c.label, c.year, c.version, fi.id, fi.feed, fi.guid, fi.title, "
+        "fi.link, fi.published_at, fi.excerpt FROM candidates c JOIN feed_items fi ON fi.id = c.feed_item_id "
+        "WHERE fi.station_id = ? AND NOT EXISTS (SELECT 1 FROM station_candidates sc WHERE sc.station_id = ? "
+        "AND sc.candidate_id = c.id) ORDER BY c.rowid LIMIT ?", (station_id, station_id, UNSCORED_LIMIT)).fetchall()
+    return [(r[0], Extracted(r[1], r[2], r[3] or "", r[4] or "", r[5] or "", r[6], r[7] or ""), FeedItem(*r[8:15])) for r in rows]
 
 
 def _store_candidates(db, station_id: str, found: dict[str, list[Extracted]], items: dict[str, FeedItem], now: datetime):
@@ -90,17 +102,14 @@ def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, pref
     found, ex_notes = extract(gw, prefs.writer.model, list(items.values()))
     notes += ex_notes
     counts["extracted"] = sum(len(v) for v in found.values())
-    cands = _store_candidates(db, station.id, found, items, now)
+    _store_candidates(db, station.id, found, items, now)
     seeds, seed_notes = seed_candidates(gw, station, db, now)  # the core, when the feeds run thin (Tarik, Nov 27)
-    cands += seeds
     notes += seed_notes
     counts["seeds"] = len(seeds)
+    cands = _unscored(db, station.id)
     if cands:
-        try:
-            scores, raw, model = fit_scores(gw, station, cands)
-        except (GatewayError, KeyError) as e:
-            scores, raw, model = {}, {}, None
-            notes.append(f"fit scoring failed: {str(e)[:120]}")
+        scores, raw, model, fit_notes = fit_scores(gw, station, cands)
+        notes += fit_notes
         for cid, score in scores.items():
             db.execute("INSERT OR REPLACE INTO station_candidates (station_id, candidate_id, fit_score, decided_at) VALUES (?,?,?,?)",
                        (station.id, cid, score, now.isoformat()))
@@ -108,18 +117,22 @@ def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, pref
         counts["fit_scored"] = len(scores)
         db.commit()
     _resolve_some(gw, station, db, now, counts, notes)
-    block = program_block(station, db, now)
-    counts["scheduled"] = len(block.tracks)
+    block = program_block(station, db, now, mark=False)
     counts["notes"] = notes
-    if not block.tracks:
-        return counts  # keep the last published set
+    counts["scheduled"] = 0
+    minutes = sum(t["duration_ms"] for t in block.tracks) / 60000
+    if minutes < MIN_FILL * station.flow.get("block_minutes", 50):
+        notes.append(f"thin set ({len(block.tracks)} tracks, {minutes:.0f} min): keeping the last page")
+        return counts  # keep the last published set; nothing is marked played
     out = Path(out_root) / station.id
     out.mkdir(parents=True, exist_ok=True)
     data = {"station": station.id, "block": asdict(block), "counts": {k: v for k, v in counts.items() if k != "notes"}}
     (out / "latest.json").write_text(json.dumps(data, indent=1))
-    html = render_sampler(station, block, counts, prefs)
+    html = render_sampler(station, block, {**counts, "scheduled": len(block.tracks)}, prefs)
     (out / "index.html").write_text(html)
     for key, body, ctype in ((f"data/radio/{station.id}.json", json.dumps(data).encode(), "application/json"),
                              (sampler_path(station.id), html.encode(), "text/html; charset=utf-8")):
         put_object(gw, prefs.hosting.bucket, key, body, ctype, cache_control(key))
+    mark_scheduled(db, block, now)  # only after the upload: a failed upload burns nothing
+    counts["scheduled"] = len(block.tracks)
     return counts

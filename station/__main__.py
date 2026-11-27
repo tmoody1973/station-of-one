@@ -542,21 +542,31 @@ def cmd_radio(run: Path, station_id: str | None = None) -> None:
     from station.radio.model import STATIONS_ROOT
     from station.radio.run import run_station
 
-    log = RunLog.open(run / "run_log.json", run_id=run.name) if run is not None else None
     ids = [station_id] if station_id else sorted(p.stem for p in STATIONS_ROOT.glob("*.json"))
-    totals: dict = {}
-    notes: list[str] = []
-    for sid in ids:
-        with closing(_db()) as db:
-            out = run_station(Gateway(), sid, db, datetime.now(UTC), load_prefs())
-        notes += [f"{sid}: {n}" for n in out.pop("notes", [])]
-        totals[sid] = out
-    if log is None:
+
+    def run_all() -> tuple[dict, list[str]]:
+        totals: dict = {}
+        notes: list[str] = []
+        for sid in ids:  # a station that fails is a note; it never stops the build (review I1)
+            try:
+                with closing(_db()) as db:
+                    out = run_station(Gateway(), sid, db, datetime.now(UTC), load_prefs())
+            except Exception as e:  # noqa: BLE001
+                notes.append(f"{sid}: {type(e).__name__}: {str(e)[:160]}")
+                continue
+            notes += [f"{sid}: {n}" for n in out.pop("notes", [])]
+            totals[sid] = out
+        return totals, notes
+
+    if run is None:
+        totals, notes = run_all()
         print(json.dumps({"stations": totals, "notes": notes}, indent=1))
         return
+    log = RunLog.open(run / "run_log.json", run_id=run.name)
     with log.step("radio", "Apify + Ollama + Jev + Apple Music") as rec:
+        totals, notes = run_all()
         rec.notes.extend(notes)
-        rec.counts.update({k: sum(t.get(k, 0) for t in totals.values()) for k in ("items", "extracted", "resolved", "scheduled")})
+        rec.counts.update({k: sum(t.get(k, 0) for t in totals.values()) for k in ("items", "extracted", "resolved", "seeds", "scheduled")})
 
 
 COMMANDS = {"scrape": cmd_scrape, "dedupe": cmd_dedupe, "judge": cmd_judge, "rundown": cmd_rundown,
@@ -584,9 +594,10 @@ def cmd_build(hour: str | None) -> None:
         return
     last_hour = int(load_prefs().station.last_newscast.split(":")[0])
     first_hour = int(load_prefs().station.first_newscast.split(":")[0])
-    extra = ({"steps": [*build_mod.STEPS, "video"]} if when.hour == last_hour  # daily video after the last newscast
-             else {"steps": [*[s for st in build_mod.STEPS for s in (["corrections", st] if st == "rundown" else [st])],
-                             "table", "picks"]} if when.hour == first_hour  # Corrections, The Table, music picks
+    news = [s for s in build_mod.STEPS if s != "radio"]  # the music stations always run last (review I1)
+    extra = ({"steps": [*news, "video", "radio"]} if when.hour == last_hour  # daily video after the last newscast
+             else {"steps": [*[s for st in news for s in (["corrections", st] if st == "rundown" else [st])],
+                             "table", "picks", "radio"]} if when.hour == first_hour  # Corrections, The Table, music picks
              else {})
     result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")

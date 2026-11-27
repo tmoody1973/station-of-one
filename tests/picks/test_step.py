@@ -69,7 +69,7 @@ def test_first_hour_runs_picks_after_table(monkeypatch):
     got = []
     monkeypatch.setattr(build_mod, "build", lambda hour, **kw: got.append(kw.get("steps")))
     main(["build", "--hour", "2026-11-27T07"])
-    assert got[0][-2:] == ["table", "picks"]
+    assert got[0][-3:] == ["table", "picks", "radio"]
     assert FALLBACKS["picks"] == ["retry", "skip"] and "newscasts are unaffected" in SKIP_MEANS["picks"]
 
 

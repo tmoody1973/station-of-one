@@ -17,7 +17,13 @@ from station.radio.extract import Extracted
 from station.radio.model import normalize
 
 MATCH_MIN = 0.8
-VERSION_WORDS = ("remaster", "live", "edit", "clean", "instrumental", "karaoke", "acoustic", "demo", "remix", "sped up")
+# whole words only: "Deluxe Edition" is not an "edit" (review, Nov 27)
+VERSION = re.compile(r"\b(remaster\w*|live|edit|clean|instrumental|karaoke|acoustic|demo|remix\w*|sped up|vip)\b")
+
+
+def has_version(name: str, asked: str = "") -> bool:
+    """A version word in the song name that the item did not ask for."""
+    return any(m.group(0) not in normalize(asked) for m in VERSION.finditer(normalize(name)))
 FEAT = re.compile(r"\s*[\(\[](feat\.?|featuring|with)\b[^\)\]]*[\)\]]", re.I)
 
 
@@ -68,9 +74,8 @@ def match_score(want: Extracted, attrs: dict) -> float:
         extra = 0.2 if _sim(want.release, attrs["albumName"]) > 0.8 else 0.0
     else:
         extra = 0.2  # nothing to disagree with
-    asked = normalize(f"{want.title} {want.version}")
     name = normalize(attrs.get("name", ""))
-    penalty = 0.3 if any(w in name and w not in asked for w in VERSION_WORDS) else 0.0
+    penalty = 0.3 if has_version(name, f"{want.title} {want.version}") else 0.0
     # the version the item asked for ("Live at the Barbican", "VIP") beats the plain take
     bonus = 0.05 if want.version and normalize(want.version) in name else 0.0
     return round(0.4 * artist + 0.4 * title + extra - penalty + bonus, 3)

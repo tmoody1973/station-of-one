@@ -51,7 +51,7 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
     <div><h3>{{ t.title }}</h3><div class="by">{{ t.artist }} · {{ t.album }}{% if t.release_date %} · {{ t.release_date[:4] }}{% endif %}</div>
       <div class="note"><a href="{{ t.source_url | safe_url }}" rel="noopener" target="_blank">{{ t.note }}</a></div></div>
     <div class="act">
-      <button class="pv" data-preview="{{ t.preview_url | safe_url }}" aria-label="Play a 30-second preview of {{ t.title }}">▶ Preview</button>
+      {% if t.preview_url %}<button class="pv" data-preview="{{ t.preview_url | safe_url }}" aria-label="Play a 30-second preview of {{ t.title }}">▶ Preview</button>{% endif %}
       <a class="am" href="{{ t.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a>
     </div>
   </div>
@@ -64,7 +64,7 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
     <span><b>agent log</b> · {{ block.built_at[:16].replace('T', ' ') }} UTC</span>
     <span>feed items read: {{ counts.get('items', 0) }}</span>
     <span>music found: {{ counts.get('extracted', 0) }}</span>
-    <span>matched on Apple Music: {{ counts.get('resolved', 0) }}</span>
+    <span>matched on Apple Music: {{ counts.get('resolved', 0) + counts.get('seeds', 0) }}</span>
     <span>held (match too weak): {{ counts.get('held', 0) }}</span>
     <span>not on Apple Music: {{ counts.get('not_on_apple', 0) }}</span>
     <span>in this set: {{ block.tracks | length }}</span>

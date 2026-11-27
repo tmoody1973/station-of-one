@@ -61,7 +61,7 @@ def test_apple_refusal_keeps_last_page(db, tmp_path, monkeypatch):  # Review Foc
     monkeypatch.setattr(run_mod, "poll", fake_poll)
     monkeypatch.setattr(run_mod, "seed_candidates", lambda gw, st, d, now: ([], []))
     monkeypatch.setattr(run_mod, "extract", lambda gw, m, items: ({"fi1": [Extracted("track", "Nubya Garcia", "Odyssey", "", "", 2024, "")]}, []))
-    monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: ({c[0][0]: 0.9}, {c[0][0]: {"type": "noul", "noul": 0.9}}, "jev"))
+    monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: ({c[0][0]: 0.9}, {c[0][0]: {"type": "noul", "noul": 0.9}}, "jev", []))
 
     def refuse(*a, **k):
         raise AppleRefused("Apple Music refused the developer token (401)")
@@ -84,9 +84,75 @@ def test_seed_tracks_are_fit_scored_with_feed_finds(db, tmp_path, monkeypatch):
     seed = ("sc1", Extracted("track", "Ezra Collective", "Victory Dance", "", "", 2022, ""), seed_item)
     monkeypatch.setattr(run_mod, "poll", lambda gw, st, d, now: ([], []))
     monkeypatch.setattr(run_mod, "extract", lambda gw, m, items: ({}, []))
-    monkeypatch.setattr(run_mod, "seed_candidates", lambda gw, st, d, now: ([seed], []))
+    def fake_seeds(gw, st, d, now):  # stores the seed like the real function
+        d.execute("INSERT INTO feed_items (id, station_id, feed, guid, title, link, published_at, excerpt, seen_at, extracted_at) "
+                  "VALUES ('seed1', 'uk-jazz', 'the station''s seed list', 'seed:Ezra Collective', 'core', '', '', 'brief', '', '')")
+        d.execute("INSERT INTO candidates (id, feed_item_id, kind, artist, title, status) VALUES ('sc1', 'seed1', 'track', 'Ezra Collective', 'Victory Dance', 'resolved')")
+        return [seed], []
+    monkeypatch.setattr(run_mod, "seed_candidates", fake_seeds)
     seen = []
-    monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: (seen.extend(x[0] for x in c), ({}, {}, None))[1])
+    monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: (seen.extend(x[0] for x in c), ({}, {}, None, []))[1])
     monkeypatch.setattr(run_mod, "put_object", lambda *a, **k: None)
     run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
     assert seen == ["sc1"]
+
+
+def _seed_pool(db, n, minutes=5):
+    db.execute("INSERT INTO feed_items (id, station_id, feed, guid, title, link, published_at, excerpt, seen_at) "
+               "VALUES ('fs', 'uk-jazz', 'the station''s seed list', 's', 'core', '', '', '', '')")
+    for i in range(n):
+        db.execute("INSERT INTO candidates (id, feed_item_id, kind, artist, title, status, song_id, apple_url, preview_url, artwork_url, "
+                   "duration_ms, release_date, album, matched_artist, matched_title) VALUES (?, 'fs', 'track', ?, 'T', 'resolved', ?, "
+                   "'https://music.apple.com/x', 'https://p.m4a', 'https://a', ?, '2025-01-01', 'Alb', ?, 'T')",
+                   (f"c{i}", f"Artist {i}", f"s{i}", minutes * 60000, f"Artist {i}"))
+        db.execute("INSERT INTO station_candidates VALUES ('uk-jazz', ?, 0.9, '', NULL)", (f"c{i}",))
+
+
+def _quiet(monkeypatch):
+    monkeypatch.setattr(run_mod, "poll", lambda gw, st, d, now: ([], []))
+    monkeypatch.setattr(run_mod, "extract", lambda gw, m, items: ({}, []))
+    monkeypatch.setattr(run_mod, "seed_candidates", lambda gw, st, d, now: ([], []))
+
+
+def test_thin_set_keeps_last_page_and_burns_nothing(db, tmp_path, monkeypatch):  # review I2
+    _quiet(monkeypatch)
+    _seed_pool(db, 2)
+    uploads = []
+    monkeypatch.setattr(run_mod, "put_object", lambda *a, **k: uploads.append(a[2]))
+    out = run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
+    assert uploads == [] and out["scheduled"] == 0 and any("thin" in n for n in out["notes"])
+    assert db.execute("SELECT COUNT(*) FROM station_candidates WHERE scheduled_at IS NOT NULL").fetchone()[0] == 0
+
+
+def test_failed_upload_burns_nothing(db, tmp_path, monkeypatch):  # review minor 1
+    _quiet(monkeypatch)
+    _seed_pool(db, 12)
+
+    def boom(*a, **k):
+        raise RuntimeError("bucket down")
+    monkeypatch.setattr(run_mod, "put_object", boom)
+    with pytest.raises(RuntimeError):
+        run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
+    assert db.execute("SELECT COUNT(*) FROM station_candidates WHERE scheduled_at IS NOT NULL").fetchone()[0] == 0
+
+
+def test_unscored_candidates_are_retried(db, tmp_path, monkeypatch):  # review I5
+    _quiet(monkeypatch)
+    db.execute("INSERT INTO feed_items (id, station_id, feed, guid, title, link, published_at, excerpt, seen_at) "
+               "VALUES ('f1', 'uk-jazz', 'UK Vibe', 'g', 'Review', 'https://u', '', 'x', '')")
+    db.execute("INSERT INTO candidates (id, feed_item_id, kind, artist, title, release) VALUES ('orphan', 'f1', 'track', 'Kokoroko', 'Abusey Junction', '')")
+    seen = []
+    monkeypatch.setattr(run_mod, "fit_scores", lambda gw, st, c: (seen.extend(x[0] for x in c), ({}, {}, None, []))[1])
+    monkeypatch.setattr(run_mod, "put_object", lambda *a, **k: None)
+    run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
+    assert seen == ["orphan"]
+
+
+def test_agent_log_counts_seed_matches():  # review minor 6
+    html = render_sampler(load_station("uk-jazz"), Block("uk-jazz", "b1", NOW.isoformat(), [TRACK]),
+                          {"items": 0, "extracted": 0, "resolved": 0, "seeds": 10, "scheduled": 1}, load_prefs())
+    assert "matched on Apple Music: 10" in html
+
+
+def test_no_preview_button_without_a_preview():  # review minor 7
+    assert 'class="pv"' not in page([{**TRACK, "preview_url": ""}])

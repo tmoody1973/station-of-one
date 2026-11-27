@@ -78,3 +78,11 @@ def test_apple_401_raises_a_clear_error():  # Review Focus 4
     gw = FakeGateway({("GET", CONN, "/v1/catalog/us/search"): [ok({}, status=401)]})
     with pytest.raises(AppleRefused, match="apple_check"):
         resolve(gw, CONN, want(), "us")
+
+
+def test_deluxe_edition_is_not_an_edit():  # review I4
+    w = want(title="", release="Odyssey", kind="release")
+    probe = Extracted("track", "Nubya Garcia", "Odyssey", "Odyssey", "", None, "")
+    assert match_score(probe, {"artistName": "Nubya Garcia", "name": "Odyssey (Deluxe Edition)", "albumName": "Odyssey (Deluxe Edition)"}) >= MATCH_MIN
+    assert match_score(want(), {"artistName": "Nubya Garcia", "name": "Solstice (Radio Edit)"}) < MATCH_MIN
+    assert match_score(want(), {"artistName": "Nubya Garcia", "name": "Solstice (Remastered 2025)"}) < MATCH_MIN

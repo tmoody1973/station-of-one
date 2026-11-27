@@ -53,3 +53,14 @@ def test_artist_with_enough_unused_tracks_is_skipped(db):
                    "VALUES (?, 'f', 'track', 'Kokoroko', ?, 'resolved', 'Kokoroko')", (f"k{i}", f"T{i}"))
         db.execute("INSERT INTO station_candidates VALUES ('uk-jazz', ?, 0.8, '', NULL)", (f"k{i}",))
     assert seed_candidates(gw, st, db, NOW) == ([], []) and gw.calls == []
+
+
+def test_seed_skips_live_and_edit_versions(db):  # review I3
+    gw = FakeGateway({("GET", "APPLE", "/v1/catalog/us/search"): [ok({"results": {"songs": {"data": [
+        song("1", "Yussef Dayes", "Black Classical Music (Live at the Barbican)"), song("2", "Yussef Dayes", "Rust (Radio Edit)"),
+        song("3", "Yussef Dayes", "Rust"), song("4", "Yussef Dayes", "Raisins Under the Sun")]}}})]})
+    st = station_with(["Yussef Dayes"])
+    st = st.__class__(**{**st.__dict__, "apple_connection": "APPLE"})
+    cands, _ = seed_candidates(gw, st, db, NOW)
+    assert [e.title for _, e, _ in cands] == ["Rust", "Raisins Under the Sun"]
+    assert db.execute("SELECT link FROM feed_items").fetchone() == ("",)   # review M5: each track links to its own Apple page

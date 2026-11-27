@@ -17,7 +17,7 @@ def jev(n, start=0):
 
 def test_fit_batches_by_25():
     gw = FakeGateway({("POST", "typesafe", "/v1/systemone"): [jev(25), jev(5, 25)]})
-    scores, raw, model = fit_scores(gw, load_station("uk-jazz"), cands(30))
+    scores, raw, model, _ = fit_scores(gw, load_station("uk-jazz"), cands(30))
     assert len(gw.calls) == 2 and len(scores) == 30 and model == "jev-1"
     assert scores["c29"] == 0.79 and raw["c0"]["noul"] == 0.5
 
@@ -34,4 +34,10 @@ def test_fit_state_carries_brief_seeds_and_excerpt():
 
 def test_no_candidates_no_call():
     gw = FakeGateway({})
-    assert fit_scores(gw, load_station("uk-jazz"), []) == ({}, {}, None) and gw.calls == []
+    assert fit_scores(gw, load_station("uk-jazz"), []) == ({}, {}, None, []) and gw.calls == []
+
+
+def test_a_failed_batch_keeps_earlier_scores():  # review I5
+    gw = FakeGateway({("POST", "typesafe", "/v1/systemone"): [jev(25), ok({"e": 1}, status=500)]})
+    scores, raw, model, notes = fit_scores(gw, load_station("uk-jazz"), cands(30))
+    assert len(scores) == 25 and any("fit" in n for n in notes)
