@@ -82,7 +82,7 @@ def test_page_writes_front_and_hour_files(tmp_path):
         (runs / h / "newscast.json").write_text(json.dumps(newscast(h)))
     written = page(runs / "2026-11-26T17", PREFS, runs_root=runs)
     names = sorted(str(p.relative_to(runs / "2026-11-26T17" / "site")) for p in written)
-    assert names == ["data/stations.json", "feed.xml", "h/2026-11-26/1700/index.html", "index.html", "shell.js"]
+    assert names == ["data/stations.json", "feed.xml", "h/2026-11-26/1700/index.html", "index.html", "live.js", "shell.js"]
 
 
 def test_only_http_links_render():  # scraped URLs are untrusted
@@ -99,3 +99,33 @@ def test_play_labels_show_story_length():  # "0:010:01..." bug seen in the first
     n["stories"][1]["seconds"] = 32
     html = render_front(n, [n], PREFS)
     assert "Play from this story · 1:30" in html and "Play · 0:32" in html and "0:010:01" not in html
+
+
+def test_musickit_json_written_from_token_file(tmp_path):  # Plan C Task 1
+    from station.steps.page import musickit_config
+    runs = tmp_path / "runs"
+    (runs / "2026-11-26T17").mkdir(parents=True)
+    (runs / "2026-11-26T17" / "newscast.json").write_text(json.dumps(newscast("2026-11-26T17")))
+    token = tmp_path / "musickit_token"
+    token.write_text("abc.def.ghi\n")
+    written = page(runs / "2026-11-26T17", PREFS, runs_root=runs, musickit_token=token)
+    out = runs / "2026-11-26T17" / "site" / "data" / "musickit.json"
+    assert out in written
+    assert json.loads(out.read_text()) == {"developerToken": "abc.def.ghi", "app": {"name": "ONE 1.0 FM", "build": "2026.11.27"}}
+    assert musickit_config(token) == json.loads(out.read_text())
+
+
+def test_no_token_no_musickit_json(tmp_path):
+    from station.steps.page import musickit_config
+    runs = tmp_path / "runs"
+    (runs / "2026-11-26T17").mkdir(parents=True)
+    (runs / "2026-11-26T17" / "newscast.json").write_text(json.dumps(newscast("2026-11-26T17")))
+    written = page(runs / "2026-11-26T17", PREFS, runs_root=runs, musickit_token=tmp_path / "missing")
+    assert not any(p.name == "musickit.json" for p in written)
+    (tmp_path / "empty").write_text("  \n")
+    assert musickit_config(tmp_path / "missing") is None and musickit_config(tmp_path / "empty") is None
+
+
+def test_token_file_is_git_ignored():
+    import subprocess
+    assert subprocess.run(["git", "check-ignore", "-q", "data/musickit_token"]).returncode == 0

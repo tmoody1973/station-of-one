@@ -11,6 +11,13 @@
   const label = $("wone-label"), nowEl = $("wone-now"), icon = $("wone-icon"), embed = $("wone-embed");
   const PLAY = "M4 2l12 7-12 7z", PAUSE = "M4 2h4v14H4zM10 2h4v14h-4z";
   let item = null;
+  const BASE = new URL(".", (document.currentScript && document.currentScript.src) || location.href);
+  const MUSICKIT = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
+  const msgEl = $("wone-msg");
+  let mk = null, mkReady = null, station = null, errors = 0, joining = false;
+  let gen = 0, lastStart = 0, rejoinAt = 0;  // gen: a newer tap or sound cancels a tune-in still in progress (review I2)
+  const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
+  const playing = () => (mk.isPlaying ?? (mk.playbackState === MusicKit.PlaybackStates.playing));  // isPlaying unconfirmed (I6)
 
   const fmt = (s) => { s = Math.max(0, Math.floor(s || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
   const chapterAt = (ms) => ((item && item.chapters) || []).filter((c) => ms >= c.start_ms).pop();
@@ -32,7 +39,128 @@
     nowEl.textContent = next.title || "";
   }
 
+  // A clock station (Plan C): full songs through the listener's own Apple Music, joined live. MusicKit loads only
+  // after a tap; the token in /data/musickit.json is the public, origin-locked web token (decision 012).
+  const loadScript = (src) => new Promise((ok, no) => {
+    const s = document.createElement("script"); s.src = src; s.async = true; s.onload = ok; s.onerror = no; document.head.append(s);
+  });
+  async function musicKit() {
+    const r = await fetch("/data/musickit.json", { cache: "no-cache" });
+    if (!r.ok) throw new Error("no web token");
+    const cfg = await r.json();
+    if (!window.woneLive) await loadScript(new URL("live.js", BASE).href);
+    if (!window.MusicKit) {
+      const ready = new Promise((ok) => document.addEventListener("musickitloaded", ok, { once: true }));
+      await loadScript(MUSICKIT);
+      await ready;
+    }
+    await MusicKit.configure(cfg);
+    mk = MusicKit.getInstance();
+    mk.addEventListener("nowPlayingItemDidChange", ({ item: song }) => {
+      if (station && song) { errors = 0; nowEl.textContent = [song.title, song.artistName].filter(Boolean).join(" · "); }
+    });
+    mk.addEventListener("mediaPlaybackError", () => station && failed());
+    return mk;
+  }
+  // Connect / Disconnect in settings. The status comes from a flag this browser keeps, so visiting settings
+  // never loads Apple's script (MusicKit loads only after a tap).
+  const showApple = () => document.querySelectorAll("[data-apple-status]").forEach((el) => {
+    el.textContent = localStorage.getItem("wone-apple") === "1" ? "Connected" : "Not connected";
+  });
+  document.addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-apple]");
+    if (!b) return;
+    if (b.dataset.apple === "connect") { if (await signIn()) localStorage.setItem("wone-apple", "1"); }
+    else { await window.wone.disconnect(); localStorage.removeItem("wone-apple"); }
+    showApple();
+  });
+  document.addEventListener("pointerdown", (e) => { if (e.target.closest("[data-apple='connect']")) getMK().catch(() => {}); });
+  document.addEventListener("wone:page", showApple);
+  showApple();
+  const getMK = () => (mkReady = mkReady || musicKit().catch((e) => { mkReady = null; throw e; }));
+
+  async function signIn() {
+    try { await getMK(); } catch (e) { say("Full songs aren't available right now."); return false; }
+    try { await mk.authorize(); } catch (e) {
+      say("Full songs need an Apple Music subscription. Previews still play on each station's page.");
+      return false;
+    }
+    if (mk.isAuthorized === false) { say("Full songs need an Apple Music subscription."); return false; }
+    return true;
+  }
+  async function failed(err) {  // a song that won't play here
+    if (err && err.name === "NotAllowedError") { say("Tap ▶ to start."); return; }  // the browser wants a tap, not a skip (I3)
+    errors += 1;
+    if (errors >= 3) {
+      say("Some songs won't play here: they may not be available in your country, or your Apple Music subscription may not be active.");
+      return;
+    }
+    try { await mk.skipToNextItem(); } catch (e) { await failed(e); }
+  }
+  async function join(fromEnd = false, my = gen) {  // tune in at the song and second that are live now
+    if (joining || !station) return;
+    joining = true;
+    try {
+      const r = await fetch(new URL(station.src, location.href), { cache: "no-cache" });
+      if (my !== gen) return;
+      if (!r.ok) { say("The schedule isn't available right now."); return; }
+      let items = (await r.json()).items || [];
+      if (my !== gen) return;
+      // The client skips IDs and breaks, so it runs ahead of the schedule: after the queue runs out, carry on
+      // after the last song already queued, never back to songs just heard (I5).
+      if (fromEnd && lastStart) items = items.filter((it) => Date.parse(it.starts_at) > lastStart);
+      const live = window.woneLive.liveStart(items, Date.now());
+      if (!live.songIds.length) { say("Nothing is scheduled right now."); return; }
+      if (fromEnd) live.startTime = 0;
+      const queued = new Set(live.songIds);
+      lastStart = Math.max(...items.filter((it) => queued.has(String(it.song_id))).map((it) => Date.parse(it.starts_at)));
+      errors = 0;
+      audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time, right before Apple's audio starts
+      try { await mk.setQueue({ songs: live.songIds, startTime: live.startTime, startPlaying: true }); } catch (e) { await failed(e); }
+    } finally { joining = false; }
+  }
+  async function playStation(next) {
+    const my = ++gen;
+    say("");
+    if (!(await signIn()) || my !== gen) return;  // a newer tap (the newscast, a preview) wins
+    localStorage.setItem("wone-apple", "1");
+    station = next; item = next;
+    root.classList.add("station");
+    label.textContent = next.label || next.title || "Live";
+    nowEl.textContent = next.title || "";
+    lastStart = 0;
+    rejoinAt = 0;
+    await join(false, my);
+  }
+  function leaveStation() {
+    gen += 1;  // also cancels a tune-in still waiting on sign-in
+    if (!station) return;
+    if (mk) mk.pause();
+    station = null;
+    item = null;
+    root.classList.remove("station");
+  }
+  setInterval(() => {  // the station's clock, progress and end of queue
+    if (!station || !mk) return;
+    const t = mk.currentPlaybackTime || 0, d = mk.currentPlaybackDuration || 0;
+    fill.style.width = d ? `${(t / d) * 100}%` : "0";
+    timeEl.textContent = `${fmt(t)} / ${fmt(d)}`;
+    icon.setAttribute("d", playing() ? PAUSE : PLAY);
+    if (window.MusicKit && mk.playbackState === MusicKit.PlaybackStates.completed && Date.now() >= rejoinAt) {
+      rejoinAt = Date.now() + 30000;  // once per finish, then every 30 s at most (I4)
+      join(true);
+    }
+  }, 500);
+  document.addEventListener("pointerdown", (e) => {  // start loading on touch, so sign-in opens inside the tap
+    const p = e.target.closest("[data-play]");
+    if (p && p.dataset.play.includes('"station"')) getMK().catch(() => {});
+  });
+  $("wone-skip-song")?.addEventListener("click", () => station && mk.skipToNextItem().catch((e) => failed(e)));  // absent on older pages (C1)
+  $("wone-live")?.addEventListener("click", () => { if (station) { lastStart = 0; join(); } });
+
   function play(next) {
+    if (next && next.kind === "station") return playStation(next);
+    leaveStation();
     if (next) {
       load(next);
       if (next.kind === "embed") return;
@@ -48,13 +176,21 @@
     audio.play().catch(() => {});
   }
 
-  window.wone = { play, pause: () => audio.pause(), seek: (s) => { audio.currentTime = s; }, now: () => item };
+  window.wone = {
+    play, pause: () => (station ? mk.pause() : audio.pause()), seek: (s) => { audio.currentTime = s; }, now: () => item,
+    connect: signIn,
+    disconnect: async () => { leaveStation(); try { await getMK(); await mk.unauthorize(); } catch (e) { /* nothing to undo */ } },
+    connected: async () => { try { return (await getMK()).isAuthorized; } catch (e) { return false; } },
+  };
 
-  $("wone-play").addEventListener("click", () => (audio.paused ? play() : audio.pause()));
+  $("wone-play").addEventListener("click", () => {
+    if (station) return playing() ? mk.pause() : mk.play();
+    return audio.paused ? play() : audio.pause();
+  });
   document.addEventListener("click", (e) => {  // delegated: works on first loads and after page swaps
     const stage = e.target.closest("[data-stage-embed]");  // a big player that lives on its page (music picks)
     if (stage) {
-      audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one thing at a time
+      leaveStation(); audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one thing at a time
       const f = document.createElement("iframe");
       f.src = stage.dataset.stageEmbed; f.title = stage.dataset.title || "";
       f.allow = "autoplay; encrypted-media; fullscreen"; f.referrerPolicy = "strict-origin-when-cross-origin";
@@ -67,11 +203,11 @@
     if (s && item && item.kind !== "embed") audio.currentTime += Number(s.dataset.skip);
   });
   bar.addEventListener("click", (e) => {
-    if (!audio.duration) return;
+    if (station || !audio.duration) return;
     const r = bar.getBoundingClientRect();
     audio.currentTime = ((e.clientX - r.left) / r.width) * audio.duration;
   });
-  audio.addEventListener("play", () => icon.setAttribute("d", PAUSE));
+  audio.addEventListener("play", () => { leaveStation(); icon.setAttribute("d", PAUSE); });
   audio.addEventListener("pause", () => icon.setAttribute("d", PLAY));
   audio.addEventListener("timeupdate", () => {
     const c = chapterAt(audio.currentTime * 1000);
