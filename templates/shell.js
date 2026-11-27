@@ -337,6 +337,9 @@
       if (st.schedule) {
         schedulePage = st.page.replace(/index\.html$/, "meeting/index.html");
         const pd = el("a", null, "The program director"); pd.href = schedulePage; links.append(pd);
+        const how = el("a", null, "How it's programmed");
+        how.href = st.page.replace(/[^/]+\/index\.html$/, "how-it-works/index.html");  // /radio/<id>/ -> /radio/how-it-works/
+        links.append(how);
       }
       col.append(links);
       cols.push(col);
