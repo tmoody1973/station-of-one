@@ -5,36 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/logo.png" type="image/png">
 <title>Settings · {{ station.name }}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#fff}
-a{color:#141414}a:hover{color:#C8102E}
-h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
-.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
-header{border-bottom:1px solid #e3e3e3}
-header .wrap{padding-top:18px;padding-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
-header a.brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;text-decoration:none}
-nav{display:flex;gap:22px;font-size:15px;font-weight:500}nav a{text-decoration:none}
-main{padding-top:32px;padding-bottom:56px;display:flex;flex-direction:column;gap:32px}
-h1{margin:0;font-size:44px}.lede{margin:8px 0 0;font-size:17px;color:#555}
-h2{margin:0;font-size:24px}
-table{width:100%;border-collapse:collapse;border:1px solid #e3e3e3;border-radius:10px;overflow:hidden;font-size:15px}
-th{background:#f6f6f6;text-align:left;padding:12px 14px;font-weight:600}td{padding:12px 14px;border-top:1px solid #e3e3e3}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
-.card{border:1px solid #e3e3e3;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:10px}
-.card h3{margin:0;font-size:22px}.k{font-weight:600;font-size:15px}.v{font-size:15px;color:#333}
-.conn{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.conn div{border:1px solid #e3e3e3;border-radius:10px;padding:14px;font-size:15px}
-.conn span{display:block;color:#555;font-size:14px}
-.note{font-size:14px;color:#555;margin:0}
-.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap;color:inherit}.logo b{font-weight:700;letter-spacing:1px}
-.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',Inter,sans-serif;line-height:1;border-radius:4px;overflow:hidden;font-size:15px}.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}
+{% include "_bauhaus.css" %}
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:36px}
+h1{margin:0;font-size:52px;font-weight:800;text-transform:lowercase;letter-spacing:-.04em}.lede{margin:8px 0 0;font-size:18px;color:var(--ink-2);max-width:62ch}
+h2{margin:0;font-size:24px;text-transform:lowercase}
+table{width:100%;border-collapse:collapse;border:2px solid var(--ink);background:var(--card);box-shadow:6px 6px 0 var(--ink);font-size:15px}
+th{background:var(--ink);color:var(--paper);text-align:left;padding:12px 14px;font-weight:700;text-transform:lowercase;letter-spacing:.06em}td{padding:12px 14px;border-top:2px solid var(--ink)}
+.dot{display:inline-block;width:12px;height:12px;margin-right:8px;border:2px solid var(--ink)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:22px}
+.card{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:22px;display:flex;flex-direction:column;gap:10px}
+.card:nth-child(3n+1){box-shadow:6px 6px 0 var(--red)}.card:nth-child(3n+2){box-shadow:6px 6px 0 var(--yellow)}.card:nth-child(3n){box-shadow:6px 6px 0 var(--blue)}
+.card h3{margin:0;font-size:22px}.k{font-weight:700;font-size:15px}.v{font-size:15px;color:var(--ink-2)}
+.conn{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.conn div{background:var(--card);border:2px solid var(--ink);padding:14px;font-size:15px;font-weight:700}
+.conn span{display:block;color:var(--muted);font-size:14px;font-weight:400}
+.note{font-size:14px;color:var(--muted);margin:0}
 </style>
 </head>
 <body>
-<header><div class="wrap"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
+<header class="site"><div class="wrap"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
   <nav><a href="/index.html">Front page</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav></div></header>
 <main class="wrap">
 <div><h1>Settings</h1><p class="lede">Everything here is one preferences file on the Sprite. The agent reads it at the start of every run. This page is read-only.</p></div>

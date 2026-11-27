@@ -1,0 +1,52 @@
+/* Shared look for every page (Nov 27 restyle): Bauhaus primaries on cream paper.
+   Bright red/yellow are for shapes and large type; small text uses --red-text (5:1 on paper). */
+:root{--paper:#ece4cf;--card:#f6f1e3;--ink:#111;--ink-2:#3b3833;--muted:#5f584d;
+  --red:#d62d20;--red-text:#b3241a;--yellow:#f4c20d;--blue:#1d4e9e;
+  --geo:Jost,Futura,"Century Gothic","Avenir Next",sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--geo);color:var(--ink);background:var(--paper);line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:var(--ink);text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:var(--red-text)}
+h1,h2,h3{font-family:var(--geo);font-weight:700;letter-spacing:-.02em}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+.mono{font-family:var(--mono)}.muted{color:var(--muted)}
+
+/* masthead: logo, station line, nav, then the thick black rule */
+header.site{border-bottom:7px solid var(--ink)}
+header.site .wrap{padding-top:22px;padding-bottom:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.brand{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.brand .line{font-size:14px;font-weight:600;letter-spacing:.12em;text-transform:lowercase;color:var(--ink-2);padding-bottom:4px}
+nav{display:flex;gap:22px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:lowercase;flex-wrap:wrap}
+nav a{text-decoration:none;border-bottom:4px solid transparent;padding-bottom:2px}
+nav a:hover{color:var(--ink);border-bottom-color:var(--yellow)}
+
+/* logo: the WONE ID block plus "FM" */
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.logo .lockup{font-family:var(--geo);font-size:30px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;color:inherit}
+.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',var(--geo);line-height:1;overflow:hidden;font-size:17px;border:2px solid var(--ink)}
+.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}
+.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}
+
+/* numbered section markers: a big numeral with a primary shape behind it */
+.marker{display:flex;align-items:flex-end;gap:10px;margin:0;font-weight:700}
+.marker .num{position:relative;display:inline-block;font-size:48px;line-height:.78;letter-spacing:-.05em;padding-right:.3em;z-index:0}
+.marker .num::before{content:"";position:absolute;z-index:-1;width:.56em;height:.56em;left:.26em;top:.18em;background:var(--mk,var(--red))}
+.marker.sq .num::before{--mk:var(--red)}
+.marker.tri .num::before{--mk:var(--yellow);clip-path:polygon(50% 0,100% 92%,0 92%)}
+.marker.ci .num::before{--mk:var(--blue);border-radius:50%}
+.marker.qu .num::before{--mk:var(--yellow);border-radius:0 .56em 0 0}
+.marker .lbl{font-size:22px;letter-spacing:.03em;line-height:1;text-transform:lowercase;padding-bottom:2px}
+
+/* boxes and buttons: square corners, 2 px ink border, hard offset shadow */
+.box{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:20px;display:flex;flex-direction:column;gap:10px}
+.box h3{margin:0;font-size:19px;text-transform:lowercase;letter-spacing:.02em}
+.box p{margin:0;font-size:15px;line-height:1.5;color:var(--ink-2)}
+.btn-dark{background:var(--ink);color:var(--paper);border:2px solid var(--ink);padding:12px 18px;font-size:15px;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn-line{background:var(--card);color:var(--ink);border:2px solid var(--ink);padding:9px 12px;font-size:14px;font-weight:700;transition:transform .15s,box-shadow .15s}
+.btn-dark:hover,.btn-line:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--yellow)}
+.tag{font-size:13px;letter-spacing:.12em;text-transform:lowercase;font-weight:700}
+.kicker{color:var(--red-text)}
+
+footer{border-top:7px solid var(--ink);padding-top:18px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

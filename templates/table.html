@@ -5,35 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/logo.png" type="image/png">
 <title>The Table · {{ ep.question }} · WNCL</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,sans-serif;color:#141414;background:#fff}
-a{color:#141414}a:hover{color:#C8102E}
-h1,h2{font-family:'Space Grotesk',Inter,sans-serif;margin:0}
-.wrap{max-width:900px;margin:0 auto;padding:0 24px}
-header{border-bottom:1px solid #e3e3e3}header .wrap{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;white-space:nowrap;color:inherit}.logo b{font-weight:700;letter-spacing:1px}
-nav{display:flex;gap:20px;font-size:15px;font-weight:500}nav a{text-decoration:none}
-main{padding:32px 24px 56px;display:flex;flex-direction:column;gap:28px}
-.kicker{font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:#C8102E}
-h1{font-size:40px;line-height:1.1}
-.muted{color:#555}.mono{font-family:'JetBrains Mono',monospace}
-.player{border:1px solid #e3e3e3;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px}
-.player audio{width:100%}.chapters{display:flex;flex-wrap:wrap;gap:8px}
-.chapters button{border:1px solid #c9c9c9;background:#fff;border-radius:6px;padding:6px 10px;font:inherit;font-size:14px;cursor:pointer}
-.round{display:flex;flex-direction:column;gap:12px}
-.claim{border-left:6px solid #1f3a5f;padding:12px 16px;background:#f7f7f7;border-radius:0 8px 8px 0;display:flex;flex-direction:column;gap:6px}
-.claim.uncle{border-left-color:#C8102E}
-.who{font-weight:600;font-size:14px}.ruling{font-family:'JetBrains Mono',monospace;font-size:14px}
+{% include "_bauhaus.css" %}
+.wrap{max-width:920px}
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:30px}
+h1{margin:0;font-size:44px;line-height:1.08;font-weight:800}h2{margin:0;font-size:24px;text-transform:lowercase}
+.kicker{font-size:13px;letter-spacing:.12em;text-transform:lowercase;font-weight:700}
+.player{background:var(--yellow);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:16px;display:flex;flex-direction:column;gap:12px}
+.player audio{width:100%}.player .muted{color:var(--ink-2)}.chapters{display:flex;flex-wrap:wrap;gap:8px}
+.chapters button{border:2px solid var(--ink);background:var(--card);padding:6px 10px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.chapters button:hover{background:var(--ink);color:var(--paper)}
+.round{display:flex;flex-direction:column;gap:14px}
+.claim{background:var(--card);border:2px solid var(--ink);border-left:12px solid var(--blue);padding:12px 16px;display:flex;flex-direction:column;gap:6px}
+.claim.uncle{border-left-color:var(--red)}
+.who{font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:lowercase}.ruling{font-family:var(--mono);font-size:14px}
 .sources{font-size:13px}
-.verdict{border:2px solid #141414;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:8px}
-footer{border-top:1px solid #e3e3e3;padding-top:18px;font-size:14px;color:#555;display:flex;flex-direction:column;gap:6px}
-.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',Inter,sans-serif;line-height:1;border-radius:4px;overflow:hidden;font-size:15px}.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}
+.verdict{background:var(--ink);color:var(--paper);box-shadow:6px 6px 0 var(--red);padding:20px;display:flex;flex-direction:column;gap:8px}
+.verdict .muted{color:#d9d2bf}.verdict h2{color:var(--yellow)}
+footer{flex-direction:column;gap:6px}
 </style>
 </head>
 <body>
-<header><div class="wrap">
+<header class="site"><div class="wrap">
   <a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
   <nav><a href="/index.html">Front page</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav>
 </div></header>

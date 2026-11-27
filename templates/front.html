@@ -7,82 +7,83 @@
 <title>{% if mode == "hour" %}{{ n.hour_label }} newscast · {% endif %}{{ station.show_name }} · {{ station.name }}</title>
 <meta name="description" content="A five-minute newscast for an audience of one, machine-edited from public posts. Voices are synthetic.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&display=swap">
 <style>
-:root{--ink:#141414;--accent:#C8102E;--muted:#555;--rule:#e3e3e3}
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,sans-serif;color:var(--ink);background:#fff}
-a{color:var(--ink)}a:hover{color:var(--accent)}
-h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
-button{font:inherit;cursor:pointer}
-.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
-header.site{border-bottom:1px solid var(--rule)}
-header.site .wrap{padding-top:18px;padding-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
-.brand a{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:26px;letter-spacing:-.5px;text-decoration:none}
-.brand span{font-size:14px;color:var(--muted)}
-nav{display:flex;gap:22px;font-size:15px;font-weight:500;flex-wrap:wrap}
-nav a{text-decoration:none}
-.player{background:var(--ink);color:#fff;position:sticky;top:0;z-index:10}
+{% include "_bauhaus.css" %}
+/* sticky player */
+.player{background:var(--ink);color:var(--paper);position:sticky;top:0;z-index:10}
 .player .wrap{padding-top:12px;padding-bottom:12px;display:flex;flex-wrap:wrap;gap:18px;align-items:center}
-.play{width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center}
+.play{width:50px;height:50px;border-radius:50%;border:0;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center}
 .now{display:flex;flex-direction:column;gap:2px;min-width:200px}
-.now .label{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#ff8a98;font-weight:600}
-.now .chapter{font-size:15px}
-.bar{flex:1 1 260px;height:6px;background:#3a3a3a;border-radius:3px;position:relative;cursor:pointer}
-.bar div{width:0;height:6px;background:#fff;border-radius:3px}
-.time{font-size:14px;color:#d0d0d0;font-variant-numeric:tabular-nums}
-.skip{background:transparent;border:1px solid #777;color:#fff;border-radius:6px;padding:10px 14px;font-size:14px}
-main{padding-top:32px;padding-bottom:56px;display:flex;flex-direction:column;gap:44px}
-.top{display:flex;flex-wrap:wrap;gap:32px}
-.lead{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
-.art{height:320px;border-radius:10px;display:flex;align-items:flex-end;padding:20px;position:relative;overflow:hidden}
-.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.credit{font-size:12px;color:#666;margin-top:-8px}.credit a{color:#666}
-.art span,.tag{font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:600}
-.art span{color:#fff}
-.kicker{color:var(--accent)}
-.lead h1{margin:0;font-size:40px;line-height:1.1;letter-spacing:-.8px}
-.lead p{margin:0;font-size:18px;line-height:1.5;color:#333}
+.now .label{font-size:12px;letter-spacing:.14em;text-transform:lowercase;color:var(--yellow);font-weight:700}
+.now .chapter{font-size:16px;font-weight:500}
+.bar{flex:1 1 260px;height:8px;background:#3a3833;position:relative;cursor:pointer}
+.bar div{width:0;height:8px;background:var(--yellow)}
+.time{font-size:14px;color:#d9d2bf;font-family:var(--mono)}
+.skip{background:transparent;border:2px solid var(--paper);color:var(--paper);padding:8px 12px;font-size:14px;font-weight:700}
+/* layout: main column + sidebar that runs beside it, no dead zone under the lead */
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:44px}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-areas:"lead aside" "rest aside";grid-template-rows:auto 1fr;gap:44px 48px;align-items:start}
+.lead{grid-area:lead;min-width:0;display:flex;flex-direction:column;gap:14px}
+.rest{grid-area:rest;min-width:0;display:flex;flex-direction:column;gap:44px}
+aside{grid-area:aside;min-width:0;display:flex;flex-direction:column;gap:22px}
+section.block{display:flex;flex-direction:column;gap:18px}
+/* lead art: publisher photo when there is one, otherwise a Bauhaus card in the beat colour */
+.art{aspect-ratio:16/9;max-height:400px;position:relative;overflow:hidden;border:2px solid var(--ink);display:flex;align-items:flex-end;padding:18px}
+.art::before{content:"";position:absolute;width:46%;aspect-ratio:1;border-radius:50%;background:var(--yellow);right:8%;top:12%}
+.art::after{content:"";position:absolute;width:70%;height:7%;background:var(--ink);left:22%;top:58%;transform:rotate(-18deg)}
+.art i{position:absolute;width:20%;aspect-ratio:1;background:var(--red);left:10%;top:16%}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+.art span{position:relative;z-index:3;background:var(--paper);color:var(--ink);padding:6px 10px;border:2px solid var(--ink);font-size:13px;letter-spacing:.12em;text-transform:lowercase;font-weight:700}
+.credit{font-size:12px;color:var(--muted);margin-top:-6px}.credit a{color:var(--muted)}
+.lead h1{margin:0;font-size:46px;line-height:1.05;font-weight:800}
+.lead p{margin:0;font-size:19px;line-height:1.5;color:var(--ink-2);max-width:60ch}
 .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
-.btn-dark{background:var(--ink);color:#fff;border:0;border-radius:6px;padding:12px 18px;font-size:15px;font-weight:600}
-.btn-line{background:#fff;border:1px solid var(--ink);border-radius:6px;padding:10px 12px;font-size:14px;font-weight:600}
-.score{font-size:14px;font-weight:600;background:#f1f1f1;border-radius:6px;padding:10px 12px}
-details.sources{font-size:14px}details.sources summary{cursor:pointer;text-decoration:underline}
-details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6}
-aside{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px}
-.count{background:var(--ink);color:#fff;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:6px}
-.count .label{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:#d0d0d0;font-weight:600}
-.count .big{font-family:'Space Grotesk',sans-serif;font-size:56px;font-weight:700;line-height:1}
-.count .pink{color:#ff8a98;font-weight:600}
-.box{border:1px solid var(--rule);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:10px}
-.box h3{margin:0;font-size:18px}.box p{margin:0;font-size:15px;line-height:1.5;color:#333}
-h2{margin:0;font-size:24px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
-.card{border:1px solid var(--rule);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-.card .stripe{height:8px}.card .body{padding:18px;display:flex;flex-direction:column;gap:10px}
-.card .tag{font-size:12px;color:var(--muted)}.card h3{margin:0;font-size:19px;line-height:1.25}
+.score{font-size:14px;font-weight:700;background:var(--yellow);border:2px solid var(--ink);padding:10px 12px}
+details.sources{font-size:14px;font-weight:600}details.sources summary{cursor:pointer;text-decoration:underline;text-decoration-thickness:2px}
+details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:400}
+/* sidebar */
+.count{background:var(--ink);color:var(--paper);padding:22px;display:flex;flex-direction:column;gap:6px;box-shadow:6px 6px 0 var(--red)}
+.count .label{font-size:13px;letter-spacing:.14em;text-transform:lowercase;color:#d9d2bf;font-weight:700}
+.count .big{font-size:68px;font-weight:800;line-height:.95;color:var(--yellow);letter-spacing:-.03em}
+.count .pink{color:var(--paper);font-weight:700}
+.item{display:flex;justify-content:space-between;gap:12px;font-size:14px;border-top:2px solid var(--ink);padding-top:8px}
+.item b{white-space:nowrap}.held{color:var(--blue)}.faded{color:var(--red-text)}
+/* also this hour */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+.card{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);display:flex;flex-direction:column}
+.card .stripe{height:12px;border-bottom:2px solid var(--ink)}.card .body{padding:18px;display:flex;flex-direction:column;gap:10px}
+.card .tag{color:var(--muted)}.card h3{margin:0;font-size:21px;line-height:1.2}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px}
-.hours{display:flex;flex-direction:column;gap:12px;max-width:560px}
-.hour{display:flex;align-items:center;gap:14px;border-top:1px solid var(--rule);padding-top:12px}
-.round{width:44px;height:44px;border-radius:50%;border:1px solid var(--ink);background:#fff;display:flex;align-items:center;justify-content:center}
+/* the Table */
+.table-card{background:var(--yellow);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+.table-card .q{font-size:28px;font-weight:800;line-height:1.15;text-decoration:none}
+.table-card .q:hover{text-decoration:underline}
+/* today's newscasts */
+.hours{display:flex;flex-direction:column}
+.hour{display:flex;align-items:center;gap:14px;border-top:2px solid var(--ink);padding:12px 0}
+.round{width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--card);display:flex;align-items:center;justify-content:center;flex:none}
+.round:hover{background:var(--yellow)}
 .hour .meta{display:flex;flex-direction:column;gap:2px;flex:1}
-.hour-time{font-weight:600;font-size:16px}.hour .sub{font-size:14px;color:var(--muted)}
-footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;font-size:14px;color:var(--muted)}
+.hour-time{font-weight:700;font-size:17px}.hour .sub{font-size:14px;color:var(--muted)}
+@media (max-width:900px){
+  /* one column: lead, the big count, the other stories, then the secondary boxes */
+  .grid{display:flex;flex-direction:column;gap:36px;align-items:stretch}
+  aside{display:contents}
+  .lead{order:1}.count{order:2}.rest{order:3}aside .box{order:4}
+}
 @media (max-width:640px){
   .player{position:fixed;top:auto;bottom:0;left:0;right:0}
   body{padding-bottom:150px}
-  .lead h1{font-size:30px}.art{height:180px}
+  .lead h1{font-size:32px}.count .big{font-size:54px}
 }
-.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap;color:inherit}.logo b{font-weight:700;letter-spacing:1px}
-.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',Inter,sans-serif;line-height:1;border-radius:4px;overflow:hidden;font-size:15px}.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}
 </style>
 <link rel="alternate" type="application/rss+xml" title="{{ station.show_name }} podcast feed" href="/feed.xml">
 </head>
 <body>
 <header class="site"><div class="wrap">
   <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a>
-    <span>{{ station.name }} · {{ station.show_name }} · {{ date_label }}</span></div>
+    <span class="line">{{ station.name }} · {{ station.show_name }} · {{ date_label }}</span></div>
   <nav><a href="/index.html#newscasts">Newscasts</a><a href="/control-room/index.html">Control room</a><a href="/settings/index.html">Settings</a></nav>
 </div></header>
 
@@ -98,11 +99,12 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
 
 <main class="wrap">
 {% if mode == "hour" %}<p style="margin:0;color:var(--muted)">{{ n.hour_label }} newscast · {{ date_label }} · <a href="/index.html">Latest newscast</a></p>{% endif %}
-<section class="top">
+<div class="grid">
   {% if lead %}
   <article class="lead">
+    <h2 class="marker sq"><span class="num">1</span><span class="lbl">top story</span></h2>
     {% set img = lead.image | safe_url if lead.image else '#' %}
-    <div class="art" style="background:{{ beats[lead.beat_id].color if lead.beat_id in beats else '#1f3a5f' }}"><span>{{ beats[lead.beat_id].name if lead.beat_id in beats else lead.beat_id }}</span>
+    <div class="art" style="background:{{ beats[lead.beat_id].color if lead.beat_id in beats else '#1f3a5f' }}"><i></i><span>{{ beats[lead.beat_id].name if lead.beat_id in beats else lead.beat_id }}</span>
       {% if img != '#' %}<img src="{{ img }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</div>
     {% if img != '#' %}<span class="credit">Image: <a href="{{ lead.sources[0].url | safe_url if lead.sources else '#' }}" rel="noopener" target="_blank">{{ lead.sources[0].source_name if lead.sources else 'source' }}</a>, shown from the original</span>{% endif %}
     <span class="tag kicker">Lead story · {{ beats[lead.beat_id].name if lead.beat_id in beats else lead.beat_id }}</span>
@@ -119,6 +121,7 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
   {% else %}
   <article class="lead"><h1>A quiet hour</h1><p>Nothing cleared the bar this hour. The newscast says so.</p></article>
   {% endif %}
+
   <aside>
     <div class="count">
       <span class="label">Today so far</span>
@@ -129,67 +132,73 @@ footer{border-top:1px solid var(--rule);padding-top:20px;display:flex;flex-wrap:
     <div class="box"><h3>This hour</h3><p>{{ n.counts.posts_read_hour | thousands }} new posts read · {{ n.counts.stories_aired }} stor{{ 'y' if n.counts.stories_aired == 1 else 'ies' }} aired</p></div>
     {% if corrections and corrections.called %}
     <div class="box"><h3>Corrections</h3>
-      <p style="margin:0;font-size:15px;line-height:1.5;color:#333">A week ago this station called {{ corrections.called }} stor{{ 'y' if corrections.called == 1 else 'ies' }} likely to matter a week later. {{ corrections.held }} {{ 'was' if corrections.held == 1 else 'were' }} still being discussed in the last two days of feeds we read; {{ corrections.faded }} {{ 'was' if corrections.faded == 1 else 'were' }} not.</p>
+      <p>A week ago this station called {{ corrections.called }} stor{{ 'y' if corrections.called == 1 else 'ies' }} likely to matter a week later. {{ corrections.held }} {{ 'was' if corrections.held == 1 else 'were' }} still being discussed in the last two days of feeds we read; {{ corrections.faded }} {{ 'was' if corrections.faded == 1 else 'were' }} not.</p>
       {% for c in corrections['items'] %}
-      <div style="display:flex;justify-content:space-between;gap:12px;font-size:14px;border-top:1px solid #eee;padding-top:8px">
-        <a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a>
-        <span style="white-space:nowrap;font-weight:600;color:{{ '#1b7a3a' if c.held_up else '#C8102E' }}">said {{ c.said | pct }} · {{ 'held up' if c.held_up else 'faded' }}</span></div>
+      <div class="item"><a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a>
+        <b class="{{ 'held' if c.held_up else 'faded' }}">said {{ c.said | pct }} · {{ 'held up' if c.held_up else 'faded' }}</b></div>
       {% endfor %}
-      {% if corrections.backfill %}<p style="margin:0;font-size:13px;color:#555">Backfill: calls made this week on last week's posts, then checked against this week's feeds.</p>{% endif %}
+      {% if corrections.backfill %}<p style="font-size:13px;color:var(--muted)">Backfill: calls made this week on last week's posts, then checked against this week's feeds.</p>{% endif %}
     </div>
     {% endif %}
     {% if n.almost %}
     <div class="box"><h3>Almost made air</h3>
       {% for c in n.almost[:5] %}
-      <div style="display:flex;justify-content:space-between;gap:12px;font-size:15px;border-top:1px solid #eee;padding-top:10px">
-        <a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a><span style="color:#555;font-weight:600;white-space:nowrap">{{ c.score_matter_week | pct }}</span></div>
+      <div class="item" style="font-size:15px"><a href="{{ c.url | safe_url }}" rel="noopener" target="_blank">{{ c.title }}</a><b style="color:var(--muted)">{{ c.score_matter_week | pct }}</b></div>
       {% endfor %}
     </div>
     {% endif %}
   </aside>
-</section>
 
-{% if others %}
-<section style="display:flex;flex-direction:column;gap:16px">
-  <h2>Also this hour</h2>
-  <div class="cards">
-  {% for s in others %}
-    <article class="card">
-      <div class="stripe" style="background:{{ beats[s.beat_id].color if s.beat_id in beats else '#555' }}"></div>
-      <div class="body">
-        <span class="tag">{{ beats[s.beat_id].name if s.beat_id in beats else s.beat_id }}</span>
-        <h3>{{ s.headline }}</h3>
-        <div class="row">
-          <button class="btn-line" data-start-ms="{{ s.chapter_start_ms }}">Play · {{ ((s.seconds or 0) * 1000) | duration }}</button>
-          <span style="font-weight:600">{{ s.score_matter_week | pct }}</span>
-          <details class="sources"><summary>{{ s.sources | length }} source{{ '' if s.sources | length == 1 else 's' }}</summary><ul>
-            {% for src in s.sources %}<li><a href="{{ src.url | safe_url }}" rel="noopener" target="_blank">{{ src.source_name }}</a></li>{% endfor %}
-          </ul></details>
+  <div class="rest">
+  {% if others %}
+  <section class="block">
+    <h2 class="marker ci"><span class="num">2</span><span class="lbl">Also this hour</span></h2>
+    <div class="cards">
+    {% for s in others %}
+      <article class="card">
+        <div class="stripe" style="background:{{ beats[s.beat_id].color if s.beat_id in beats else '#555' }}"></div>
+        <div class="body">
+          <span class="tag">{{ beats[s.beat_id].name if s.beat_id in beats else s.beat_id }}</span>
+          <h3>{{ s.headline }}</h3>
+          <div class="row">
+            <button class="btn-line" data-start-ms="{{ s.chapter_start_ms }}">Play · {{ ((s.seconds or 0) * 1000) | duration }}</button>
+            <span style="font-weight:700">{{ s.score_matter_week | pct }}</span>
+            <details class="sources"><summary>{{ s.sources | length }} source{{ '' if s.sources | length == 1 else 's' }}</summary><ul>
+              {% for src in s.sources %}<li><a href="{{ src.url | safe_url }}" rel="noopener" target="_blank">{{ src.source_name }}</a></li>{% endfor %}
+            </ul></details>
+          </div>
         </div>
-      </div>
-    </article>
-  {% endfor %}
-  </div>
-</section>
-{% endif %}
+      </article>
+    {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
-{% if table %}
-<section class="table-card" style="border:2px solid #141414;border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:8px">
-  <span style="font-size:13px;letter-spacing:1px;text-transform:uppercase;font-weight:600;color:#C8102E">The Table · WNCL · daily debate</span>
-  <a href="/table/{{ table.day }}/index.html" style="font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;text-decoration:none">{{ table.question }}</a>
-  <span style="color:#555">The Anchor vs. the Uncle, refereed by Jev. {{ {"anchor": "The Anchor took it", "uncle": "The Uncle took it", "draw": "A draw"}[table.verdict.winner] }}, {{ "%.2f" | format(table.verdict.anchor) }} to {{ "%.2f" | format(table.verdict.uncle) }}. Season: Anchor {{ table.record.anchor }}, Uncle {{ table.record.uncle }}.</span>
-</section>
-{% endif %}
-<section id="newscasts" class="hours">
-  <h2>Today's newscasts</h2>
-  {% for h in today %}
-  <div class="hour">
-    <button class="round" data-play-src="{{ h.audio_url }}" data-chapters='{{ h.chapters | tojson }}' aria-label="Play the {{ h.hour_label }} newscast"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 18 18"><path d="M4 2l12 7-12 7z" fill="#141414"/></svg></button>
-    <div class="meta"><span class="hour-time">{{ h.hour_label }}</span><span class="sub">{{ h.audio.duration_ms | duration }} · {{ h.stories | length }} stor{{ 'y' if h.stories | length == 1 else 'ies' }} · {{ h.counts.posts_read_hour | thousands }} posts read</span></div>
-    <a href="{{ h.page }}" style="font-size:14px">Page</a>
+  {% if table %}
+  <section class="block">
+    <h2 class="marker tri"><span class="num">3</span><span class="lbl">The Table</span></h2>
+    <div class="table-card">
+      <span class="tag">The Table · WNCL · daily debate</span>
+      <a class="q" href="/table/{{ table.day }}/index.html">{{ table.question }}</a>
+      <span style="color:var(--ink-2)">The Anchor vs. the Uncle, refereed by Jev. {{ {"anchor": "The Anchor took it", "uncle": "The Uncle took it", "draw": "A draw"}[table.verdict.winner] }}, {{ "%.2f" | format(table.verdict.anchor) }} to {{ "%.2f" | format(table.verdict.uncle) }}. Season: Anchor {{ table.record.anchor }}, Uncle {{ table.record.uncle }}.</span>
+    </div>
+  </section>
+  {% endif %}
+
+  <section id="newscasts" class="block">
+    <h2 class="marker qu"><span class="num">4</span><span class="lbl">Today's newscasts</span></h2>
+    <div class="hours">
+    {% for h in today %}
+    <div class="hour">
+      <button class="round" data-play-src="{{ h.audio_url }}" data-chapters='{{ h.chapters | tojson }}' aria-label="Play the {{ h.hour_label }} newscast"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 18 18"><path d="M4 2l12 7-12 7z" fill="#111"/></svg></button>
+      <div class="meta"><span class="hour-time">{{ h.hour_label }}</span><span class="sub">{{ h.audio.duration_ms | duration }} · {{ h.stories | length }} stor{{ 'y' if h.stories | length == 1 else 'ies' }} · {{ h.counts.posts_read_hour | thousands }} posts read</span></div>
+      <a href="{{ h.page }}" style="font-size:14px;font-weight:700">Page</a>
+    </div>
+    {% endfor %}
+    </div>
+  </section>
   </div>
-  {% endfor %}
-</section>
+</div>
 
 <footer>
   <span>Voices are synthetic. This show is machine-edited from public posts, with every source linked.</span>

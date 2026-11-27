@@ -5,49 +5,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/logo.png" type="image/png">
 <title>Control room · {{ station.name }}</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-*{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,sans-serif;color:#f2f2f2;background:#111214}
-a{color:#f2f2f2}a:hover{color:#ff8a98}
-h1,h2,h3{font-family:'Space Grotesk',Inter,sans-serif}
-.wrap{max-width:1160px;margin:0 auto;padding:0 24px}
-header{border-bottom:1px solid #2c2e33}
-header .wrap{padding-top:18px;padding-bottom:18px;display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.brand a{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;text-decoration:none}
-.muted{color:#b8bcc4}.mono{font-family:'JetBrains Mono',monospace}
-.badge{background:#C8102E;color:#fff;font-size:13px;font-weight:600;letter-spacing:1px;border-radius:4px;padding:6px 10px;text-transform:uppercase}
-main{padding-top:28px;padding-bottom:48px;display:flex;flex-direction:column;gap:28px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-.tile{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:4px}
-.tile .l{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#b8bcc4;font-weight:600}
-.tile .v{font-family:'Space Grotesk',sans-serif;font-size:36px;font-weight:700;line-height:1.1}
-.cols{display:flex;flex-wrap:wrap;gap:24px}
-.left{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:12px}
-.right{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px}
-h2{margin:0;font-size:20px}
-.panel{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;overflow:hidden}
-.step{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #2c2e33}
-.dot{width:10px;height:10px;border-radius:50%;flex:none}
-.dot.green{background:#3ecf8e}.dot.amber{background:#ffc857}.dot.red{background:#ff8a98}.dot.white{background:#fff}.dot.grey{background:#5a5e68}
-.step .name{font-weight:600;font-size:15px;flex:1 1 150px}
-.tool{font-size:13px;font-weight:600;border:1px solid #4a4d55;border-radius:4px;padding:3px 8px;color:#e4e6ea}
-.step .detail{font-size:14px;color:#b8bcc4;flex:2 1 200px}
-.log{background:#0b0c0e;border:1px solid #2c2e33;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;font-family:'JetBrains Mono',monospace;font-size:13px;max-height:420px;overflow-y:auto}
+{% include "_bauhaus.css" %}
+.badge{background:var(--red);color:#fff;font-size:13px;font-weight:700;letter-spacing:.1em;padding:6px 10px;text-transform:lowercase;border:2px solid var(--ink)}
+main.wrap{padding-top:30px;padding-bottom:48px;display:flex;flex-direction:column;gap:30px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.tile{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:18px;display:flex;flex-direction:column;gap:4px}
+.tile:nth-child(1){box-shadow:6px 6px 0 var(--red)}.tile:nth-child(2){box-shadow:6px 6px 0 var(--yellow)}.tile:nth-child(3){box-shadow:6px 6px 0 var(--blue)}
+.tile .l{font-size:13px;letter-spacing:.12em;text-transform:lowercase;color:var(--muted);font-weight:700}
+.tile .v{font-size:42px;font-weight:800;line-height:1.05;letter-spacing:-.02em}
+.cols{display:flex;flex-wrap:wrap;gap:30px}
+.left{flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:14px}
+.right{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:14px}
+h2{margin:0;font-size:22px;text-transform:lowercase}
+.panel{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink)}
+.step{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 16px;border-bottom:2px solid var(--ink)}
+.step:last-child{border-bottom:0}
+/* status: shape and colour, so it never depends on colour alone */
+.dot{width:14px;height:14px;flex:none;border:2px solid var(--ink)}
+.dot.green{background:var(--blue);border-radius:50%}
+.dot.amber{background:var(--yellow);border:0;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.dot.red{background:var(--red)}
+.dot.white{background:var(--card);border-radius:50%}.dot.grey{background:#b8b0a0;border-color:#8a8273;border-radius:50%}
+.step .name{font-weight:700;font-size:15px;flex:1 1 150px}
+.tool{font-size:13px;font-weight:700;border:2px solid var(--ink);padding:2px 8px;background:var(--paper)}
+.step .detail{font-size:14px;color:var(--ink-2);flex:2 1 200px}
+/* Jev's decision log: a black terminal panel */
+.log{background:var(--ink);color:#ece4cf;border:2px solid var(--ink);box-shadow:6px 6px 0 var(--yellow);padding:14px;display:flex;flex-direction:column;gap:8px;font-family:var(--mono);font-size:13px;max-height:440px;overflow-y:auto}
 .log div{display:flex;gap:10px;align-items:baseline}
-.v-AIR{color:#3ecf8e}.v-CUT{color:#b8bcc4}.v-DROP{color:#ff8a98}.v-MERGE{color:#ffc857}
-.log .verdict{font-weight:600;width:46px;flex:none}.log .score{width:38px;flex:none;color:#e4e6ea}
-.log .post{color:#b8bcc4;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card{background:#1b1d21;border:1px solid #2c2e33;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
-.card.repair{border-color:#6b4e00}.card.repair .t{color:#ffc857;font-weight:600}
-.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.logo .lockup{font-family:'Space Grotesk',sans-serif;font-size:24px;letter-spacing:-.3px;white-space:nowrap;color:inherit}.logo b{font-weight:700;letter-spacing:1px}
-.wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',Inter,sans-serif;line-height:1;border-radius:4px;overflow:hidden;font-size:15px}.wone-id .t{background:#111;color:#FFC629;font-size:1.3em;padding:.08em .3em 0;text-align:center}.wone-id .b{background:#E4002B;color:#fff;padding:.1em .32em .12em;letter-spacing:.04em;text-align:center}.wone-id{box-shadow:0 0 0 2px #3a3d44}
+.log .muted{color:#b8b0a0}
+.v-AIR{color:var(--yellow)}.v-CUT{color:#b8b0a0}.v-DROP{color:#ff7a6e}.v-MERGE{color:#8fb4ff}
+.log .verdict{font-weight:600;width:46px;flex:none}.log .score{width:38px;flex:none;color:#fff}
+.log .post{color:#d9d2bf;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card{background:var(--card);border:2px solid var(--ink);padding:16px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.5}
+.card.repair{background:var(--yellow)}.card.repair .t{font-weight:700}
 </style>
 </head>
 <body>
-<header><div class="wrap">
-  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a><span class="muted">Control room</span></div>
+<header class="site"><div class="wrap">
+  <div class="brand"><a class="logo" href="/index.html">{% include "_logo.html" %}<span class="lockup"><b>FM</b></span></a><span class="line">Control room</span></div>
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span class="badge">Built · {{ n.hour_label }} newscast</span>
     <span class="mono muted" style="font-size:14px">started {{ started }} · build {{ total }}</span>
@@ -69,7 +66,7 @@ h2{margin:0;font-size:20px}
         <span class="tool">{{ r.tool }}</span><span class="detail">{{ r.detail }}</span><span class="mono muted" style="font-size:13px">{{ r.time }}</span></div>
       {% endfor %}
     </div>
-    <p class="muted" style="margin:0;font-size:13px">Green: done. Amber: repaired by the station manager. Red: failed.</p>
+    <p class="muted" style="margin:0;font-size:13px">Blue circle: done. Yellow triangle: repaired by the station manager. Red square: failed.</p>
   </div>
   <div class="right">
     <h2>Jev's decisions</h2>
