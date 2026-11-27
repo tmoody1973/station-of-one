@@ -178,10 +178,10 @@ def test_connect_from_settings(make_page):
     assert calls(pg, "unauthorize")
 
 
-def test_strip_chip_tunes_in(make_page):
+def test_strip_name_box_tunes_in(make_page):
     pg = make_page()
-    pg.wait_for_function("() => [...document.querySelectorAll('#wone-strip .chip')].some(c => c.textContent.includes('Rhythm Lab'))", timeout=10000)
-    pg.locator("#wone-strip .chip", has_text="Rhythm Lab").click()
+    pg.wait_for_selector("#wone-strip .st-name:has-text('Rhythm Lab')", timeout=10000)
+    pg.locator("#wone-strip .st-name", has_text="Rhythm Lab").click()
     pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
 
 
@@ -238,3 +238,16 @@ def test_pause_works_without_isplaying(make_page):  # review I6: isPlaying isn't
     tune(pg)
     pg.locator("#wone-play").click()
     pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'pause')", timeout=5000)
+
+
+def test_strip_follows_the_player(make_page):  # live-playlist Focus 1: the header names the song you hear
+    pg = make_page()
+    pg.route("**/data/radio/rhythm-lab/queue.json", lambda route: route.fulfill(json=queue()))
+    pg.wait_for_selector("#wone-strip .st-name:has-text('Rhythm Lab')", timeout=10000)
+    pg.locator("#wone-strip .st-name", has_text="Rhythm Lab").click()
+    pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
+    pg.wait_for_function("""() => [...document.querySelectorAll('#wone-strip .st')].some(s =>
+        s.textContent.includes('Rhythm Lab') && s.querySelector('.st-now').textContent.includes('Song s1'))""", timeout=5000)
+    pg.locator("#wone-skip-song").click()
+    pg.wait_for_function("""() => [...document.querySelectorAll('#wone-strip .st')].some(s =>
+        s.textContent.includes('Rhythm Lab') && s.querySelector('.st-now').textContent.includes('Song s2'))""", timeout=5000)

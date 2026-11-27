@@ -4,7 +4,7 @@ at /data/stations.json; shell.js re-reads it every minute and renders it as text
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from station.config import Prefs
@@ -17,6 +17,24 @@ def _line(t: dict) -> str:
     return f"{t.get('artist', '')} · {t.get('title', '')}"
 
 
+def _clock(dt: datetime) -> str:
+    return dt.strftime("%-I:%M %p").lower()
+
+
+def _next_newscast(newscast: dict, prefs: Prefs) -> str:
+    """The next newscast's start time: the next hour, or the first newscast tomorrow after the last one."""
+    hour = datetime.fromisoformat(newscast["hour_local"])
+    first, last = (int(t.split(":")[0]) for t in (prefs.station.first_newscast, prefs.station.last_newscast))
+    nxt = hour + timedelta(hours=1)
+    if nxt.hour > last or nxt.hour < first:
+        nxt = (hour + timedelta(days=1 if hour.hour >= first else 0)).replace(hour=first, minute=0)
+    return _clock(nxt)
+
+
+def _music_now(t: dict) -> dict:
+    return {"at": t.get("at", ""), "title": _line(t), "art": t.get("artwork_url") or ""}
+
+
 def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_ROOT,
                   stations_root: Path = STATIONS_ROOT) -> dict:
     from station.steps.page import _hour_label, audio_path  # page imports this module too
@@ -25,7 +43,9 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
         lead = (newscast.get("stories") or [{}])[0].get("headline", "")
         label = f"{_hour_label(newscast)} newscast"
         out.append({"id": "news", "kind": "news", "name": "News", "on_now": f"{label}: {lead}" if lead else label,
-                    "next": [], "description": f"{prefs.station.show_name}: five minutes on the hour, 7 am to 7 pm Central, "
+                    "now": {"at": _hour_label(newscast), "title": lead or label, "art": "/cover-one.png"},
+                    "next": {"at": _next_newscast(newscast, prefs), "title": "The next newscast"},
+                    "description": f"{prefs.station.show_name}: five minutes on the hour, 7 am to 7 pm Central, "
                                                "machine-edited from public posts.", "page": "/index.html",
                     "play": {"src": audio_path(newscast), "title": lead or label, "label": f"On air · {label}",
                              "chapters": newscast.get("chapters", []), "kind": "newscast", "start": 0}})
@@ -39,8 +59,13 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
         except (OSError, ValueError, KeyError, TypeError):
             tracks = []
         entry = {"id": st.id, "kind": "music", "name": st.name, "on_now": _line(tracks[0]) if tracks else "",
-                 "next": [_line(t) for t in tracks[1:3]], "description": st.brief, "page": f"/radio/{st.id}/index.html"}
-        if st.programmer == "clock":  # the chip tunes in live (Plan C); sampler stations link to their page
+                 "now": _music_now(tracks[0]) if tracks else {"at": "", "title": "", "art": ""},
+                 "next": _music_now(tracks[1]) if len(tracks) > 1 else None,
+                 "description": st.brief, "page": f"/radio/{st.id}/index.html"}
+        if st.programmer == "clock":  # the name box tunes in live (Plan C); the browser picks now/next from the schedule
             entry["play"] = {"kind": "station", "src": f"/data/radio/{st.id}/queue.json", "title": st.name, "label": f"{st.name} · live"}
+            entry["schedule"] = [{"starts_at": t.get("starts_at"), "ends_at": t.get("ends_at"), "at": t.get("at", ""),
+                                  "song_id": str(t.get("song_id") or ""), "title": t.get("title", ""), "artist": t.get("artist", ""),
+                                  "art": t.get("artwork_url") or ""} for t in tracks if t.get("starts_at")]
         out.append(entry)
-    return {"updated": datetime.now(UTC).isoformat(timespec="seconds"), "stations": out}
+    return {"updated": datetime.now(UTC).isoformat(timespec="seconds"), "stations": out, "playlists": "/playlists/index.html"}

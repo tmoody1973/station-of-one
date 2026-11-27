@@ -99,15 +99,30 @@ def test_controls_work_after_swap(page):
     assert start <= t <= start + 5 and page.evaluate("() => window.__marker") == 1
 
 
-def test_station_strip(page):
-    page.wait_for_function("() => document.querySelectorAll('#wone-strip .chip').length >= 2", timeout=10000)
-    names = page.locator("#wone-strip .chip b").all_text_contents()  # raw text; the chip styling lowercases it
+def test_station_strip(page):  # KCRW pattern: a name box with play, what's on now, More station info
+    page.wait_for_function("() => document.querySelectorAll('#wone-strip .st-name').length >= 2", timeout=10000)
+    names = page.locator("#wone-strip .st-name .nm").all_text_contents()
     assert names[0] == "News" and "ONE Jazz" in names
-    page.locator("#wone-strip .chip", has_text="News").click()
+    page.locator("#wone-strip .st-name", has_text="News").click()           # the name box plays
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
-    _click(page, "#wone-strip .chip:has-text('ONE Jazz')")
+    _click(page, "#wone-strip a.st-name:has-text('ONE Jazz')")               # a station with no live stream opens its page
     s = page.evaluate(STATE)
     assert s["path"].endswith("/radio/uk-jazz/index.html") and not s["paused"] and s["marker"]
+
+
+def test_more_station_info_panel(page):
+    page.wait_for_selector("#wone-strip [data-strip-more]", timeout=10000)
+    assert page.locator("#wone-strip .strip-panel").is_hidden()
+    page.locator("#wone-strip [data-strip-more]").click()
+    panel = page.locator("#wone-strip .strip-panel")
+    assert panel.is_visible() and "five minutes on the hour" in panel.inner_text() and "Next up" in panel.inner_text()
+
+
+def test_strip_now_links_to_station_page(page):
+    page.wait_for_selector("#wone-strip .st-now", timeout=10000)
+    hrefs = page.locator("#wone-strip .st-now").evaluate_all("els => els.map(e => e.getAttribute('href'))")
+    assert any(h.endswith("/radio/rhythm-lab/index.html") for h in hrefs) and any(h.endswith("/radio/uk-jazz/index.html") for h in hrefs)
+
 
 
 def _inject(page, html):

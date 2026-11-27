@@ -121,7 +121,7 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
 
     out = Path(out_root) / station.id
     out.mkdir(parents=True, exist_ok=True)
-    tracks = [t for t in [on_now, *upcoming] if t]
+    tracks = [t for t in [on_now, *[s for s in songs if s["starts_at"] > now.isoformat()]] if t]  # the strip's 3-hour schedule
     (out / "latest.json").write_text(json.dumps({"station": station.id, "block": {"tracks": tracks}}, indent=1))
     on_page = [s for s in songs if s["ends_at"] > now.isoformat()]  # the browser picks what's on from these (shell.js)
     block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), on_page)
