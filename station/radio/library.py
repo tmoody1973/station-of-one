@@ -144,6 +144,18 @@ def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
     return counts
 
 
+def library_track(db: sqlite3.Connection, candidate_id: str, today) -> dict:
+    """A library song as pages and the queue show it: the track, the Apple links and "First aired on ...".
+    No show notes, no Drive links (the library stays private), so source_url is empty."""
+    from station.radio.program import era
+    r = db.execute("SELECT c.id, c.song_id, c.matched_artist, c.matched_title, c.album, c.release_date, c.duration_ms, "
+                   "c.preview_url, c.apple_url, c.artwork_url, ro.source_note FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id "
+                   "WHERE ro.candidate_id = ?", (candidate_id,)).fetchone()
+    return {"candidate_id": r[0], "song_id": r[1], "artist": r[2], "title": r[3], "album": r[4], "release_date": r[5],
+            "duration_ms": r[6], "preview_url": r[7], "apple_url": r[8], "artwork_url": r[9], "fit": None,
+            "note": r[10] or "", "source_url": "", "era": era(r[5], today)}
+
+
 REPORT_FIELDS = ("track_id", "artist", "title", "version", "play_count", "tier", "match_status", "matched_artist",
                  "matched_title", "match_confidence")
 
@@ -161,4 +173,4 @@ def held_report(db: sqlite3.Connection, path: Path) -> int:
     return len(rows)
 
 
-__all__ = ["import_tracks", "to_match", "match_library", "held_report", "library_energy", "seed_rotation", "AppleRefused"]
+__all__ = ["import_tracks", "to_match", "match_library", "held_report", "library_energy", "library_track", "seed_rotation", "AppleRefused"]
