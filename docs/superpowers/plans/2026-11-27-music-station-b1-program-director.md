@@ -176,6 +176,29 @@ Code maps energy to 1, 2, 3.
   - `test_sampler_shows_on_now`
 - [ ] **Step 2:** Run them. Expected: FAIL. **Step 3:** Implement. **Step 4:** Run them. Expected: PASS. Commit.
 
+### Task 6b: "How the station is programmed" explainer page
+
+Tarik, Nov 27: "a page on the site that explains the agentic program director and how it works: rotation, breaks, etc."
+
+**Files:** `templates/how_programmed.html` → `radio/how-it-works/index.html`; `station/radio/page.py` (`render_explainer(station, rotation_counts, last_meeting) -> str`); linked from the sampler, the meeting page and the station strip's panel.
+
+**Content.** Plain English, Bauhaus style, rendered from the station config, so the numbers are always the ones running:
+1. **What a program director does,** and which parts are Jev's judgment (adds, moves, drops, tags) and which are code's rules (categories, rests, clocks, separation).
+2. **The categories:** a live table of each category's size, rest time and song count now.
+3. **The hour clocks:** day and overnight, drawn as a Bauhaus circle with coloured slots, built from the same clock lists the scheduler uses.
+4. **Separation rules:** which never relax, and which relax first.
+5. **The weekly music meeting:** what Jev is asked, the 0.6 thresholds, the 25% churn cap, and a link to the latest meeting.
+6. **Where songs come from:** feeds, seeds, extraction, fit, Apple Music matching and the 0.8 match bar.
+7. **Breaks, IDs and news:** a placeholder section filled in by Plan B2 (cite-or-cut facts, Gemini voice).
+8. **What's not done by a model:** "A language model never picks the next song."
+
+- [ ] **Step 1: Failing tests:**
+  - `test_explainer_numbers_come_from_config`: change a rest time in a test config, and the page shows the new value
+  - `test_clock_drawing_matches_slots`
+  - `test_explainer_escaped_and_linked_from_sampler`
+- [ ] **Step 2:** Run them. Expected: FAIL. **Step 3:** Implement. **Step 4:** Run them. Expected: PASS.
+- [ ] **Step 5:** Screenshot at 1440 and 390 px. Commit.
+
 ### Task 7: 24 hours a day
 
 **Files:**
