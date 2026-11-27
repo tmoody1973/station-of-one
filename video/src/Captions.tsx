@@ -19,7 +19,7 @@ const CaptionPage: React.FC<{ page: TikTokPage; fontFamily: string }> = ({ page,
           // The spoken word pops: a quick scale-up as it starts, settling while it is said.
           // Peak by 120 ms, or mid-word for shorter words (an 80 ms word crashed the Nov 26 render).
           const peak = Math.min(t.fromMs + 120, (t.fromMs + t.toMs) / 2);
-          const pop = active ? interpolate(nowMs, [t.fromMs, peak, t.toMs], [1, 1.14, 1.06], {
+          const pop = active ? interpolate(nowMs, [t.fromMs, peak, t.toMs], [1, 1.06, 1.03], {
             extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.bezier(0.16, 1, 0.3, 1) }) : 1;
           // The space before a word stays outside the animated box, so wrapped lines never start with a gap.
           return (
