@@ -85,12 +85,19 @@ def embed_url(pick: dict) -> str:
     return ""
 
 
-def latest_picks(picks_root: Path) -> dict | None:
-    """The newest day with at least one pick (an empty day keeps the last real picks on the page)."""
+def latest_picks(picks_root: Path, today: str | None = None) -> dict | None:
+    """The newest day up to `today` with at least one playable pick (an empty day keeps the last real picks).
+    A damaged file is skipped, never fatal: this runs in every hourly page build (review, Nov 27)."""
     for f in sorted(Path(picks_root).glob("????-??-??.json"), reverse=True):
-        data = json.loads(f.read_text())
-        if data.get("picks"):
-            return {**data, "picks": [{**p, "embed": embed_url(p)} for p in data["picks"] if embed_url(p)]}
+        if today and f.stem > today:
+            continue
+        try:
+            data = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        playable = [{**p, "embed": embed_url(p)} for p in data.get("picks") or [] if embed_url(p)]
+        if playable:
+            return {**data, "picks": playable}
     return None
 
 
@@ -286,7 +293,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
                                   table=episodes[0] if episodes else None,
                                   corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras,
-                                  picks=latest_picks(Path(os.environ.get("STATION_PICKS", "data/picks")))))
+                                  picks=latest_picks(Path(os.environ.get("STATION_PICKS", "data/picks")), today=day)))
     hour.write_text(render_hour(current, prefs, today, extras=extras))
     story_pages = []
     if extras is not None:

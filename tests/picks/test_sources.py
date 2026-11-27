@@ -59,3 +59,10 @@ def test_a_failed_run_is_a_note():
     gw = FakeGateway({("POST", "apify", f"/v2/actors/{ACTORS['rss']}/runs"): [ok({"error": "x"}, status=500)]})
     picks, notes = youtube_candidates(gw, ["UC1"], now=NOW)
     assert picks == [] and "youtube" in notes[0]
+
+
+def test_a_date_without_timezone_is_skipped_not_fatal():  # review Minor 6
+    items = [{"feed_title": "KEXP", "item_title": "x", "item_link": "https://www.youtube.com/watch?v=_l1DbqVacBc",
+              "item_published": "2026-11-25T10:00:00", "item_author": "KEXP"}]
+    picks, notes = youtube_candidates(FakeGateway(_apify(ACTORS["rss"], items)), ["UC1"], now=NOW)
+    assert picks == []

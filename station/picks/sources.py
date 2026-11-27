@@ -82,7 +82,7 @@ def youtube_candidates(gw, channels: list[str], now: datetime | None = None) -> 
         try:
             if datetime.fromisoformat(published.replace("Z", "+00:00")) < now - RECENT:
                 continue
-        except ValueError:
+        except (ValueError, TypeError):  # unparseable, or a date without a timezone
             continue
         source = it.get("feed_title") or "YouTube"
         picks.append(Pick(source, "youtube", vid, it.get("item_title") or "", it.get("item_author") or source,

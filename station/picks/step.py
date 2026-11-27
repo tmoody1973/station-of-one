@@ -23,8 +23,10 @@ def recent_keys(picks_root: Path, day: str) -> set[str]:
     out = set()
     for back in range(1, REPEAT_DAYS + 1):
         f = picks_root / f"{date.fromisoformat(day) - timedelta(days=back)}.json"
-        if f.exists():
+        try:
             out |= {f"{p['kind']}:{p['embed_id']}" for p in json.loads(f.read_text()).get("picks", [])}
+        except (OSError, ValueError, KeyError, TypeError):
+            continue  # missing or damaged day
     return out
 
 
@@ -42,5 +44,7 @@ def make_picks(gw, prefs: Prefs, db: sqlite3.Connection, day: str, picks_root: P
     out = {"day": day, "picks": [{**asdict(p), "score": s} for p, s in chosen], "model": model,
            "candidates": len(candidates), "notes": yt_notes + bc_notes}
     picks_root.mkdir(parents=True, exist_ok=True)
-    (picks_root / f"{day}.json").write_text(json.dumps(out, indent=1))
+    tmp = picks_root / f"{day}.json.tmp"
+    tmp.write_text(json.dumps(out, indent=1))
+    tmp.replace(picks_root / f"{day}.json")  # whole file or nothing: the page step reads it every hour
     return out
