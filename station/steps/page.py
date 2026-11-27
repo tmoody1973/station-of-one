@@ -341,6 +341,8 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
         story_pages.append(mp)
     player = site / "shell.js"  # the site shell: one player for every page (decision 010)
     player.write_text((TEMPLATES / "shell.js").read_text())
+    live_js = site / "live.js"  # loaded by shell.js only when a listener tunes in (Plan C)
+    live_js.write_text((TEMPLATES / "live.js").read_text())
     from station.steps.stations import stations_json
     strip = site / "data" / "stations.json"  # the station strip's data
     strip.parent.mkdir(parents=True, exist_ok=True)
@@ -351,7 +353,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     for asset in ("cover-one.png", "logo-one.png"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
-    written = [front, hour, player, strip, feed, *story_pages]
+    written = [front, hour, player, live_js, strip, feed, *story_pages]
     mk = musickit_config(musickit_token)
     if mk:  # public by design: MusicKit on the Web needs it in the browser; Apple honours it only from our origin
         mk_path = site / "data" / "musickit.json"
