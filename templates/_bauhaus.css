@@ -17,9 +17,9 @@ header.site{border-bottom:7px solid var(--ink)}
 header.site .wrap{padding-top:22px;padding-bottom:16px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
 .brand{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
 .brand .line{font-size:14px;font-weight:600;letter-spacing:.12em;text-transform:lowercase;color:var(--ink-2);padding-bottom:4px}
-nav{display:flex;gap:22px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:lowercase;flex-wrap:wrap}
-nav a{text-decoration:none;border-bottom:4px solid transparent;padding-bottom:2px}
-nav a:hover{color:var(--ink);border-bottom-color:var(--yellow)}
+header.site nav{display:flex;gap:22px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:lowercase;flex-wrap:wrap}
+header.site nav a{text-decoration:none;border-bottom:4px solid transparent;padding-bottom:2px}
+header.site nav a:hover{color:var(--ink);border-bottom-color:var(--yellow)}
 
 /* logo: the ONE ID block plus "FM" */
 .logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
