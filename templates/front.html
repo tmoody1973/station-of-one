@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="/logo.png" type="image/png">
+<link rel="icon" href="/logo-one.png" type="image/png">
 <title>{% if mode == "hour" %}{{ n.hour_label }} newscast · {% endif %}{{ station.show_name }} · {{ station.name }}</title>
 <meta name="description" content="A five-minute newscast for an audience of one, machine-edited from public posts. Voices are synthetic.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -185,7 +185,7 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
   <section class="block">
     <h2 class="marker tri"><span class="num">3</span><span class="lbl">The Table</span></h2>
     <div class="table-card">
-      <span class="tag">The Table · WNCL · daily debate</span>
+      <span class="tag">The Table · daily debate</span>
       <a class="q" href="/table/{{ table.day }}/index.html">{{ table.question }}</a>
       <span style="color:var(--ink-2)">The Anchor vs. the Uncle, refereed by Jev. {{ {"anchor": "The Anchor took it", "uncle": "The Uncle took it", "draw": "A draw"}[table.verdict.winner] }}, {{ "%.2f" | format(table.verdict.anchor) }} to {{ "%.2f" | format(table.verdict.uncle) }}. Season: Anchor {{ table.record.anchor }}, Uncle {{ table.record.uncle }}.</span>
     </div>

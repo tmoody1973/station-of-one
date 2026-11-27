@@ -21,7 +21,7 @@ nav{display:flex;gap:22px;font-size:15px;font-weight:700;letter-spacing:.1em;tex
 nav a{text-decoration:none;border-bottom:4px solid transparent;padding-bottom:2px}
 nav a:hover{color:var(--ink);border-bottom-color:var(--yellow)}
 
-/* logo: the WONE ID block plus "FM" */
+/* logo: the ONE ID block plus "FM" */
 .logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .logo .lockup{font-family:var(--geo);font-size:30px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;color:inherit}
 .wone-id{display:inline-flex;flex-direction:column;font-family:'Archivo Black',var(--geo);line-height:1;overflow:hidden;font-size:17px;border:2px solid var(--ink)}

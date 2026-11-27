@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="/logo.png" type="image/png">
+<link rel="icon" href="/logo-one.png" type="image/png">
 <title>{{ s.headline }} · {{ station.name }}</title>
 <meta name="description" content="{{ s.summary }}">
 <meta property="og:type" content="article">
@@ -50,7 +50,7 @@ footer{grid-column:1/-1}
   <span class="tag kicker">{{ beats[s.beat_id].name if s.beat_id in beats else s.beat_id }}</span>
   <h1>{{ s.headline }}</h1>
   <p class="dek">{{ s.summary }}</p>
-  <div class="byline"><span><b>WONE newsroom</b> · written and voiced by machine · {{ n.hour_label }}, {{ date_label }}</span>
+  <div class="byline"><span><b>ONE newsroom</b> · written and voiced by machine · {{ n.hour_label }}, {{ date_label }}</span>
     <button class="btn-dark" id="listen" data-start-ms="{{ s.chapter_start_ms }}">Listen · {{ ((s.seconds or 0) * 1000) | duration }}</button>
     <audio id="story-audio" preload="none" src="{{ n.audio_url }}"></audio></div>
 

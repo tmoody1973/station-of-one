@@ -12,7 +12,7 @@ from tests.fakes import FakeGateway, ok
 from tests.test_rundown import j
 
 CHI = ZoneInfo("America/Chicago")
-ID1 = "WONE, 1.0 FM. One station, one listener."
+ID1 = "ONE, 1.0 FM. One station, one listener."
 
 
 def test_open_says_local_hour():  # Review Focus 5

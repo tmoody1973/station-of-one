@@ -13,7 +13,7 @@ def _newscast() -> dict:
                 "sources": [{"post_id": f"s{i}", "url": "https://ex.com/a", "author": "user7",
                              "source_name": "Urban Milwaukee", "posted_at": "2026-11-27T15:00:00Z"}]} for i in (1, 2)]
     return {"id": "2026-11-27T10", "hour_local": "2026-11-27T10:00:00-06:00", "show": "The Hourly Scroll",
-            "station": "WONE", "frequency": "1.0 FM", "short": False,
+            "station": "ONE", "frequency": "1.0 FM", "short": False,
             "counts": {"posts_read_hour": 5, "posts_read_today": 9, "posts_not_aired_today": 7, "stories_aired": 2},
             "stories": stories, "almost": [], "overheard": None,
             "chapters": [{"index": 0, "title": "Open", "kind": "open", "story_id": None, "start_ms": 0, "end_ms": 9000}],

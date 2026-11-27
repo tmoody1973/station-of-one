@@ -27,7 +27,7 @@ def test_single_latest_item_with_absolute_enclosure():
 def test_show_fields_directories_require():
     ch = feed().find("channel")
     assert ch.find("title").text and ch.find("description").text and ch.find("language").text == "en-us"
-    assert ch.find(f"{IT}image").get("href") == f"{BASE}/cover-wone.png"
+    assert ch.find(f"{IT}image").get("href") == f"{BASE}/cover-one.png"
     assert ch.find(f"{IT}category").get("text") == "News" and ch.find(f"{IT}explicit").text == "false"
     assert ch.find("link").text == f"{BASE}/index.html"
     assert "synthetic" in ch.find("description").text.lower() and "machine-edited" in ch.find("description").text.lower()

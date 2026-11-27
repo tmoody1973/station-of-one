@@ -28,7 +28,7 @@ def test_beats_and_sources():
     assert any(s.type == "hackernews" for s in ai.sources)
     assert p.station.timezone == "America/Chicago"
     assert p.writer.model == "deepseek-v4.1-flash"
-    assert p.station.id_lines_newscast[0] == "WONE, 1.0 FM. One station, one listener."
+    assert p.station.id_lines_newscast[0] == "ONE, 1.0 FM. One station, one listener."
 
 
 def test_rejects_missing_threshold(tmp_path):  # fail fast at the boundary

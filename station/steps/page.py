@@ -332,7 +332,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
     feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0, episodes))
-    for asset in ("cover-wone.png", "logo.png"):  # a changed asset gets a new name: images are cached long
+    for asset in ("cover-one.png", "logo-one.png"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
     written = [front, hour, player, feed, *story_pages]

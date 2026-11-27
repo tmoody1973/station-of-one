@@ -16,7 +16,7 @@ const defaultProps: ReelProps = {
   endMs: 3500,
   durationMs: 30000,
   show: "The Hourly Scroll",
-  station: "WONE 1.0 FM",
+  station: "ONE 1.0 FM",
   url: "example.com/index.html",
 };
 

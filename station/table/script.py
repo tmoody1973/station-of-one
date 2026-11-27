@@ -1,6 +1,6 @@
 """Table step 5: the spoken script. The writer only rewrites each claim for its speaker (the Uncle as
 his theories, the Anchor careful) and the Anchor's welcome. Rulings, totals, winner, season record and
-the welcome and the WNCL station ID are written by code from rulings.json, so the writer cannot change the outcome.
+the welcome and the station ID are written by code from rulings.json, so the writer cannot change the outcome.
 A delivery that mentions numbers, winning, a verdict or a username is rejected; after a second
 failure the show uses the already-checked claim text (plan Review Focus 3)."""
 from __future__ import annotations
@@ -14,7 +14,7 @@ from station.steps.write import Turn
 from station.table.argue import ATTRIBUTION, FORBIDDEN, PARTS, SIDES, Claim
 from station.table.referee import Ruling
 
-STATION_ID = "WNCL, broadcasting to a potential audience of one."
+STATION_ID = "The Table on ONE, broadcasting to a potential audience of one."
 WELCOME = "Welcome to The Table, where two of us argue about one thread and Jev keeps score."  # code-written: the writer repeated the question
 SPEAKER = {"anchor": "Anchor", "uncle": "Uncle"}
 MAX_WORDS = 75

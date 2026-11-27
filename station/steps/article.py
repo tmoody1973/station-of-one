@@ -18,7 +18,7 @@ HEADING = re.compile(r"^\s*#")
 BULLET = re.compile(r"^\s*[-*•]\s+")
 QUOTES = ('"', "“", "”")
 
-SYSTEM = """You write web articles for WONE 1.0 FM, a machine-edited public-radio-style station.
+SYSTEM = """You write web articles for ONE 1.0 FM, a machine-edited public-radio-style station.
 Rules, all mandatory:
 - Write only from the posts given. Add no facts, numbers, names or quotes of your own.
 - Public-radio web style: the first paragraph says what happened and where it was posted; short paragraphs of
