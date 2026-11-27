@@ -7,6 +7,8 @@ link names its file (/index.html, /h/<date>/<HHMM>/index.html).
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 import os
 from datetime import datetime
 from pathlib import Path
@@ -52,6 +54,22 @@ def hour_path(newscast_id: str) -> str:
     return f"h/{d:%Y-%m-%d}/{d:%H}00/index.html"
 
 
+def story_path(newscast_id: str, index: int, headline: str) -> str:
+    """One page per aired story; the position prefix keeps two identical headlines apart."""
+    d = datetime.strptime(newscast_id, "%Y-%m-%dT%H")
+    plain = unicodedata.normalize("NFKD", headline or "").encode("ascii", "ignore").decode()  # Citroën -> Citroen
+    slug = re.sub(r"[^a-z0-9]+", "-", plain.lower()).strip("-")[:60].rstrip("-") or "story"
+    return f"s/{d:%Y-%m-%d}/{d:%H}00/{index + 1}-{slug}/index.html"
+
+
+def _with_links(newscast: dict, extras: dict | None) -> list[dict]:
+    """Stories plus their page URL and extra (article, image) when the story step ran this hour."""
+    if extras is None:
+        return newscast["stories"]
+    return [{**s, "url": "/" + story_path(newscast["id"], i, s.get("headline") or ""), "extra": extras.get(s["id"])}
+            for i, s in enumerate(newscast["stories"])]
+
+
 def _hour_label(n: dict) -> str:
     t = datetime.fromisoformat(n["hour_local"])
     return f"{t.hour % 12 or 12}:00 {'am' if t.hour < 12 else 'pm'}"
@@ -62,7 +80,7 @@ def _date_label(n: dict) -> str:
     return f"{t:%A}, {t:%B} {t.day}"
 
 
-def _context(current: dict, today: list[dict], prefs: Prefs, mode: str) -> dict:
+def _context(current: dict, today: list[dict], prefs: Prefs, mode: str, extras: dict | None = None) -> dict:
     beats = {b.id: {"name": b.name, "color": b.color} for b in prefs.beats}
     ordered = sorted(today, key=lambda n: n["id"], reverse=True)
     for n in ordered:
@@ -71,7 +89,7 @@ def _context(current: dict, today: list[dict], prefs: Prefs, mode: str) -> dict:
         n["audio_url"] = audio_path(n)
     current = {**current, "hour_label": _hour_label(current), "page": "/" + hour_path(current["id"]),
                "audio_url": audio_path(current)}
-    stories = current["stories"]
+    stories = _with_links(current, extras)
     return {"n": current, "lead": stories[0] if stories else None, "others": stories[1:], "today": ordered,
             "beats": beats, "station": prefs.station, "date_label": _date_label(current), "mode": mode,
             "chapters_json": json.dumps(current["chapters"])}
@@ -83,18 +101,32 @@ def audio_path(n: dict) -> str:
 
 
 def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None,
-                 table: dict | None = None, corrections: dict | None = None) -> str:
-    return env().get_template("front.html").render(**_context(current, today, prefs, "front"), video_url=video_url,
-                                                   table=table, corrections=corrections)
+                 table: dict | None = None, corrections: dict | None = None, extras: dict | None = None) -> str:
+    return env().get_template("front.html").render(**_context(current, today, prefs, "front", extras),
+                                                   video_url=video_url, table=table, corrections=corrections)
 
 
-def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None) -> str:
-    return env().get_template("front.html").render(**_context(newscast, today or [newscast], prefs, "hour"))
+def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None, extras: dict | None = None) -> str:
+    return env().get_template("front.html").render(**_context(newscast, today or [newscast], prefs, "hour", extras))
+
+
+def render_story(newscast: dict, story: dict, extra: dict | None, prefs: Prefs) -> str:
+    stories = _with_links(newscast, {})
+    image = (extra or {}).get("image")
+    og = ""
+    if image:
+        og = image["src"] if image["kind"] == "photo" else prefs.hosting.public_base + image["src"]
+    return env().get_template("story.html").render(
+        n={**newscast, "hour_label": _hour_label(newscast), "page": "/" + hour_path(newscast["id"]),
+           "audio_url": audio_path(newscast)},
+        s=story, extra=extra or {}, image=image, og_image=og, others=[x for x in stories if x["id"] != story["id"]],
+        beats={b.id: {"name": b.name, "color": b.color} for b in prefs.beats}, station=prefs.station,
+        date_label=_date_label(newscast), floor=round(prefs.thresholds.air_min_probability * 100))
 
 
 STEP_LABELS = {"scrape": "Scrape sources", "dedupe": "Find duplicates", "judge": "Judge every post",
                "rundown": "Build the rundown", "write": "Write the scripts", "voice": "Voice the newscast",
-               "assemble": "Assemble audio", "page": "Build the page", "publish": "Publish", "archive": "Archive",
+               "assemble": "Assemble audio", "story": "Write story pages", "page": "Build the page", "publish": "Publish", "archive": "Archive",
                "finish": "Finish"}
 DOTS = {"done": "green", "repaired": "amber", "failed": "red", "running": "white"}
 
@@ -221,10 +253,19 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     has_video = (TEMPLATES.parent / "video" / "out" / f"{day}.mp4").exists()  # rendered after the last newscast
     episodes = table_episodes(Path(os.environ.get("STATION_TABLE", "data/table")))
     graded = sorted(runs_root.glob(f"{day}T??/corrections.json"))  # written by the day's first build
+    extras_file = run / "stories.json"  # written by the story step; absent when it was skipped
+    extras = json.loads(extras_file.read_text()) if extras_file.exists() else None
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
                                   table=episodes[0] if episodes else None,
-                                  corrections=json.loads(graded[0].read_text()) if graded else None))
-    hour.write_text(render_hour(current, prefs, today))
+                                  corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras))
+    hour.write_text(render_hour(current, prefs, today, extras=extras))
+    story_pages = []
+    if extras is not None:
+        for i, st in enumerate(current["stories"]):
+            sp = site / story_path(current["id"], i, st.get("headline") or "")
+            sp.parent.mkdir(parents=True, exist_ok=True)
+            sp.write_text(render_story(current, st, extras.get(st["id"]), prefs))
+            story_pages.append(sp)
     player = site / "player.js"
     player.write_text((TEMPLATES / "player.js").read_text())
     feed = site / "feed.xml"
@@ -233,7 +274,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     for asset in ("cover-wone.png", "logo.png"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
-    written = [front, hour, player, feed]
+    written = [front, hour, player, feed, *story_pages]
     if control_room and (run / "run_log.json").exists() and (run / "rundown.json").exists():
         written += write_control_room(run, prefs, current)
     if beat_counts is not None:
