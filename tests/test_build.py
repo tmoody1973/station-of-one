@@ -106,3 +106,9 @@ def test_rebuild_moves_old_run_log_aside(tmp_path, monkeypatch):  # 2 pm rebuild
     (run / "run_log.json").write_text('{"started_at": "old"}')
     build(datetime(2026, 11, 27, 9, tzinfo=CHI), lock_path=tmp_path / "l", runs_root=tmp_path / "runs")
     assert not (run / "run_log.json").exists() and (run / "run_log.prev.json").read_text() == '{"started_at": "old"}'
+
+
+def test_hold_call_timeout_does_not_crash_build():
+    # Nov 27: releasing the hold timed out after the 10 am newscast published and crashed the build.
+    from station.sprite import _curl
+    _curl(["sleep", "2"], timeout=0.1)  # must return, not raise

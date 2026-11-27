@@ -14,8 +14,12 @@ from typing import Callable
 SOCKET = Path("/.sprite/api.sock")
 
 
-def _curl(args: list[str]) -> None:
-    subprocess.run(args, capture_output=True, timeout=15)
+def _curl(args: list[str], timeout: float = 15) -> None:
+    # Best effort: a slow control socket must not crash a build that already published (Nov 27).
+    try:
+        subprocess.run(args, capture_output=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        pass
 
 
 def _cmd(socket: Path, method: str, name: str, body: str | None = None) -> list[str]:
