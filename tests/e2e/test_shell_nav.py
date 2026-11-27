@@ -90,9 +90,9 @@ def test_controls_work_after_swap(page):
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('itunes.apple.com') }", timeout=15000)
     assert "preview" in page.locator("#wone-label").inner_text().lower()
     page.go_back()
-    page.wait_for_function("() => document.querySelector('main [data-play]') !== null", timeout=10000)
-    start = page.evaluate("() => JSON.parse(document.querySelector('main [data-play]').dataset.play).start")
-    page.locator("main [data-play]").first.click()
+    page.wait_for_function("() => document.querySelector('main .btn-dark[data-play]') !== null", timeout=10000)  # the front page is back
+    start = page.evaluate("() => JSON.parse(document.querySelector('main .btn-dark[data-play]').dataset.play).start")
+    page.locator("main .btn-dark[data-play]").first.click()
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
     page.wait_for_timeout(800)
     t = page.evaluate("() => document.getElementById('wone-audio').currentTime")
