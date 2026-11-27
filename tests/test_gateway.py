@@ -65,3 +65,12 @@ def test_sends_no_auth_header_and_json_body():
     assert req.full_url == "https://api.sprites.dev/v1/gateway/typesafe/conn-typesafe/v1/systemone"
     assert "Authorization" not in req.headers and req.get_header("Content-type") == "application/json"
     assert req.data == b'{"a": 1}'
+
+
+def test_base_by_connection_id_when_a_provider_has_two():  # music station: Apple Music and Perplexity are both custom_api
+    from tests.fakes import fake_urlopen
+    listing = {"connections": [
+        {"provider": "custom_api", "id": "APPLE", "gateway_base_url": "https://api.sprites.dev/v1/gateway/custom_api/APPLE"},
+        {"provider": "custom_api", "id": "PPLX", "gateway_base_url": "https://api.sprites.dev/v1/gateway/custom_api/PPLX/"}]}
+    gw = Gateway(urlopen=fake_urlopen(listing))
+    assert gw.base("APPLE").endswith("/custom_api/APPLE") and gw.base("PPLX").endswith("/custom_api/PPLX")
