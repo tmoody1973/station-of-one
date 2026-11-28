@@ -118,3 +118,29 @@ def test_scout_runs_with_the_meeting(tmp_path, monkeypatch):  # once per meeting
         monkeypatch.setattr(onair, "meeting_due", lambda dd, st, n: False)
         run_mod.run_station(object(), "jazz", d, NOW, load_prefs(), out_root=tmp_path)
     assert len(seen) == 1
+
+
+def test_only_styles_under_target_are_deepened():  # jazz plan Task 5
+    from station.radio.scout import DEEPEN_FEED, deepen_styles
+    d = db()
+    for i in range(3):   # vocal already has 3 playable; target 3 -> nothing to do
+        addable(d, f"v{i}")
+        d.execute("INSERT INTO rotation (station_id, candidate_id, category, style) VALUES ('jazz', ?, 'G', 'vocal')", (f"v{i}",))
+    gw = FakeGateway({("GET", C, "/v1/catalog/us/search"): [artist_hit("7", "Dorothy Ashby")],
+                      ("GET", C, "/v1/catalog/us/artists/7/view/top-songs"): [tracks("Soul Vibrations", "Afro-Harping", artist="Dorothy Ashby")]})
+    found, counts, notes = deepen_styles(gw, ST, d, NOW, {"heritage": 2, "vocal": 3},
+                                         {"heritage": ["Dorothy Ashby"], "vocal": ["Gregory Porter"]})
+    assert counts == {"heritage": 2} and sorted(e.title for _, e, _ in found) == ["Afro-Harping", "Soul Vibrations"]
+    assert d.execute("SELECT DISTINCT feed FROM feed_items").fetchall() == [(DEEPEN_FEED,)]
+
+
+def test_deepened_tracks_go_to_catalog_with_style():
+    from station.radio.meeting import music_meeting
+    from station.radio.scout import DEEPEN_FEED
+    d = db()
+    d.execute("INSERT INTO feed_items (id, station_id, feed, guid, title, link, published_at, excerpt, seen_at) "
+              "VALUES ('f1', 'jazz', ?, 'g', 't', '', '', '', '')", (DEEPEN_FEED,))
+    addable(d)
+    d.execute("UPDATE candidates SET feed_item_id = 'f1', release_date = '2024-05-01' WHERE id = 'new1'")   # recent, but catalog deepening
+    music_meeting(Jev(style="vocal"), ST, d, NOW)
+    assert d.execute("SELECT category, style FROM rotation WHERE candidate_id = 'new1'").fetchone() == ("G", "vocal")

@@ -326,5 +326,10 @@
       "from": "11-22",
       "to": "12-25"
     }
+  },
+  "deepen": {
+    "heritage": 150,
+    "vocal": 120,
+    "latin_brazilian_afro": 120
   }
 }

@@ -46,3 +46,15 @@ def scout_artists(station, path: Path = ARTISTS) -> list[str]:
     except OSError:
         return list(station.seeds.get("artists", []))
     return [r["artist"] for r in rows if r.get("jazz_tier") == "core"]
+
+
+def artists_by_style(path: Path = ARTISTS) -> dict[str, list[str]]:
+    """Core artists per style from Tarik's file, most-played first (who the thin styles are deepened from)."""
+    try:
+        rows = list(csv.DictReader(open(path, encoding="utf-8-sig")))
+    except OSError:
+        return {}
+    out: dict[str, list[str]] = {}
+    for r in sorted((r for r in rows if r.get("jazz_tier") == "core"), key=lambda r: -int(r.get("plays") or 0)):
+        out.setdefault(r["jazz_style"], []).append(r["artist"])
+    return out

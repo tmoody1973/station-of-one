@@ -13,6 +13,7 @@ from station.gateway import GatewayError
 from station.radio.buzz import buzz
 from station.radio.model import StationConfig
 from station.radio.program import era
+from station.radio.scout import DEEPEN_FEED
 from station.steps.judge import MODEL
 from station.store import record_decision
 
@@ -189,7 +190,8 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
             res.notes.append(f"{s['id']}: not added (Jev: {'not jazz' if style == 'not_jazz' else 'no style'})")
             continue
         released = db.execute("SELECT release_date FROM candidates WHERE id = ?", (s["id"],)).fetchone()[0] or ""
-        to = rules["catalog"] if released and released < catalog_before else rules["new"]
+        deepen = s["source"] == DEEPEN_FEED  # catalog deepening for a thin style: never the New category
+        to = rules["catalog"] if deepen or (released and released < catalog_before) else rules["new"]
         if count.get(to, 0) >= size.get(to, 0):
             res.notes.append(f"{s['id']}: no room in {to}")
             continue

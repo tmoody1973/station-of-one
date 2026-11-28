@@ -18,6 +18,8 @@ from station.radio.poll import FeedItem
 from station.radio.resolve import AppleRefused, _get, _match, has_version
 
 SCOUT_FEED = "Apple Music new releases"
+DEEPEN_FEED = "Apple Music catalog, to deepen a thin style"
+TOP_SONGS = 10
 RECENT_DAYS = 60
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS apple_artists (name TEXT PRIMARY KEY, artist_id TEXT, checked_at TEXT);
@@ -91,3 +93,48 @@ def scout_new_releases(gw, station: StationConfig, db: sqlite3.Connection, now: 
             notes.append(f"scout lookup failed for {name}: {e.status}")
     db.commit()
     return out, notes
+
+
+def deepen_styles(gw, station: StationConfig, db: sqlite3.Connection, now: datetime, targets: dict[str, int],
+                  artists_by_style: dict[str, list[str]]) -> tuple[list[tuple[str, Extracted, FeedItem]], dict[str, int], list[str]]:
+    """For each style with fewer playable songs than its target: well-known recordings by that style's artists (Apple's
+    top songs for each, artists checked once), up to twice the gap, as candidates. Jev still rates fit and names the style;
+    the meeting files them under the catalog category."""
+    db.executescript(SCHEMA)
+    out: list[tuple[str, Extracted, FeedItem]] = []
+    counts: dict[str, int] = {}
+    notes: list[str] = []
+    for style, target in targets.items():
+        have = db.execute("SELECT COUNT(*) FROM rotation WHERE station_id = ? AND style = ?", (station.id, style)).fetchone()[0]
+        want = 2 * (target - have)
+        if want <= 0:
+            continue
+        for name in artists_by_style.get(style, []):
+            if counts.get(style, 0) >= want:
+                break
+            try:
+                aid = _artist_id(gw, station, db, name, now)
+                if not aid or db.execute("SELECT 1 FROM scouted_albums WHERE station_id = ? AND album_id = ?",
+                                         (station.id, f"top:{aid}")).fetchone():
+                    continue
+                songs = _get(gw, station.apple_connection,
+                             f"/v1/catalog/{station.storefront}/artists/{aid}/view/top-songs?limit={TOP_SONGS}").get("data", [])
+                item = FeedItem(hashlib.sha1(f"deepen|{station.id}|{aid}".encode()).hexdigest()[:16], DEEPEN_FEED, f"top:{aid}",
+                                f"{name}: best-known recordings ({style})", "", "", f"Deepening {style} with {name}'s best-known recordings.")
+                for s in songs:
+                    if counts.get(style, 0) >= want:
+                        break
+                    if not has_version(s.get("attributes", {}).get("name", "")):
+                        added = _add(db, station, item, s, now)
+                        if added:
+                            out.append(added)
+                            counts[style] = counts.get(style, 0) + 1
+                db.execute("INSERT OR IGNORE INTO scouted_albums VALUES (?,?,?)", (station.id, f"top:{aid}", now.isoformat()))
+            except AppleRefused as e:
+                notes.append(str(e))
+                db.commit()
+                return out, counts, notes
+            except GatewayError as e:
+                notes.append(f"deepening lookup failed for {name}: {e.status}")
+    db.commit()
+    return out, counts, notes
