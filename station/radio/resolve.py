@@ -18,7 +18,14 @@ from station.radio.model import normalize
 
 MATCH_MIN = 0.8
 # whole words only: "Deluxe Edition" is not an "edit" (review, Nov 27)
-VERSION = re.compile(r"\b(remaster\w*|live|edit|clean|instrumental|karaoke|acoustic|demo|remix\w*|sped up|vip|mixed)\b")
+# Spoken tracks that aren't the song at all (Rhythm Lab aired "The Lung (Nai Palm) [Commentary]", Nov 27)
+NON_SONG = re.compile(r"\b(commentary|interview|skit|track by track|voice memo)\b")
+VERSION = re.compile(r"\b(remaster\w*|live|edit|clean|instrumental|karaoke|acoustic|demo|remix\w*|sped up|vip|mixed"
+                     r"|commentary|interview|skit|track by track|voice memo)\b")
+
+
+def is_non_song(name: str) -> bool:
+    return bool(NON_SONG.search(normalize(name)))
 
 
 def has_version(name: str, asked: str = "") -> bool:

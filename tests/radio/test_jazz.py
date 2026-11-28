@@ -61,3 +61,23 @@ def test_style_column_added_to_an_existing_rotation_table():  # the live databas
     db.execute("CREATE TABLE rotation (station_id TEXT, candidate_id TEXT, category TEXT, PRIMARY KEY (station_id, candidate_id))")
     open_radio(db)
     assert "style" in {r[1] for r in db.execute("PRAGMA table_info(rotation)")}
+
+
+def test_drop_non_songs_from_rotation():  # Rhythm Lab aired a [Commentary] track, Nov 27
+    import sqlite3
+    from station.radio.library import SCHEMA as LIB, drop_non_songs
+    from station.radio.model import open_radio
+    from station.store import SCHEMA
+    d = sqlite3.connect(":memory:")
+    d.executescript(SCHEMA)
+    open_radio(d)
+    d.executescript(LIB)
+    for tid, title in (("7", "The Lung (Nai Palm) [Commentary]"), ("8", "The Lung"), ("9", "Abusey Junction (Remix)")):
+        d.execute("INSERT INTO library_tracks (track_id, artist, title, match_status, matched_title) VALUES (?, 'A', ?, 'resolved', ?)", (tid, title, title))
+        d.execute("INSERT INTO candidates (id, kind, artist, title, status, matched_title) VALUES (?, 'track', 'A', ?, 'resolved', ?)", (f"lib:{tid}", title, title))
+        d.execute("INSERT INTO rotation (station_id, candidate_id, category) VALUES ('rhythm-lab', ?, 'G')", (f"lib:{tid}",))
+    assert drop_non_songs(d, dry_run=True) == [("rhythm-lab", "A", "The Lung (Nai Palm) [Commentary]")]
+    assert d.execute("SELECT COUNT(*) FROM rotation").fetchone()[0] == 3                          # a dry run changes nothing
+    drop_non_songs(d, dry_run=False)
+    assert [r[0] for r in d.execute("SELECT candidate_id FROM rotation ORDER BY candidate_id")] == ["lib:8", "lib:9"]
+    assert d.execute("SELECT match_status FROM library_tracks WHERE track_id = '7'").fetchone() == ("held",)
