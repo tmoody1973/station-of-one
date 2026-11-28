@@ -238,3 +238,33 @@ def test_tracklist_shows_breaks_with_sources():  # Plan B2 Task 6: show the work
     assert 'data-kind="voice"' in html and "Host break" in html and "That was &lt;b&gt;Pace&lt;/b&gt;" in html
     assert 'href="https://music.apple.com/us/song/1"' in html and "/audio/radio/rhythm-lab/ab.mp3" in html
     assert "ONE, 1.0 FM." not in html                                   # station IDs stay off the playlist
+
+
+def test_pd_page_shows_the_schedule():  # live-playlist Task 4 (Tarik, 11:22 pm: upcoming breaks visible somewhere)
+    import json as _json
+    import re
+    from station.radio.page import render_meeting
+    db = rl_db()
+    soon = NOW + timedelta(minutes=10)
+    db.execute("INSERT INTO candidates (id, kind, artist, title, status, matched_artist, matched_title) VALUES "
+               "('sx', 'track', 'A <i>x</i>', 'T', 'resolved', 'A <i>x</i>', 'Song <b>1</b>')")
+    db.execute("INSERT OR REPLACE INTO rotation (station_id, candidate_id, category, energy) VALUES (?, 'sx', 'P', 3)", (RL,))
+    db.execute("INSERT INTO queue (station_id, starts_at, kind, candidate_id, duration_ms, category) VALUES (?,?,?,?,?,?)",
+               (RL, soon.isoformat(), "song", "sx", 240000, "P"))
+    db.execute("INSERT INTO queue (station_id, starts_at, kind, duration_ms, text, sources, audio_url) VALUES (?,?,?,?,?,?,?)",
+               (RL, (soon + timedelta(minutes=4)).isoformat(), "break", 25000, "That was Song 1.",
+                _json.dumps([{"url": "https://en.wikipedia.org/wiki/x", "name": "Wikipedia"}]), "/audio/radio/rhythm-lab/b.mp3"))
+    db.execute("INSERT INTO queue (station_id, starts_at, kind, duration_ms) VALUES (?,?,?,?)",
+               (RL, (NOW + timedelta(hours=3)).isoformat(), "id", 8000))          # beyond two hours: not listed
+    st = load_station(RL)
+    html = render_meeting(st, *onair.meeting_view(db, st), load_prefs(), schedule=onair.schedule_view(db, st, NOW, load_prefs()))
+    sched = html[html.index('id="schedule"'):]
+    assert "12:20 pm" in sched and "Song &lt;b&gt;1&lt;/b&gt;" in sched and re.search(r">P<", sched) and "energy 3" in sched
+    assert "Host break" in sched and "That was Song 1." in sched and 'href="https://en.wikipedia.org/wiki/x"' in sched
+    assert sched.count('class="slot') == 2 and "The program director" in html
+
+
+def test_station_page_links_the_schedule():
+    db = rl_db()
+    html = onair.station_page(db, load_station(RL), load_prefs(), NOW)
+    assert "The program director: schedule and music meeting" in html
