@@ -28,8 +28,8 @@
       if (it.kind === "song") {
         if (!it.song_id) continue;
         const last = segs[segs.length - 1];
-        if (last && last.kind === "songs") last.songIds.push(String(it.song_id));
-        else segs.push({ kind: "songs", songIds: [String(it.song_id)], startTime: offset, starts_at: it.starts_at });
+        if (last && last.kind === "songs") { last.songIds.push(String(it.song_id)); last.last_at = it.starts_at; }
+        else segs.push({ kind: "songs", songIds: [String(it.song_id)], startTime: offset, starts_at: it.starts_at, last_at: it.starts_at });
       } else if (it.kind === "news") {
         if (fresh) segs.push({ kind: "voice", src: newscast.src, offset, starts_at: it.starts_at, news: true });
       } else if (it.audio_url) {

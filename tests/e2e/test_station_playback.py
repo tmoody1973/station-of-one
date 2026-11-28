@@ -396,6 +396,6 @@ def test_unvoiced_item_is_skipped(make_page):  # B2 Focus 3
 
 def test_join_mid_break(make_page):  # B2 Focus 4
     pg = voiced_page(make_page, voiced_queue(break_at_s=98, wav_s=6, start_ago_s=100), wav_s=6)
-    tune(pg)
-    pg.wait_for_function(VOICE, timeout=5000)
+    pg.locator("#tune").click()                                        # tune() waits for Apple Music; here the voice comes first
+    pg.wait_for_function(VOICE, timeout=8000)
     assert pg.evaluate("() => window.wone.state().voiceTime") >= 1 and calls(pg, "setQueue") == []

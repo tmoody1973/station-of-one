@@ -130,7 +130,7 @@
     if (my !== gen || !station) return;
     const seg = segs.shift();
     if (!seg) { rejoinAt = Date.now() + 30000; return join(true, my); }  // the published queue ran out: fetch what's next
-    lastStart = Date.parse(seg.starts_at);
+    lastStart = Date.parse(seg.last_at || seg.starts_at);  // a block resumes after its last song, never inside it (I5)
     audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time
     if (seg.kind === "songs") {
       inVoice = false; voice.pause();

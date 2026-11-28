@@ -32,12 +32,12 @@ test("join mid-break", () => {
   assert.equal(s[0].kind, "voice");
   assert.equal(s[0].src, "/audio/radio/x/b.mp3");
   assert.equal(s[0].offset, 12);
-  assert.deepEqual(s[1], { kind: "songs", songIds: ["3", "4"], startTime: 0, starts_at: at(678) });
+  assert.deepEqual(s[1], { kind: "songs", songIds: ["3", "4"], startTime: 0, starts_at: at(678), last_at: at(903) });
 });
 
 test("join mid-song", () => {
   const s = liveSegments(Q, T0 + (413 + 30) * 1000, FRESH);
-  assert.deepEqual(s[0], { kind: "songs", songIds: ["2"], startTime: 30, starts_at: at(413) });
+  assert.deepEqual(s[0], { kind: "songs", songIds: ["2"], startTime: 30, starts_at: at(413), last_at: at(413) });
 });
 
 test("stale news is skipped", () => {
