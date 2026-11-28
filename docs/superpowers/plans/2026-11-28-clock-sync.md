@@ -4,7 +4,7 @@
 
 **Goal:** What a listener hears starts at the time the page shows, within a few seconds: breaks are scheduled at their real length, the leftover before :00/:30 is filled with music, and the player follows the clock at every boundary.
 
-**Architecture:** Evidence (Nov 28, 5:43 am): Tarik's Rhythm Lab player played "Kerala" (scheduled 6:30:08) at 5:43, 47 minutes early. The player never waits and never re-syncs: when a segment ends early (a break shorter than its planned slot, a skipped song, an unvoiced slot) the next starts at once, and nothing pulls it back. Planned-but-unplayed break time alone measured 16-93 s per hour on Rhythm Lab. Two fixes: the player rejoins live at the first segment boundary after each top of the hour when it is more than 30 s off; the schedule replaces each voiced item's planned length with its real length.
+**Architecture:** Evidence (Nov 28, 5:43 am): Tarik's Rhythm Lab player played "Kerala" (scheduled 6:30:08) at 5:43, 47 minutes early. The player never waits and never re-syncs: when a segment ends early (a break shorter than its planned slot, a skipped song, an unvoiced slot) the next starts at once, and nothing pulls it back. Planned-but-unplayed break time alone measured 16-93 s per hour on Rhythm Lab. Three fixes: the schedule carries each voiced item's real length; the leftover before each :00/:30 is back-timed with a song that fits; the player follows the clock at every segment boundary (wait a few seconds, seek in, or rejoin live).
 
 **Tech Stack:** `templates/shell.js`, `templates/live.js`, Python (`station/radio/voicing.py`), Playwright e2e with the stand-in MusicKit.
 
@@ -20,11 +20,11 @@
 
 ## Review Focus
 
-1. **Player 47 minutes ahead at 5:59:** the first boundary after 6:00 rejoins the clock's segment (Task 1 `test_rejoins_live_after_the_hour`).
-2. **Player within 30 s of the clock:** no rejoin, nothing interrupted (Task 1 `test_no_rejoin_when_close`).
-3. **Player behind the clock** (buffering, a paused tab): the same rejoin catches it up (Task 1 `test_rejoins_when_behind`).
-4. **The tab was asleep across several hours:** one rejoin, not one per missed hour (Task 1 `test_one_rejoin_per_hour`).
-5. **A voiced item's real length differs from its slot:** the published queue carries the real length; items after it in the same hour move up so the plan matches what plays (Task 2 `test_real_lengths_retime_the_hour`).
+1. **Player 47 minutes ahead:** the next boundary rejoins the clock's segment (Task 2 `test_rejoins_when_far_off`, e2e `test_player_rejoins_the_clock`).
+2. **Player a few seconds early:** a short wait, never more than 10 s of silence (Task 2 `test_waits_a_few_seconds_when_early`).
+3. **Player behind** (buffering, a slow load): the next item starts that far in (Task 2 `test_seeks_in_when_late`).
+4. **Leftover before :00/:30 after real lengths:** filled with a fitting song, never dead air (Task 1 `test_leftover_before_a_fixed_point_gets_a_song`; Task 2 `test_plays_through_leftover_near_a_fixed_point`).
+5. **A voiced item shorter than its slot:** the songs after it move up and the fixed point doesn't move (Task 1 `test_real_lengths_retime_the_hour`).
 
 ---
 
