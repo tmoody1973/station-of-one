@@ -227,3 +227,14 @@ def test_older_page_gets_the_strip_styles(page):  # Tarik, 5:27 pm: ONE Jazz bui
     page.wait_for_selector("#wone-strip .st-name", timeout=10000)
     page.wait_for_timeout(500)
     assert page.evaluate("() => getComputedStyle(document.querySelector('#wone-strip .st-name')).backgroundColor") == normal
+
+
+
+def test_past_newscasts_sit_under_news(page):  # Tarik, Nov 28 5:56 am: past newscasts on the News page, News marked in the menu
+    nav = "() => [...document.querySelectorAll('header.site nav a')].filter(a => a.getAttribute('aria-current') === 'page').map(a => a.textContent)"
+    assert page.evaluate(nav) == ["News"]
+    _click(page, "main #past a.btn-line")                                 # a day button on the News page
+    assert page.evaluate("() => location.pathname").endswith("/archive/index.html")
+    assert page.evaluate(nav) == ["News"] and "Past newscasts" in page.locator("main .crumb").text_content()
+    _click(page, "#wone-strip a.st-now[href*='/radio/jazz/']")
+    assert page.evaluate(nav) == ["Music"]                                 # the marker follows page swaps

@@ -143,13 +143,13 @@ def audio_path(n: dict) -> str:
 
 def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None,
                  table: dict | None = None, corrections: dict | None = None, extras: dict | None = None,
-                 picks: dict | None = None, table_note: str | None = None) -> str:
+                 picks: dict | None = None, table_note: str | None = None, past_days: list[dict] | None = None) -> str:
     if table:  # the episode's own date: the newest published one may be days old (Tarik, Nov 28)
         table = {**table, "day_label": datetime.strptime(table["day"], "%Y-%m-%d").strftime("%A, %B %-d")}
     if picks is not None and any("embed" not in p for p in picks.get("picks", [])):
         picks = {**picks, "picks": [{**p, "embed": embed_url(p)} for p in picks["picks"] if embed_url(p)]}
     return env().get_template("front.html").render(**_context(current, today, prefs, "front", extras),
-                                                   video_url=video_url, table=table, corrections=corrections, picks=picks, table_note=table_note)
+                                                   video_url=video_url, table=table, corrections=corrections, picks=picks, table_note=table_note, past_days=past_days or [])
 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None, extras: dict | None = None) -> str:
@@ -339,6 +339,12 @@ def table_episodes(table_root: Path) -> list[dict]:
             if (f.parent / "published").exists()]  # never link an episode that failed to upload
 
 
+def past_days(runs_root: Path, current_id: str) -> list[dict]:
+    """Days before this newscast's day that have aired newscasts, newest first, for the News page's buttons."""
+    days = sorted({n["id"][:10] for n in all_newscasts(Path(runs_root), current=current_id) if n["id"][:10] < current_id[:10]}, reverse=True)
+    return [{"id": d, "label": datetime.strptime(d, "%Y-%m-%d").strftime("%a, %b %-d")} for d in days]
+
+
 def table_note(day: str, table_root: Path | None = None) -> str | None:
     """Why there is no Table episode today, when the day's attempt ended without one (else None)."""
     root = Path(table_root or os.environ.get("STATION_TABLE", "data/table"))
@@ -413,6 +419,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     extras = json.loads(extras_file.read_text()) if extras_file.exists() else None
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
                                   table=episodes[0] if episodes else None, table_note=table_note(day),
+                                  past_days=past_days(runs_root, current["id"]),
                                   corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras,
                                   picks=picks))
     story_pages = []

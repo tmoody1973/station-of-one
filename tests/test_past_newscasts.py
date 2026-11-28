@@ -70,9 +70,31 @@ def test_archive_links_and_plays(tmp_path):
     assert "/audio/2026-11-26T11.mp3" in srcs
 
 
-def test_front_page_links_the_archive():
-    n = newscast()
-    assert 'href="/archive/index.html"' in render_front(n, [n], PREFS)
+def test_front_page_past_newscasts_section():  # past newscasts live on the News page, by day
+    n = newscast("2026-11-28T07")
+    html = render_front(n, [n], PREFS, past_days=[{"id": "2026-11-27", "label": "Fri, Nov 27"}, {"id": "2026-11-26", "label": "Thu, Nov 26"}])
+    assert '<span class="lbl">Past newscasts</span>' in html and "Every hour the station has aired" in html
+    assert 'href="/archive/index.html#2026-11-27">Fri, Nov 27</a>' in html and 'href="/archive/index.html#2026-11-26">Thu, Nov 26</a>' in html
+    assert '<span class="lbl">Past newscasts</span>' not in render_front(n, [n], PREFS)          # none yet: no empty section
+
+
+def test_page_step_lists_earlier_days(tmp_path):
+    from station.steps.page import page
+    root = runs(tmp_path, "2026-11-25T17", "2026-11-26T16", "2026-11-26T17")
+    page(root / "2026-11-26T17", PREFS, runs_root=root)
+    front = (root / "2026-11-26T17" / "site" / "index.html").read_text()
+    assert 'href="/archive/index.html#2026-11-25">Wed, Nov 25</a>' in front and "#2026-11-26\"" not in front   # earlier days only
+
+
+def test_hour_page_links_its_day_in_past_newscasts():
+    from station.steps.page import render_hour
+    html = render_hour(newscast("2026-11-26T16"), PREFS)
+    assert 'href="/archive/index.html#2026-11-26">\u2190 Past newscasts</a>' in html
+
+
+def test_archive_page_sits_under_news():
+    html = render_archive([newscast("2026-11-26T11")], PREFS)
+    assert '<a href="/index.html">News</a> \u203a Past newscasts' in html
 
 
 def test_archive_path():

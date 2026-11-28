@@ -20,7 +20,8 @@ run = Path(sys.argv[1])
 prefs, gw = load_prefs(), Gateway()
 n = json.loads((run / "newscast.json").read_text())
 extras = json.loads((run / "stories.json").read_text()) if (run / "stories.json").exists() else None
-pages = {"index.html": pg.render_front(n, [n], prefs, extras=extras), "settings/index.html": pg.render_settings(prefs, {})}
+pages = {"index.html": pg.render_front(n, [n], prefs, extras=extras, past_days=pg.past_days(Path("data/runs"), n["id"])),
+         "archive/index.html": pg.render_archive(pg.all_newscasts(Path("data/runs")), prefs), "settings/index.html": pg.render_settings(prefs, {})}
 story_key = pg.story_path(n["id"], 0, n["stories"][0]["headline"])
 pages[story_key] = pg.render_story(n, n["stories"][0], (extras or {}).get(n["stories"][0]["id"]), prefs)
 latest = json.loads(Path("data/radio/uk-jazz/latest.json").read_text())

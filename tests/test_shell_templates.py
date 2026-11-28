@@ -122,6 +122,7 @@ def test_music_link_goes_to_the_hub():  # music hub plan, Task 1
         assert '<a href="/music/index.html">Music</a>' in html, name
 
 
-def test_archive_in_the_menu():  # Tarik, Nov 28 12:08 am: no menu link to past newscasts
+def test_menu_names_destinations_only():  # Tarik, Nov 28 5:56 am: "Archive" alone doesn't say what it archives
     for name, html in pages().items():
-        assert '<a href="/archive/index.html">Archive</a>' in html, name
+        assert '<nav><a href="/index.html">News</a><a href="/music/index.html">Music</a><a href="/control-room/index.html">Control room</a>' \
+               '<a href="/settings/index.html">Settings</a></nav>' in html, name
