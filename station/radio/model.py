@@ -76,7 +76,8 @@ class StationConfig:
     styles: dict[str, list[str]] | None = None  # jazz: each style and the styles it falls back to (clock slots name styles)
     retired: bool = False  # kept as a config, never run or listed
     deepen: dict[str, int] | None = None  # ONE Jazz: playable-song targets for thin styles
-    replaces: str | None = None  # a retired station whose old page now points here  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
+    replaces: str | None = None  # a retired station whose old page now points here
+    host: dict | None = None  # Plan B2: the station's host voice {"voice", "language", "style"}  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
 
     def clock_for(self, local_hour: int) -> Clock:
         return next(c for c in self.clocks if c.covers(local_hour))
@@ -93,7 +94,7 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
                                             tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
                          separation=d.get("separation"), meeting=d.get("meeting"), shape=d.get("shape"),
                          programmer=d.get("programmer", "sampler"), styles=d.get("styles"), retired=bool(d.get("retired")),
-                         deepen=d.get("deepen"), replaces=d.get("replaces"))
+                         deepen=d.get("deepen"), replaces=d.get("replaces"), host=d.get("host"))
 
 
 SCHEMA = """
@@ -127,6 +128,10 @@ def open_radio(db: sqlite3.Connection) -> None:
     for col in ("opener INTEGER DEFAULT 0", "closer INTEGER DEFAULT 0", "source_note TEXT", "tags TEXT", "style TEXT"):
         if col.split()[0] not in have:  # databases created before the column existed
             db.execute(f"ALTER TABLE rotation ADD COLUMN {col}")
+    have_q = {r[1] for r in db.execute("PRAGMA table_info(queue)")}
+    for col in ("text TEXT", "sources TEXT", "audio_url TEXT", "audio_ms INTEGER"):  # Plan B2: the voiced spoken items
+        if col.split()[0] not in have_q:
+            db.execute(f"ALTER TABLE queue ADD COLUMN {col}")
     db.commit()
 
 

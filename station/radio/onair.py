@@ -17,6 +17,8 @@ from station.radio.page import (EXPLAINER_PATH, PLAYLISTS_PATH, explainer_path, 
 from station.radio.program import Block
 from station.radio.scheduler import schedule_hour
 from station.radio.tags import tag_songs
+from station.radio.cards import facts_for, sonar_facts
+from station.radio.voicing import voice_spoken
 from station.runs import RUNS_ROOT
 from station.steps.publish import cache_control, put_object
 from station.store import record_decision
@@ -65,11 +67,11 @@ def window(db: sqlite3.Connection, station_id: str, start: datetime, end: dateti
     rows = db.execute(
         "SELECT q.starts_at, q.kind, q.song_id, q.duration_ms, q.category, q.note, q.source_url, q.candidate_id, "
         "COALESCE(c.matched_artist, c.artist), COALESCE(c.matched_title, c.title), c.album, c.release_date, c.apple_url, "
-        "c.artwork_url, c.preview_url FROM queue q LEFT JOIN candidates c ON c.id = q.candidate_id "
+        "c.artwork_url, c.preview_url, q.text, q.sources, q.audio_url, q.audio_ms FROM queue q LEFT JOIN candidates c ON c.id = q.candidate_id "
         "WHERE q.station_id = ? AND q.starts_at >= ? AND q.starts_at < ? ORDER BY q.starts_at",
         (station_id, start.isoformat(), end.isoformat())).fetchall()
     keys = ("starts_at", "kind", "song_id", "duration_ms", "category", "note", "source_url", "candidate_id", "artist", "title",
-            "album", "release_date", "apple_url", "artwork_url", "preview_url")
+            "album", "release_date", "apple_url", "artwork_url", "preview_url", "text", "sources", "audio_url", "audio_ms")
     return [dict(zip(keys, r)) for r in rows]
 
 
@@ -125,10 +127,13 @@ def station_page(db: sqlite3.Connection, station: StationConfig, prefs: Prefs, n
     now = now.astimezone(UTC)
     tz = ZoneInfo(prefs.station.timezone)
     hour0 = now.replace(minute=0, second=0, microsecond=0)
-    songs = [it for it in _timed(window(db, station.id, now - timedelta(hours=PAGE_BACK_HOURS), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
-             if it["kind"] == "song"]
+    rows = [it for it in _timed(window(db, station.id, now - timedelta(hours=PAGE_BACK_HOURS), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
+            if it["kind"] == "song" or (it["kind"] in ("break", "backsell") and it.get("audio_url"))]  # breaks show their work (B2)
+    for it in rows:
+        it["sources"] = json.loads(it.get("sources") or "[]") if it["kind"] != "song" else []
+    songs = [it for it in rows if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
-    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), list(reversed(songs)))
+    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), list(reversed(rows)))
     return render_sampler(station, block, counts or {}, prefs, on_now=on_now)
 
 
@@ -166,6 +171,11 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     for k in range(AHEAD_HOURS + 1):  # this hour and the next two; an hour already scheduled is left alone
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
         schedule_hour(station, db, local, news_for_hour(station, local, prefs, news))
+    web = (lambda g, st, song: sonar_facts(g, prefs.perplexity, song)) if prefs.perplexity else None  # check 23
+    voiced = voice_spoken(gw, db, station, prefs, now,  # Plan B2: IDs, teases and breaks in the host's voice
+                          facts=lambda cid: facts_for(gw, db, station, cid, now, sonar=web))
+    counts["voiced"] = voiced["voiced"]
+    notes += voiced["notes"]
     items = _timed(window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)

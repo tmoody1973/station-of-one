@@ -223,3 +223,18 @@ def test_jazz_pd_page_shows_styles():
     html = render_meeting(st, [], [], load_prefs(), styles={"heritage": 86, "vocal": 52})
     assert 'data-style="heritage"' in html and "86" in html and "150" in html
     assert 'href="/radio/jazz/how-it-works/index.html"' in html
+
+
+def test_tracklist_shows_breaks_with_sources():  # Plan B2 Task 6: show the work (PRD: the tracklist links the break's sources)
+    import json as _json
+    db = rl_db()
+    at = (NOW - timedelta(minutes=5)).isoformat()
+    db.execute("INSERT INTO queue (station_id, starts_at, kind, duration_ms, text, sources, audio_url, audio_ms) VALUES (?,?,?,?,?,?,?,?)",
+               (RL, at, "break", 25000, "That was <b>Pace</b>. It's on Source.",
+                _json.dumps([{"url": "https://music.apple.com/us/song/1", "name": "Apple Music"}]), "/audio/radio/rhythm-lab/ab.mp3", 21000))
+    db.execute("INSERT INTO queue (station_id, starts_at, kind, duration_ms, text, audio_url, audio_ms) VALUES (?,?,?,?,?,?,?)",
+               (RL, (NOW - timedelta(minutes=9)).isoformat(), "id", 8000, "Rhythm Lab. ONE, 1.0 FM.", "/audio/radio/rhythm-lab/id.mp3", 6000))
+    html = onair.station_page(db, load_station(RL), load_prefs(), NOW)
+    assert 'data-kind="voice"' in html and "Host break" in html and "That was &lt;b&gt;Pace&lt;/b&gt;" in html
+    assert 'href="https://music.apple.com/us/song/1"' in html and "/audio/radio/rhythm-lab/ab.mp3" in html
+    assert "ONE, 1.0 FM." not in html                                   # station IDs stay off the playlist

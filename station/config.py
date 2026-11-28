@@ -88,6 +88,7 @@ class Prefs:
     hosting: Hosting
     table_voices: TableVoices
     music_picks: MusicPicks = MusicPicks()
+    perplexity: str | None = None  # Plan B2: the Perplexity connector's id (check 23); none = no web facts
 
 
 def _need(d: dict[str, Any], key: str, where: str) -> Any:
@@ -134,4 +135,5 @@ def load_prefs(path: Path = DEFAULT_PREFS) -> Prefs:
     music_picks = MusicPicks(bandcamp_labels=tuple(mp.get("bandcamp_labels", ())),
                              youtube_channels=tuple(mp.get("youtube_channels", ())), count=int(mp.get("count", 3)))
     return Prefs(station=station, voices=voices, thresholds=thresholds, beats=beats, writer=writer, hosting=hosting,
-                 table_voices=table_voices, music_picks=music_picks)
+                 table_voices=table_voices, music_picks=music_picks,
+                 perplexity=(d.get("perplexity") or {}).get("connection"))

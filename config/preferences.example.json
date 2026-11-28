@@ -122,5 +122,8 @@
     ],
     "call_sign": "ONE"
   },
-  "feedback": []
+  "feedback": [],
+  "perplexity": {
+    "connection": "<your Perplexity custom_api connector id>"
+  }
 }

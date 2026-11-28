@@ -30,7 +30,10 @@ pages["radio/uk-jazz/index.html"] = render_sampler(load_station("uk-jazz"), Bloc
 import sqlite3 as _sqlite3  # the Rhythm Lab tracklist and the Playlists page, from the real schedule (read only)
 from datetime import UTC as _UTC, datetime as _dt
 from station.radio.onair import playlists_page, station_page
-_db = _sqlite3.connect("data/station.db")
+_db = _sqlite3.connect(":memory:")  # a copy of the real schedule: never write to the live database from a test script
+_sqlite3.connect("file:data/station.db?mode=ro", uri=True).backup(_db)
+from station.radio.model import open_radio as _open_radio
+_open_radio(_db)  # newer columns (Plan B2) on the copy only
 pages["radio/rhythm-lab/index.html"] = station_page(_db, load_station("rhythm-lab"), prefs, _dt.now(_UTC))
 pages["radio/jazz/index.html"] = station_page(_db, load_station("jazz"), prefs, _dt.now(_UTC))  # ONE Jazz, 24/7 since Nov 27
 pages["playlists/index.html"] = playlists_page(_db, _dt.now(_UTC), prefs)

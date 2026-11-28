@@ -19,6 +19,7 @@ main.wrap{padding-top:34px;padding-bottom:56px;display:grid;grid-template-column
 .list{display:flex;flex-direction:column}
 .trk{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:16px;align-items:center;border-top:2px solid var(--ink);padding:14px 0}
 .trk img{width:72px;height:72px;border:2px solid var(--ink);object-fit:cover;background:var(--blue)}
+.trk .vb{width:72px;height:72px;border:2px solid var(--ink);background:var(--yellow);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:lowercase}
 .trk h3{margin:0;font-size:19px;line-height:1.2}.trk .by{font-size:15px;color:var(--ink-2)}
 .trk .note{font-size:13px;color:var(--muted);margin-top:4px}.trk .note a{color:var(--muted)}
 .trk .act{display:flex;flex-direction:column;gap:8px;align-items:stretch}
@@ -58,6 +59,14 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
   <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">{% if clock %}Playlist{% else %}This set{% endif %}</span></h2>
   {% if clock %}<ol class="tracklist" data-station-src="/data/radio/{{ st.id }}/queue.json">{% endif %}
   {% for t in block.tracks %}
+  {% if clock and t.kind in ("break", "backsell") %}
+  <li class="trk brk" data-kind="voice" data-starts="{{ t.starts_at }}" data-ends="{{ t.ends_at }}" data-at="{{ t.at }}" data-title="Host break" data-by="{{ st.name }}">
+    <span class="vb" aria-hidden="true">on air</span>
+    <div><h3><span class="at">{{ t.at }}</span> Host break</h3><div class="by">{{ t.text }}</div>
+      {% if t.sources %}<div class="note">Source{{ "s" if t.sources | length > 1 else "" }}: {% for s in t.sources %}<a href="{{ s.url | safe_url }}" rel="noopener" target="_blank">{{ s.name }}</a>{{ ", " if not loop.last }}{% endfor %}</div>{% endif %}</div>
+    <div class="act"><button class="pv" {{ play(t.audio_url if (t.audio_url or "").startswith("/audio/") else "#", "Host break · " ~ st.name, st.name, 0, [], "preview") }} aria-label="Hear the host break">▶ Hear it</button></div>
+  </li>
+  {% else %}
   <{{ "li" if clock else "div" }} class="trk"{% if clock %} data-song="{{ t.song_id }}" data-starts="{{ t.starts_at }}" data-ends="{{ t.ends_at }}" data-at="{{ t.at }}" data-title="{{ t.title }}" data-by="{{ t.artist }}{% if t.note %} · {{ t.note }}{% endif %}" data-apple="{{ t.apple_url | safe_url }}"{% endif %}>
     <img src="{{ t.artwork_url | safe_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div><h3>{% if t.at %}<span class="at">{{ t.at }}</span> {% endif %}{{ t.title }}</h3><div class="by">{{ t.artist }} · {{ t.album }}{% if t.release_date %} · {{ t.release_date[:4] }}{% endif %}</div>
@@ -67,6 +76,7 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
       <a class="am" href="{{ t.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a>
     </div>
   </{{ "li" if clock else "div" }}>
+  {% endif %}
   {% else %}
   <p>{% if st.programmer == "clock" %}Nothing scheduled yet: the program director fills the next two hours on each run.{% else %}No set yet: nothing has matched on Apple Music this hour.{% endif %}</p>
   {% endfor %}

@@ -376,3 +376,17 @@ Spike `spikes/check20_feeds.py`: one run of the stations' Apify RSS actor (cap $
 ### 22. ONE Jazz: matching the jazz deep cuts, and Apple's new-release lookups (Nov 27)
 - **Deep cuts** (`scripts/jazz_golive.py`, rehearsed on a database copy, 1 min 18 s): of the core jazz tracks not yet matched, 651 resolved, 16 held, 30 not on Apple Music. Playable core jazz: 948 (was 297). By style: contemporary 293, uk_jazz 181, spiritual_avant 152, jazz_funk_fusion 138, heritage 86, vocal 52, latin_brazilian_afro 46.
 - **Apple Music API, live through the connector** (Nubya Garcia, id 1092350492): `search?types=artists` 200; `artists/{id}/view/latest-release` 200 ("Set It Free (feat. Richie) [musclecars Remix] - Single", 2026-11-13); `view/top-songs` 200; `view/full-albums` 200; `artists/{id}/albums` 200. Context7 (developer_apple_applemusicapi) documents the `/view/{name}` mechanism and the albums relationship; `latest-release` and `top-songs` were confirmed live, not in the fetched docs.
+
+### 24. Plan B2: a real voicing rehearsal, and calibrating Jev's "beyond the facts" check (Nov 27, ~9:40 pm)
+- **Rehearsal** (`/tmp/rehearsal-b2.db`, a copy; audio saved on the Sprite, nothing published): Rhythm Lab 7 spoken items voiced in 28 s, ONE Jazz 6 in 32 s, no errors; break MP3s 8.4-15.1 s, IDs 5.0-5.6 s; the two identical top-of-hour IDs shared one file.
+- **Every break was cut** to the plain back-announce: Jev answered 0.94 that a faithful script stated things beyond its facts, because Jev wasn't shown the playlist (the songs the host names). Fixed: Jev now sees the playlist.
+- **Still ~0.75 on faithful scripts**, so the threshold was calibrated. Same facts ("One Hundred Ways is on Quincy Jones & James Ingram's album The Dude, released in 1981."), two answers each: three faithful scripts 0.70/0.69, 0.72/0.68, 0.70/0.74; wrong year 0.97/0.97; wrong album 0.96/0.97; invented studio 0.98/0.98. Cut at **0.85**. A flipped question ("is every claim supported?") scored the faithful script 0.24 and the invented one 0.02: separated, but less clearly.
+- **Recalibrated after the question changed** (facts sent as fact+source pairs; "or credit a fact to the wrong source"): faithful 0.72/0.74, 0.66/0.66, 0.74/0.67; wrong year 0.98/0.98; wrong album 0.98/0.98; wrong source ("according to Pitchfork") 0.93/0.96; invented studio 0.98/0.98. 0.85 still separates.
+- **Second rehearsal** (fresh copy, the playlist fix): 9 of 10 breaks kept their cited fact, e.g. "According to Apple Music, Brotha is on Angie Stone's album Mahogany Soul…"; breaks 15-24 s.
+
+### 23. Perplexity Sonar through the Sprites Custom API connector (Nov 27, 10:30 pm)
+Spike `spikes/perplexity_check.py` (scratch), run on the Sprite. Connector `Perplexity` (custom_api `oazmIvwPutdcMvFs9wauvg`, Bearer header), added by Tarik.
+- `POST /v1/sonar`, model `sonar`, `response_format` json_schema `{facts: [{text, citation}]}`: **200 in 2.6 s**. Response keys: `choices, citations, created, id, model, object, search_results, usage`; `search_context_size` "low" by default.
+- Angie Stone "Brotha": 5 facts, every `citation` number mapped to `citations[n-1]` (Wikipedia, Genius, a Discogs archive copy): J Records 2001; produced by Raphael Saadiq with Jake and the Phatman; players; studios; the original has no sample (the Part II remix does).
+- **Cost from `usage.cost`: $0.00519** (request $0.0025 + tokens). ~240 breaks/day for two stations ≈ $1.25/day before caching; a track's card is fetched once.
+- Not tried: `/chat/completions` (the first path worked).
