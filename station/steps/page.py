@@ -261,6 +261,15 @@ def render_control_room(run_log: dict, decisions: list[dict], newscast: dict, pr
         floor=round(prefs.thresholds.air_min_probability * 100))
 
 
+MUSIC_HUB_PATH = "music/index.html"
+
+
+def render_hub(stations: list[dict], picks: dict | None, prefs: Prefs) -> str:
+    """The Music hub (music hub plan): the strip's music stations (not News), today's picks, the Playlists page."""
+    music = [s for s in stations if s.get("page", "").startswith("/radio/")]
+    return env().get_template("hub.html").render(stations=music, picks=picks, station=prefs.station)
+
+
 def render_settings(prefs: Prefs, beat_counts: dict[str, tuple[int, int]]) -> str:
     return env().get_template("settings.html").render(
         prefs=prefs, station=prefs.station, beat_counts=beat_counts,
@@ -348,14 +357,18 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     from station.steps.stations import stations_json
     strip = site / "data" / "stations.json"  # the station strip's data
     strip.parent.mkdir(parents=True, exist_ok=True)
-    strip.write_text(json.dumps(stations_json(prefs, current)))
+    strip_data = stations_json(prefs, current)
+    strip.write_text(json.dumps(strip_data))
+    hub = site / MUSIC_HUB_PATH  # the Music hub; its on-now lines are filled live by shell.js
+    hub.parent.mkdir(parents=True, exist_ok=True)
+    hub.write_text(render_hub(strip_data["stations"], picks, prefs))
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
     feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0, episodes))
     for asset in ("cover-one.png", "logo-one.png"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
-    written = [front, hour, player, live_js, shell_css, strip, feed, *story_pages]
+    written = [front, hour, player, live_js, shell_css, strip, hub, feed, *story_pages]
     mk = musickit_config(musickit_token)
     if mk:  # public by design: MusicKit on the Web needs it in the browser; Apple honours it only from our origin
         mk_path = site / "data" / "musickit.json"

@@ -184,17 +184,7 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
     <h2 class="marker ci"><span class="num">5</span><span class="lbl">Music picks</span></h2>
     <p style="margin:0;color:var(--ink-2)">New releases from the labels and channels the station follows, ranked by Jev. Players are the artists' official Bandcamp and YouTube embeds and load only when you tap Play.</p>
     <div class="cards">
-    {% for p in picks.picks %}
-      <article class="card pick">
-        <div class="body">
-          <span class="tag">{{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} · {{ p.source }}</span>
-          <h3>{% if p.page %}<a href="{{ p.page }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}</h3>
-          <span style="font-weight:600">{{ p.artist }}</span>
-          <div class="row"><button class="btn-line" {{ play(p.embed, p.artist ~ ": " ~ p.title, "Music pick · " ~ p.source, 0, [], "embed") }}>Play here</button>
-            <a href="{{ p.url | safe_url }}" rel="noopener" target="_blank">on {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }}</a></div>
-        </div>
-      </article>
-    {% endfor %}
+    {% include "_picks.html" %}
     </div>
   </section>
   {% endif %}

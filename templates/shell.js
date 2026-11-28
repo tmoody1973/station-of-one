@@ -301,7 +301,15 @@
     const nx = sched[i + 1];
     return { now: { at: sched[i].at, title: songLine(sched[i]), art: sched[i].art }, next: nx ? { at: nx.at, title: songLine(nx), art: nx.art } : null };
   }
+  function fillNow() {  // the Music hub's "on now" lines: the same answer as the strip (music hub plan, Task 2)
+    if (!stripData) return;  // not loaded yet: the page keeps the text it was built with
+    document.querySelectorAll("main [data-now-of]").forEach((a) => {
+      const st = (stripData.stations || []).find((x) => x.id === a.dataset.nowOf);
+      if (st) a.textContent = stationNow(st).now.title || "";
+    });
+  }
   function renderStrip() {
+    fillNow();
     const row = stripEl && stripEl.querySelector(".strip-row");
     if (!row || !stripData) return;
     let panel = stripEl.querySelector(".strip-panel");
@@ -411,6 +419,7 @@
   markNow();
   setInterval(markNow, 30000);
   document.addEventListener("wone:page", markNow);
+  document.addEventListener("wone:page", fillNow);
   document.addEventListener("wone:song", markNow);
 
   // The page keeps clear of the bar, whatever its height (a docked video makes it tall on a phone).
