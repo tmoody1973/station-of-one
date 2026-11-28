@@ -27,7 +27,7 @@
   // (The bar's shared <audio> means "the listener chose something else" and would leave the station.)
   const voice = new Audio();
   voice.preload = "auto";
-  let segs = [], inVoice = false, segTok = 0;  // segTok: only the segment playing now may advance the player (review C2)
+  let segs = [], inVoice = false, segTok = 0, starting = false;  // segTok: only the segment playing now may advance the player (review C2)
   const SILENT = "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
   const playing = () => (mk.isPlaying ?? (mk.playbackState === MusicKit.PlaybackStates.playing));  // isPlaying unconfirmed (I6)
@@ -135,8 +135,9 @@
     audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time
     if (seg.kind === "songs") {
       inVoice = false; voice.pause();
-      rejoinAt = Date.now() + 5000;  // while Apple loads the block it may still say "completed": don't advance again (I1)
+      starting = true;  // while Apple loads the block it may still say "completed": don't advance again (I1)
       try { await mk.setQueue({ songs: seg.songIds, startTime: seg.startTime, startPlaying: true }); } catch (e) { await failed(e); }
+      finally { starting = false; }
       return;
     }
     if (seg.kind === "news") {  // the newscast for this slot's hour, chosen now from the strip's latest data (C1)
@@ -200,7 +201,7 @@
     fill.style.width = d ? `${(t / d) * 100}%` : "0";
     timeEl.textContent = `${fmt(t)} / ${fmt(d)}`;
     icon.setAttribute("d", (inVoice ? !voice.paused : playing()) ? PAUSE : PLAY);
-    if (!inVoice && window.MusicKit && mk.playbackState === MusicKit.PlaybackStates.completed && Date.now() >= rejoinAt) {
+    if (!inVoice && !starting && window.MusicKit && mk.playbackState === MusicKit.PlaybackStates.completed && Date.now() >= rejoinAt) {
       rejoinAt = Date.now() + (segs.length ? 3000 : 30000);  // once per finish; an empty queue retries every 30 s at most (I4)
       segs.length ? nextSegment() : join(true);
     }
