@@ -13,7 +13,8 @@ from station.radio.meeting import MODEL as JEV
 from station.radio.model import StationConfig
 from station.store import record_decision
 
-CUT_AT = 0.3  # Jev's probability that a script states something beyond its facts, at or above which it is cut
+CUT_AT = 0.85  # Jev's probability that a script states something beyond its facts, at or above which it is cut. Check 24:
+# faithful scripts scored 0.68-0.74, scripts with a wrong year, wrong album or invented place 0.96-0.98 (12 answers)
 MIN_WORDS, MAX_WORDS = 25, 110
 RULES = ("You are the on-air host of {name}, a music station programmed by an agent. Write one voice break of 55 to 75 "
          "words, plain spoken English, no lists, no URLs, no stage directions. Back-announce what just played (artist and "

@@ -9,7 +9,7 @@
 2. **Only the station's own facts** (Apple Music's album and year, the post where the record was found). Free, already linked. Cost: plainer breaks that repeat the same kinds of fact.
 3. **No facts: back-announces only.** Nothing can be wrong. Cost: a host with nothing to say.
 
-**What we chose and why** — Option 1. Tarik chose Perplexity (Nov 27, 9 pm) and a host per station. Claude built the station's own facts first, so breaks work and cite sources before Perplexity is connected, and keep working when it fails. Jev, not the writer, judges whether a script went beyond its facts: at 0.3 or more the script is replaced by a plain back-announce.
+**What we chose and why** — Option 1. Tarik chose Perplexity (Nov 27, 9 pm) and a host per station. Claude built the station's own facts first, so breaks work and cite sources before Perplexity is connected, and keep working when it fails. Jev, not the writer, judges whether a script went beyond its facts: at 0.85 or more the script is replaced by a plain back-announce. The plan said 0.3; a rehearsal cut every break, and a calibration (check 24) found Jev scores faithful scripts about 0.7 and scripts with a wrong year, album or place about 0.97.
 
 **What we gave up**
 - The hosts' voices can't be chosen by accent. Our Gemini connector only reaches Gemini's 30 built-in voices: Google's voice library and designed voices are refused ("endpoint is not supported by the Google Gemini connector"). ONE Jazz's host reads with British English as its language setting; whether it sounds British is a matter of ear.

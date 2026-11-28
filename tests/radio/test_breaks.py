@@ -45,10 +45,10 @@ def test_break_names_what_played_and_one_fact():
 
 def test_script_beyond_facts_is_cut():  # B2 Focus 2: Jev says the script claims more than its facts
     d = db()
-    out = script_for(gw(beyond=0.4), d, ST, item("break"), PREV, NEXT, PREFS, FACTS)
+    out = script_for(gw(beyond=0.96), d, ST, item("break"), PREV, NEXT, PREFS, FACTS)
     assert out["sources"] == [] and "Concord" not in out["text"] and "Abusey Junction" in out["text"] and "Alfa Mist" in out["text"]
     assert d.execute("SELECT COUNT(*) FROM decisions WHERE question_id = 'break:beyond_facts'").fetchone()[0] == 1
-    assert CUT_AT == 0.3
+    assert CUT_AT == 0.85                                              # check 24's calibration
 
 
 def test_no_facts_means_plain_back_announce():
