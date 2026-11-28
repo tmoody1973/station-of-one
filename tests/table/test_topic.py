@@ -8,23 +8,32 @@ def thread(i, n=7):
     return Thread(p(f"hn:{i}", "story", f"Story {i}"), tuple(p(f"hn:{i}{k}", "comment", f"Comment on: Story {i}") for k in range(n)))
 
 
-def jev(per_thread):
-    answers = {}
-    for i, (d, lo, hot) in enumerate(per_thread):
-        answers |= {f"dispute_{i}": {"type": "noul", "noul": d}, f"low_stakes_{i}": {"type": "noul", "noul": lo},
-                    f"hot_topic_{i}": {"type": "noul", "noul": hot}, f"private_harm_{i}": {"type": "noul", "noul": 0.0}}
-    return FakeGateway({("POST", "typesafe", "/v1/systemone"): [ok({"model": "jev-1.14.0", "answers": answers})]})
+def jev(per_thread):  # one Jev reply per thread, in order: each thread is scored in its own request
+    replies = [ok({"model": "jev-1.14.0", "answers": {
+        "dispute_0": {"type": "noul", "noul": d}, "low_stakes_0": {"type": "noul", "noul": lo},
+        "hot_topic_0": {"type": "noul", "noul": hot}, "private_harm_0": {"type": "noul", "noul": 0.0}}}) for d, lo, hot in per_thread]
+    return FakeGateway({("POST", "typesafe", "/v1/systemone"): replies})
 
 
-def test_one_request_three_questions_per_thread():
+def test_one_request_per_thread():  # Nov 28 calibration: in one shared request, harmful threads coloured their neighbours' scores
     gw = jev([(0.8, 0.9, 0.1), (0.4, 0.9, 0.0)])
     scored, model = score_threads(gw, [thread(1), thread(2)])
-    (_, _, _, req), = gw.calls
-    assert set(req["questions"]) == {f"{q}_{i}" for q in ("dispute", "low_stakes", "hot_topic", "private_harm") for i in (0, 1)}
-    assert "threads[0]" in req["questions"]["hot_topic_0"]["instructions"]
-    assert req["state"]["threads"][0]["title"] == "Story 1" and len(req["state"]["threads"][0]["comments"]) == 7
+    assert len(gw.calls) == 2
+    for k, (_, _, _, req) in enumerate(gw.calls):
+        assert set(req["questions"]) == {f"{q}_0" for q in ("dispute", "low_stakes", "hot_topic", "private_harm")}
+        assert len(req["state"]["threads"]) == 1 and req["state"]["threads"][0]["title"] == f"Story {k + 1}"
+    assert "threads[0]" in gw.calls[0][3]["questions"]["hot_topic_0"]["instructions"]
+    assert len(gw.calls[0][3]["state"]["threads"][0]["comments"]) == 7
     assert scored[0] == {"story_id": "hn:1", "dispute": 0.8, "low_stakes": 0.9, "hot_topic": 0.1, "private_harm": 0.0}
+    assert scored[1]["story_id"] == "hn:2" and scored[1]["dispute"] == 0.4
     assert model == "jev-1.14.0"
+
+
+def test_harm_question_says_who_counts_as_a_private_person():  # Nov 28: the vague wording scored harmless threads 0.14-0.51
+    gw = jev([(0.8, 0.9, 0.1)])
+    score_threads(gw, [thread(1)])
+    text = gw.calls[0][3]["questions"]["private_harm_0"]["instructions"]
+    assert "not a public figure" in text and "companies, products" in text
 
 
 def test_pick_highest_passing_both():
