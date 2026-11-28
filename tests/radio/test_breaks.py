@@ -89,3 +89,11 @@ def test_jev_checks_sources_too():  # review I3b: a fact credited to the wrong s
     body = next(b for m, p, path, b in g.calls if p == "typesafe")
     assert body["state"]["facts"] == [{"fact": FACTS[0]["text"], "source": "example.org"}]
     assert "wrong source" in body["questions"]["beyond_facts"]["instructions"]
+
+
+def test_writer_knows_which_song_was_last():  # Rhythm Lab, 11:40 pm: "That was Nxt Msg… and before that Top Again" (backwards)
+    g = gw()
+    script_for(g, db(), ST, item("break"), PREV, NEXT, PREFS, FACTS)
+    import ast
+    sent = ast.literal_eval(next(b for m, p, path, b in g.calls if p == "ollama")["messages"][-1]["content"])
+    assert sent["last_song"] == PREV[-1] and sent["song_before"] == PREV[-2] and "just_played" not in sent

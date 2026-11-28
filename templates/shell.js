@@ -27,7 +27,8 @@
   // (The bar's shared <audio> means "the listener chose something else" and would leave the station.)
   const voice = new Audio();
   voice.preload = "auto";
-  let segs = [], inVoice = false, segTok = 0, starting = false;  // segTok: only the segment playing now may advance the player (review C2)
+  let segs = [], inVoice = false, segTok = 0, starting = false;
+  let blockFailed = false, voicesPlayed = 0;  // a break never back-announces a song that didn't play here  // segTok: only the segment playing now may advance the player (review C2)
   const SILENT = "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
   const playing = () => (mk.isPlaying ?? (mk.playbackState === MusicKit.PlaybackStates.playing));  // isPlaying unconfirmed (I6)
@@ -102,6 +103,7 @@
   async function failed(err) {  // a song that won't play here
     if (err && err.name === "NotAllowedError") { say("Tap ▶ to start."); return; }  // the browser wants a tap, not a skip (I3)
     errors += 1;
+    blockFailed = true;
     if (errors >= 3) {
       say("Some songs won't play here: they may not be available in your country, or your Apple Music subscription may not be active.");
       return;
@@ -135,6 +137,7 @@
     audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time
     if (seg.kind === "songs") {
       inVoice = false; voice.pause();
+      blockFailed = false;
       starting = true;  // while Apple loads the block it may still say "completed": don't advance again (I1)
       try { await mk.setQueue({ songs: seg.songIds, startTime: seg.startTime, startPlaying: true }); } catch (e) { await failed(e); }
       finally { starting = false; }
@@ -146,12 +149,14 @@
       seg.news = true;
       if (!seg.src) return nextSegment(my);
     }
+    if (blockFailed && (seg.item === "break" || seg.item === "backsell")) return nextSegment(my);  // it names a song you didn't hear
     if (mk && playing()) mk.pause();  // Apple's audio stops before ours starts
     inVoice = true;
     nowEl.textContent = seg.news ? "News" : seg.text || station.title || "";
     voice.src = new URL(seg.src, location.href).href;
     const at = () => { try { voice.currentTime = seg.offset || 0; } catch (e) { /* not seekable yet */ } };
     voice.readyState ? at() : voice.addEventListener("loadedmetadata", at, { once: true });
+    voicesPlayed += 1;
     try { await voice.play(); } catch (e) {  // can't play it: skip, never stall — unless its error event already moved on
       if (tok === segTok && inVoice) { inVoice = false; return nextSegment(my); }
     }
@@ -237,7 +242,7 @@
 
   window.wone = {
     play, pause: () => (station ? (inVoice ? voice.pause() : mk.pause()) : audio.pause()), seek: (s) => { audio.currentTime = s; }, now: () => item,
-    state: () => ({ inVoice, voicePaused: voice.paused, voiceTime: voice.currentTime, segments: segs.length }),  // for tests and the page
+    state: () => ({ inVoice, voicePaused: voice.paused, voiceTime: voice.currentTime, segments: segs.length, voicesPlayed }),  // for tests and the page
     connect: signIn,
     disconnect: async () => { leaveStation(); try { await getMK(); await mk.unauthorize(); } catch (e) { /* nothing to undo */ } },
     connected: async () => { try { return (await getMK()).isAuthorized; } catch (e) { return false; } },

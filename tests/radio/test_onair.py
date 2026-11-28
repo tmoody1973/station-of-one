@@ -276,3 +276,10 @@ def test_every_radio_run_publishes_the_player(tmp_path, monkeypatch):  # Tarik, 
     _, uploads = run(db, tmp_path, monkeypatch)
     for f in ("shell.js", "live.js", "shell.css"):
         assert f in uploads and uploads[f] == (Path("templates") / ("_shell.css" if f == "shell.css" else f)).read_bytes(), f
+
+
+def test_source_names_listed_once():  # "Sources: Apple Music, Apple Music"
+    from station.radio.onair import unique_sources
+    assert unique_sources([{"url": "https://music.apple.com/1", "name": "Apple Music"}, {"url": "https://music.apple.com/2", "name": "Apple Music"},
+                           {"url": "https://en.wikipedia.org/x", "name": "Wikipedia"}]) == \
+        [{"url": "https://music.apple.com/1", "name": "Apple Music"}, {"url": "https://en.wikipedia.org/x", "name": "Wikipedia"}]
