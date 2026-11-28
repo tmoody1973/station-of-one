@@ -42,7 +42,7 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
     if newscast:
         lead = (newscast.get("stories") or [{}])[0].get("headline", "")
         label = f"{_hour_label(newscast)} newscast"
-        out.append({"id": "news", "kind": "news", "name": "News", "on_now": f"{label}: {lead}" if lead else label,
+        out.append({"id": "news", "kind": "news", "name": "News", "hour_local": newscast.get("hour_local"), "on_now": f"{label}: {lead}" if lead else label,
                     "now": {"at": _hour_label(newscast), "title": lead or label, "art": "/cover-one.png"},
                     "next": {"at": _next_newscast(newscast, prefs), "title": "The next newscast"},
                     "description": f"{prefs.station.show_name}: five minutes on the hour, 7 am to 7 pm Central, "

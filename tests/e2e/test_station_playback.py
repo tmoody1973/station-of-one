@@ -334,3 +334,68 @@ def test_hub_now_after_swap(make_page):  # music hub Focus 5: reached by a page 
     pg.wait_for_function("() => location.pathname.endsWith('/music/index.html')", timeout=10000)
     assert pg.evaluate("() => window.__marker") == 1                      # a swap: the player kept going
     pg.wait_for_function(f"() => ({HUB_NOW})('rhythm-lab').includes('Song s1')", timeout=8000)
+
+
+
+# --- Plan B2 Task 5: voice between songs -------------------------------------------------------------------------
+def _wav(seconds):
+    import io
+    import wave
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(8000); w.writeframes(b"\x00\x00" * int(8000 * seconds))
+    return buf.getvalue()
+
+
+def voiced_queue(break_at_s=140, voiced=True, wav_s=0.6, start_ago_s=100):
+    start = datetime.now(UTC) - timedelta(seconds=start_ago_s)
+    t = lambda s: (start + timedelta(seconds=s)).isoformat()
+    brk = {"starts_at": t(break_at_s), "kind": "break", "duration_ms": int(wav_s * 1000), "text": "That was s1."}
+    if voiced:
+        brk |= {"audio_url": "/voice-test.wav", "audio_ms": int(wav_s * 1000)}
+    return {"station": "test-station", "items": [
+        {"starts_at": t(0), "kind": "song", "song_id": "s1", "duration_ms": break_at_s * 1000},
+        brk,
+        {"starts_at": t(break_at_s + wav_s), "kind": "song", "song_id": "s2", "duration_ms": 240000},
+        {"starts_at": t(break_at_s + wav_s + 240), "kind": "song", "song_id": "s3", "duration_ms": 240000}]}
+
+
+def voiced_page(make_page, q, wav_s=0.6):
+    pg = make_page()
+    pg.route("**/test-station/queue.json", lambda route: route.fulfill(json=q))
+    pg.route("**/voice-test.wav", lambda route: route.fulfill(body=_wav(wav_s), content_type="audio/wav"))
+    return pg
+
+
+VOICE = "() => window.wone.state && window.wone.state().inVoice && !window.wone.state().voicePaused"
+
+
+def test_break_plays_between_songs(make_page):
+    pg = voiced_page(make_page, voiced_queue())
+    tune(pg)
+    assert calls(pg, "setQueue")[0][1] == ["s1"]                      # the block before the break
+    pg.locator("#wone-skip-song").click()                             # s1 ends
+    pg.wait_for_function(VOICE, timeout=5000)
+    pg.wait_for_function("() => window.__mk.calls.filter(c => c[0] === 'setQueue').length === 2", timeout=8000)
+    assert calls(pg, "setQueue")[1][1] == ["s2", "s3"]                # after the break, the next block
+
+
+def test_one_sound_at_a_time(make_page):  # B2 Focus 4: never our audio over a song
+    pg = voiced_page(make_page, voiced_queue(), wav_s=3)
+    tune(pg)
+    pg.locator("#wone-skip-song").click()
+    pg.wait_for_function(VOICE, timeout=5000)
+    assert pg.evaluate("() => !MusicKit.getInstance().isPlaying")
+
+
+def test_unvoiced_item_is_skipped(make_page):  # B2 Focus 3
+    pg = voiced_page(make_page, voiced_queue(voiced=False))
+    tune(pg)
+    assert calls(pg, "setQueue")[0][1] == ["s1", "s2", "s3"]          # one block: nothing to play between
+
+
+def test_join_mid_break(make_page):  # B2 Focus 4
+    pg = voiced_page(make_page, voiced_queue(break_at_s=98, wav_s=6, start_ago_s=100), wav_s=6)
+    tune(pg)
+    pg.wait_for_function(VOICE, timeout=5000)
+    assert pg.evaluate("() => window.wone.state().voiceTime") >= 1 and calls(pg, "setQueue") == []

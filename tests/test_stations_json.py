@@ -95,3 +95,9 @@ def test_clock_station_publishes_its_schedule(tmp_path):
     assert rl["schedule"][1] == {"starts_at": "2026-11-27T22:01:00+00:00", "ends_at": "2026-11-27T22:01:59+00:00", "at": "4:01 pm",
                                  "song_id": "1", "title": "T1", "artist": "A", "art": "https://a.jpg"}
     assert rl["now"]["title"] == "A · T0" and rl["play"]["kind"] == "station"
+
+
+def test_news_entry_carries_its_hour(tmp_path):  # Plan B2 Task 5: the browser skips a newscast over 70 minutes old
+    n = _newscast()
+    news = stations_json(load_prefs(), n, radio_root=tmp_path, stations_root=_stations(tmp_path))["stations"][0]
+    assert news["id"] == "news" and news["hour_local"] == n["hour_local"]

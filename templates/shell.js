@@ -23,6 +23,11 @@
   document.head.querySelectorAll("style").forEach((n) => { n.dataset.wonePage = "1"; });  // the page's own styles, before any script adds one
   let mk = null, mkReady = null, station = null, errors = 0, joining = false;
   let gen = 0, lastStart = 0, rejoinAt = 0;  // gen: a newer tap or sound cancels a tune-in still in progress (review I2)
+  // Plan B2: a station's IDs, breaks and news play in their own player, between Apple Music blocks, never over a song.
+  // (The bar's shared <audio> means "the listener chose something else" and would leave the station.)
+  const voice = new Audio();
+  voice.preload = "auto";
+  let segs = [], inVoice = false;
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
   const playing = () => (mk.isPlaying ?? (mk.playbackState === MusicKit.PlaybackStates.playing));  // isPlaying unconfirmed (I6)
 
@@ -111,19 +116,38 @@
       if (!r.ok) { say("The schedule isn't available right now."); return; }
       let items = (await r.json()).items || [];
       if (my !== gen) return;
-      // The client skips IDs and breaks, so it runs ahead of the schedule: after the queue runs out, carry on
-      // after the last song already queued, never back to songs just heard (I5).
+      // After the segments run out, carry on after the last one already played, never back to what was just heard (I5).
       if (fromEnd && lastStart) items = items.filter((it) => Date.parse(it.starts_at) > lastStart);
-      const live = window.woneLive.liveStart(items, Date.now());
-      if (!live.songIds.length) { say("Nothing is scheduled right now."); return; }
-      if (fromEnd) live.startTime = 0;
-      const queued = new Set(live.songIds);
-      lastStart = Math.max(...items.filter((it) => queued.has(String(it.song_id))).map((it) => Date.parse(it.starts_at)));
+      const news = stripData && (stripData.stations || []).find((st) => st.id === "news");
+      segs = window.woneLive.liveSegments(items, Date.now(), news && news.play ? { src: news.play.src, hour_local: news.hour_local } : null);
+      if (!segs.length) { say("Nothing is scheduled right now."); return; }
+      if (fromEnd) { segs[0].startTime = 0; segs[0].offset = 0; }
       errors = 0;
-      audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time, right before Apple's audio starts
-      try { await mk.setQueue({ songs: live.songIds, startTime: live.startTime, startPlaying: true }); } catch (e) { await failed(e); }
     } finally { joining = false; }
+    await nextSegment(my);
   }
+  async function nextSegment(my = gen) {  // play the next segment: a block of songs in Apple Music, or a voice item here
+    if (my !== gen || !station) return;
+    const seg = segs.shift();
+    if (!seg) { rejoinAt = Date.now() + 30000; return join(true, my); }  // the published queue ran out: fetch what's next
+    lastStart = Date.parse(seg.starts_at);
+    audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time
+    if (seg.kind === "songs") {
+      inVoice = false; voice.pause();
+      try { await mk.setQueue({ songs: seg.songIds, startTime: seg.startTime, startPlaying: true }); } catch (e) { await failed(e); }
+      return;
+    }
+    if (mk && playing()) mk.pause();  // Apple's audio stops before ours starts
+    inVoice = true;
+    nowEl.textContent = seg.news ? "News" : seg.text || station.title || "";
+    voice.src = new URL(seg.src, location.href).href;
+    const at = () => { try { voice.currentTime = seg.offset || 0; } catch (e) { /* not seekable yet */ } };
+    voice.readyState ? at() : voice.addEventListener("loadedmetadata", at, { once: true });
+    try { await voice.play(); } catch (e) { inVoice = false; return nextSegment(my); }  // can't play it: skip, never stall
+  }
+  const voiceDone = () => { if (inVoice) { inVoice = false; nextSegment(); } };
+  voice.addEventListener("ended", voiceDone);
+  voice.addEventListener("error", voiceDone);
   async function playStation(next) {
     const my = ++gen;
     say("");
@@ -142,6 +166,7 @@
     gen += 1;  // also cancels a tune-in still waiting on sign-in
     if (!station) return;
     if (mk) mk.pause();
+    voice.pause(); inVoice = false; segs = [];
     station = null;
     item = null;
     root.classList.remove("station");
@@ -150,7 +175,7 @@
   function showSong() {  // name what Apple says is playing now; its change event can come late or not at all
     const song = mk && mk.nowPlayingItem;
     const id = song ? String(song.id) : null;
-    if (!station || !song || id === shownSong) return;
+    if (!station || inVoice || !song || id === shownSong) return;
     shownSong = id;
     errors = 0;
     nowEl.textContent = [song.artistName, song.title].filter(Boolean).join(" · ");  // Artist · Title, as in the strip
@@ -159,20 +184,25 @@
   setInterval(() => {  // the station's clock, progress and end of queue
     if (!station || !mk) return;
     showSong();
-    const t = mk.currentPlaybackTime || 0, d = mk.currentPlaybackDuration || 0;
+    const t = inVoice ? voice.currentTime || 0 : mk.currentPlaybackTime || 0;
+    const d = inVoice ? voice.duration || 0 : mk.currentPlaybackDuration || 0;
     fill.style.width = d ? `${(t / d) * 100}%` : "0";
     timeEl.textContent = `${fmt(t)} / ${fmt(d)}`;
-    icon.setAttribute("d", playing() ? PAUSE : PLAY);
-    if (window.MusicKit && mk.playbackState === MusicKit.PlaybackStates.completed && Date.now() >= rejoinAt) {
-      rejoinAt = Date.now() + 30000;  // once per finish, then every 30 s at most (I4)
-      join(true);
+    icon.setAttribute("d", (inVoice ? !voice.paused : playing()) ? PAUSE : PLAY);
+    if (!inVoice && window.MusicKit && mk.playbackState === MusicKit.PlaybackStates.completed && Date.now() >= rejoinAt) {
+      rejoinAt = Date.now() + (segs.length ? 3000 : 30000);  // once per finish; an empty queue retries every 30 s at most (I4)
+      segs.length ? nextSegment() : join(true);
     }
   }, 500);
   document.addEventListener("pointerdown", (e) => {  // start loading on touch, so sign-in opens inside the tap
     const p = e.target.closest("[data-play]");
     if (p && p.dataset.play.includes('"station"')) getMK().catch(() => {});
   });
-  $("wone-skip-song")?.addEventListener("click", () => station && mk.skipToNextItem().catch((e) => failed(e)));  // absent on older pages (C1)
+  $("wone-skip-song")?.addEventListener("click", () => {  // absent on older pages (C1)
+    if (!station) return;
+    if (inVoice) { voice.pause(); return voiceDone(); }  // skip the break: on to the next block
+    mk.skipToNextItem().catch((e) => failed(e));
+  });
   $("wone-live")?.addEventListener("click", () => { if (station) { lastStart = 0; join(); } });
 
   function play(next) {
@@ -194,13 +224,15 @@
   }
 
   window.wone = {
-    play, pause: () => (station ? mk.pause() : audio.pause()), seek: (s) => { audio.currentTime = s; }, now: () => item,
+    play, pause: () => (station ? (inVoice ? voice.pause() : mk.pause()) : audio.pause()), seek: (s) => { audio.currentTime = s; }, now: () => item,
+    state: () => ({ inVoice, voicePaused: voice.paused, voiceTime: voice.currentTime, segments: segs.length }),  // for tests and the page
     connect: signIn,
     disconnect: async () => { leaveStation(); try { await getMK(); await mk.unauthorize(); } catch (e) { /* nothing to undo */ } },
     connected: async () => { try { return (await getMK()).isAuthorized; } catch (e) { return false; } },
   };
 
   $("wone-play").addEventListener("click", () => {
+    if (station && inVoice) return voice.paused ? voice.play().catch(() => {}) : voice.pause();
     if (station) return playing() ? mk.pause() : mk.play();
     return audio.paused ? play() : audio.pause();
   });
