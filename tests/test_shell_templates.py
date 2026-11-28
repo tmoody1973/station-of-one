@@ -117,6 +117,6 @@ def test_clock_station_has_listen_live_sampler_does_not():
     assert '"kind": "station"' not in jazz and "Full songs come when this station runs around the clock" in jazz
 
 
-def test_music_link_goes_to_the_flagship():
+def test_music_link_goes_to_the_hub():  # music hub plan, Task 1
     for name, html in pages().items():
-        assert '<a href="/radio/rhythm-lab/index.html">Music</a>' in html, name
+        assert '<a href="/music/index.html">Music</a>' in html, name

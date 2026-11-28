@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo-one.png" type="image/png">
+<title>Music · {{ station.name }}</title>
+<meta name="description" content="Every ONE 1.0 FM music station, live, with today's music picks and playlists.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+{% include "_bauhaus.css" %}
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:40px;max-width:1080px}
+.intro h1{margin:0;font-size:56px;font-weight:800;line-height:1}
+.intro p{margin:12px 0 0;font-size:18px;color:var(--ink-2);max-width:62ch}
+.stations{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:26px}
+.stn{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:20px;display:flex;flex-direction:column;gap:12px}
+.stn:nth-child(2n){box-shadow:6px 6px 0 var(--blue)}
+.stn h2{margin:0;font-size:30px}
+.stn .desc{margin:0;font-size:16px;line-height:1.5;color:var(--ink-2)}
+.stn .live{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.stn .now-k{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:lowercase;color:var(--red)}
+.stn .hub-now{font-weight:700;text-decoration:none}.stn .hub-now:hover{text-decoration:underline}
+.stn .links{display:flex;gap:16px;flex-wrap:wrap;font-weight:700;font-size:15px;border-top:2px solid var(--ink);padding-top:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px}
+.card{background:var(--card);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--ink);display:flex;flex-direction:column}
+.card .body{padding:18px;display:flex;flex-direction:column;gap:10px}.card .tag{color:var(--muted)}
+.card h3{margin:0;font-size:21px;line-height:1.2}.card h3 a{text-decoration:none}.card .row{display:flex;gap:14px;align-items:center}
+.empty{color:var(--muted)}
+@media (max-width:640px){.intro h1{font-size:40px}}
+</style>
+</head>
+<body>
+{% set masthead_line = "Music" %}{% include "_masthead.html" %}
+<main class="wrap">
+<section class="intro">
+  <span class="tag kicker">Music</span>
+  <h1>Music on ONE</h1>
+  <p>Music stations programmed around the clock by an agent program director, plus the day's picks. Tap ▶ to listen live; with Apple Music connected in Settings you hear the full songs, otherwise 30-second previews on each station's page.</p>
+</section>
+
+<section aria-label="Stations">
+  <div class="stations">
+  {% for s in stations %}
+    <article class="stn" id="{{ s.id }}">
+      <h2>{{ s.name }}</h2>
+      <p class="desc">{{ s.description }}</p>
+      <div class="live">
+        {% if s.play %}<button class="btn-dark" data-play='{{ s.play | tojson }}' aria-label="Listen live to {{ s.name }}">▶ Listen live</button>{% endif %}
+        <span><span class="now-k">on now</span><br><a class="hub-now" data-now-of="{{ s.id }}" href="{{ s.page }}">{{ s.now.title if s.now else "" }}</a></span>
+      </div>
+      <nav class="links" aria-label="{{ s.name }}">
+        <a href="{{ s.page }}">Playlist</a>
+        {% if s.schedule is defined %}<a href="/radio/{{ s.id }}/meeting/index.html">The program director</a>
+        <a href="/radio/{{ s.id }}/how-it-works/index.html">How it's programmed</a>{% endif %}
+      </nav>
+    </article>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="block" id="picks">
+  <h2 class="marker ci"><span class="num">1</span><span class="lbl">Today's picks</span></h2>
+  {% if picks and picks.picks %}
+  <p style="margin:0 0 14px;color:var(--ink-2)">New releases from the labels and channels the station follows, ranked by Jev. Players are the artists' official Bandcamp and YouTube embeds and load only when you tap Play.</p>
+  <div class="cards">
+    {% include "_picks.html" %}
+  </div>
+  {% else %}<p class="empty">Today's music picks arrive with the 7 am newscast.</p>{% endif %}
+</section>
+
+<section class="block">
+  <h2 class="marker ci"><span class="num">2</span><span class="lbl">Playlists</span></h2>
+  <p><a href="/playlists/index.html">Playlists, every station</a>: what each station has played today.</p>
+</section>
+
+<footer>
+  <span>Machine-programmed. Voices are synthetic. Songs play through each listener's own Apple Music; no audio is stored by this station.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+</footer>
+</main>
+{% set player_default = {} %}{% include "_player.html" %}
+</body>
+</html>

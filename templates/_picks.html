@@ -1,0 +1,12 @@
+{% from "_play.html" import play %}
+    {% for p in picks.picks %}
+      <article class="card pick">
+        <div class="body">
+          <span class="tag">{{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }} · {{ p.source }}</span>
+          <h3>{% if p.page %}<a href="{{ p.page }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}</h3>
+          <span style="font-weight:600">{{ p.artist }}</span>
+          <div class="row"><button class="btn-line" {{ play(p.embed, p.artist ~ ": " ~ p.title, "Music pick · " ~ p.source, 0, [], "embed") }}>Play here</button>
+            <a href="{{ p.url | safe_url }}" rel="noopener" target="_blank">on {{ 'Bandcamp' if p.kind == 'bandcamp' else 'YouTube' }}</a></div>
+        </div>
+      </article>
+    {% endfor %}
