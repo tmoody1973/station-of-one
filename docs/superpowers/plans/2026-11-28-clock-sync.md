@@ -4,7 +4,7 @@
 
 **Goal:** What a listener hears starts at the time the page shows, within a few seconds: breaks are scheduled at their real length, the leftover before :00/:30 is filled with music, and the player follows the clock at every boundary.
 
-**Architecture:** Evidence (Nov 28, 5:43 am): Tarik's Rhythm Lab player played "Kerala" (scheduled 6:30:08) at 5:43, 47 minutes early. The player never waits and never re-syncs: when a segment ends early (a break shorter than its planned slot, a skipped song, an unvoiced slot) the next starts at once, and nothing pulls it back. Planned-but-unplayed break time alone measured 16-93 s per hour on Rhythm Lab. Three fixes: the schedule carries each voiced item's real length; the leftover before each :00/:30 is back-timed with a song that fits; the player follows the clock at every segment boundary (wait a few seconds, seek in, or rejoin live).
+**Architecture:** Evidence (Nov 28, 5:43 am): Tarik's Rhythm Lab player played "Kerala" (scheduled 6:30:08) at 5:43, 47 minutes early. The player never waits and never re-syncs: when a segment ends early (a break shorter than its planned slot, a skipped song, an unvoiced slot) the next starts at once, and nothing pulls it back. Planned-but-unplayed break time alone measured 16-93 s per hour on Rhythm Lab. Three fixes: the schedule carries each voiced item's real length; each break is written to fill its slot (the host back-times, as on air); the player follows the clock at every segment boundary (wait a few seconds, seek in, or rejoin live).
 
 **Tech Stack:** `templates/shell.js`, `templates/live.js`, Python (`station/radio/voicing.py`), Playwright e2e with the stand-in MusicKit.
 
@@ -23,17 +23,19 @@
 1. **Player 47 minutes ahead:** the next boundary rejoins the clock's segment (Task 2 `test_rejoins_when_far_off`, e2e `test_player_rejoins_the_clock`).
 2. **Player a few seconds early:** a short wait, never more than 10 s of silence (Task 2 `test_waits_a_few_seconds_when_early`).
 3. **Player behind** (buffering, a slow load): the next item starts that far in (Task 2 `test_seeks_in_when_late`).
-4. **Leftover before :00/:30 after real lengths:** filled with a fitting song, never dead air (Task 1 `test_leftover_before_a_fixed_point_gets_a_song`; Task 2 `test_plays_through_leftover_near_a_fixed_point`).
-5. **A voiced item shorter than its slot:** the songs after it move up and the fixed point doesn't move (Task 1 `test_real_lengths_retime_the_hour`).
+4. **A long break slot (80 s):** the host's break is written to about that length, so the next song starts near its scheduled time (Task 1 `test_break_written_to_its_slot`).
+5. **A voiced break still shorter than its slot (no facts):** the player plays through without dead air and the next boundary's sync absorbs the gap (Task 2 `test_plays_through_leftover_near_a_fixed_point`).
 
 ---
 
-### Task 1: Real lengths in the schedule, leftover filled with music
+### Task 1: Breaks fill their slot, and the schedule carries real lengths
 
-**Files:** `station/radio/voicing.py` (after voicing an item, set its `duration_ms` to its audio length and move the later items of its segment up to the next :00/:30 fixed point earlier by the difference), `station/radio/scheduler.py` (reuse the extra-song rule: when the leftover before a fixed point is at least the shortest rested song, insert the best-fitting one; any remainder goes to the last spoken item before the fixed point); tests `tests/radio/test_voicing.py`, `tests/radio/test_scheduler.py`.
+The scheduler already tries extra songs before each fixed point; the leftover exists because no rested song fits (`scheduler._close_gap` gives it to the segment's last break, which is why Rhythm Lab plans 42-89 s breaks). So the leftover is filled the radio way: the host talks to time.
 
-- [ ] Failing tests: `test_real_lengths_retime_the_hour` (a break voiced at 20 s in a 60 s slot: the next song starts 40 s earlier, the fixed point doesn't move); `test_leftover_before_a_fixed_point_gets_a_song` (a 3-minute leftover gets a rested song of 3 minutes or less, separation rules held); `test_short_leftover_goes_to_the_last_spoken_item`.
-- [ ] Implement; commit.
+**Files:** `station/radio/breaks.py` (`script_for(..., target_s)`: the writer is asked for about 2.5 words per second of the slot, capped at 90 s; with more time it may use a second cited fact; the plain back-announce is unchanged), `station/radio/voicing.py` (passes each item's planned slot; after voicing, the queue row keeps the planned `duration_ms` and stores `audio_ms`; the browser plays real lengths and syncs at boundaries); tests `tests/radio/test_breaks.py`, `tests/radio/test_voicing.py`.
+
+- [ ] Failing tests: `test_break_written_to_its_slot` (an 80 s slot asks the writer for about 200 words; a 25 s slot for about 60); `test_long_slot_may_use_two_facts`; `test_voicing_passes_the_slot_length`.
+- [ ] Implement; rehearse on a database copy and measure real vs planned lengths; commit.
 
 ### Task 2: The player follows the clock at every boundary
 
