@@ -432,3 +432,15 @@ def test_break_skipped_when_its_song_failed(make_page):  # Tarik, 11:37 pm: the 
     pg.locator("#wone-skip-song").click()                             # s1 ends; sX won't play here
     pg.wait_for_function("() => window.__mk.calls.filter(c => c[0] === 'setQueue').length === 2", timeout=8000)
     assert calls(pg, "setQueue")[1][1] == ["s2", "s3"] and pg.evaluate("() => window.wone.state().voicesPlayed") == 0
+
+
+def test_a_skipped_song_says_why(make_page):  # Tarik, 11:49 pm: show the reason instead of guessing
+    pg = make_page()
+    pg.route("**/test-station/queue.json", lambda route: route.fulfill(json=queue()))
+    pg.evaluate("() => { window.__mk.failSongs = ['s2'] }")
+    tune(pg)
+    pg.locator("#wone-skip-song").click()                             # on to s2, which won't play here
+    pg.wait_for_function("() => document.getElementById('wone-msg').textContent.includes('Skipped')", timeout=8000)
+    msg = pg.locator("#wone-msg").text_content()
+    assert "Song s2" in msg and "unavailable s2" in msg
+    assert pg.evaluate("() => window.wone.state().lastSkip.title") == "Artist s2 · Song s2"
