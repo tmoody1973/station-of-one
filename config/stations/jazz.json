@@ -332,5 +332,10 @@
     "vocal": 120,
     "latin_brazilian_afro": 120
   },
-  "replaces": "uk-jazz"
+  "replaces": "uk-jazz",
+  "host": {
+    "voice": "Sulafat",
+    "language": "en-GB",
+    "style": "warm, unhurried late-night jazz host"
+  }
 }
