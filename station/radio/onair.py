@@ -25,6 +25,12 @@ AHEAD_HOURS = 2
 BOARD_SONGS = 15  # songs listed per category on the meeting page (the library holds thousands)
 
 
+def news_for_hour(station: StationConfig, local_hour_start: datetime, prefs: Prefs, newscast_ms: int) -> int:
+    """The news slot's planned length for an hour: the newscast's, in newscast hours (7 am to 7 pm), else none."""
+    first, last = (int(t.split(":")[0]) for t in (prefs.station.first_newscast, prefs.station.last_newscast))
+    return newscast_ms if station.news and first <= local_hour_start.hour <= last else 0
+
+
 def news_ms(station: StationConfig, runs_root: Path = RUNS_ROOT) -> int:
     """The latest newscast's length, as the planned length of each hour's news (0 when the station has no news)."""
     if not station.news:
@@ -123,12 +129,12 @@ def station_page(db: sqlite3.Connection, station: StationConfig, prefs: Prefs, n
 
 def playlists_page(db: sqlite3.Connection, now: datetime, prefs: Prefs, radio_root: Path = Path("data/radio")) -> str:
     """One tab per station: a clock station's songs today (newest first, the browser hides later ones), a sampler's set."""
-    from station.radio.model import STATIONS_ROOT, load_station
+    from station.radio.model import active_stations
     now = now.astimezone(UTC)
     tz = ZoneInfo(prefs.station.timezone)
     midnight = now.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(UTC)
     tabs = []
-    for st in sorted((load_station(p.stem) for p in STATIONS_ROOT.glob("*.json")), key=lambda s: (s.type != "flagship", s.name)):
+    for st in active_stations():
         if st.programmer == "clock":
             rows = [it for it in _timed(window(db, st.id, midnight, now + timedelta(hours=AHEAD_HOURS)), tz) if it["kind"] == "song"]
             tabs.append({"st": st, "clock": True, "rows": list(reversed(rows))})
@@ -154,7 +160,7 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     news = news_ms(station)
     for k in range(AHEAD_HOURS + 1):  # this hour and the next two; an hour already scheduled is left alone
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
-        schedule_hour(station, db, local, news if station.clock_for(local.hour).name == "day" else 0)
+        schedule_hour(station, db, local, news_for_hour(station, local, prefs, news))
     items = _timed(window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)

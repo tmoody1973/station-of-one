@@ -155,7 +155,7 @@ def test_playlists_page_has_a_tab_per_station(tmp_path, monkeypatch):
     db = rl_db()
     run(db, tmp_path, monkeypatch)
     html = playlists_page(db, NOW, load_prefs())
-    assert 'href="#rhythm-lab"' in html and 'id="rhythm-lab"' in html and 'href="#uk-jazz"' in html
+    assert 'href="#rhythm-lab"' in html and 'id="rhythm-lab"' in html and 'href="#jazz"' in html and 'href="#uk-jazz"' not in html
     assert "<script>" not in html
 
 
@@ -165,3 +165,13 @@ def test_empty_queue_page():  # live-playlist Focus 5
     db.executescript(STORE_SCHEMA)
     html = station_page(db, load_station(RL), load_prefs(), NOW)
     assert "Nothing scheduled yet" in html and '<li class="trk"' not in html
+
+
+def test_news_follows_newscast_hours():  # jazz plan Task 2: jazz dayparts aren't named "day"
+    from zoneinfo import ZoneInfo
+    from station.radio.onair import news_for_hour
+    chi = ZoneInfo("America/Chicago")
+    st = load_station("jazz")
+    assert news_for_hour(st, datetime(2026, 11, 27, 12, tzinfo=chi), load_prefs(), 165000) == 165000
+    assert news_for_hour(st, datetime(2026, 11, 27, 19, tzinfo=chi), load_prefs(), 165000) == 165000   # the 7 pm newscast
+    assert news_for_hour(st, datetime(2026, 11, 27, 22, tzinfo=chi), load_prefs(), 165000) == 0

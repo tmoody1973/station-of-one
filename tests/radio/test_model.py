@@ -69,3 +69,45 @@ def test_only_one_flagship():
     from station.radio.model import STATIONS_ROOT
     types = [load_station(p.stem).type for p in sorted(STATIONS_ROOT.glob("*.json"))]
     assert types.count("flagship") == 1
+
+
+# Tarik's jazz_clocks.json (Nov 27), the slot orders the config must carry
+TARIK_JAZZ_CLOCKS = {
+    "rise": ([6, 7, 8, 9], ["vocal", "latin_brazilian_afro", "heritage", "contemporary", "jazz_funk_fusion", "uk_jazz", "vocal",
+                            "latin_brazilian_afro", "contemporary", "heritage", "jazz_funk_fusion"]),
+    "workday": ([10, 11, 12, 13, 14], ["contemporary", "uk_jazz", "jazz_funk_fusion", "heritage", "latin_brazilian_afro", "contemporary",
+                                       "vocal", "uk_jazz", "jazz_funk_fusion", "contemporary", "heritage"]),
+    "drive": ([15, 16, 17, 18], ["jazz_funk_fusion", "uk_jazz", "latin_brazilian_afro", "contemporary", "jazz_funk_fusion", "vocal",
+                                 "uk_jazz", "heritage", "jazz_funk_fusion", "latin_brazilian_afro", "contemporary"]),
+    "after_hours": ([19, 20, 21, 22, 23], ["heritage", "vocal", "spiritual_avant", "contemporary", "heritage", "uk_jazz", "spiritual_avant",
+                                           "vocal", "contemporary", "heritage", "spiritual_avant"]),
+    "overnight": ([0, 1, 2, 3, 4, 5], ["spiritual_avant", "contemporary", "spiritual_avant", "uk_jazz", "heritage", "spiritual_avant",
+                                       "latin_brazilian_afro", "contemporary", "spiritual_avant", "heritage", "spiritual_avant"]),
+}
+
+
+def test_jazz_clocks_match_tarik_file():  # jazz station plan, Task 2
+    st = load_station("jazz")
+    assert st.programmer == "clock" and st.name == "ONE Jazz" and st.type == "genre"
+    for name, (hours, slots) in TARIK_JAZZ_CLOCKS.items():
+        clock = next(c for c in st.clocks if c.name == name)
+        assert [h for h in range(24) if clock.covers(h)] == hours
+        flat = [s for _, seg in clock.segments for s in seg]
+        assert [s for s in flat if s not in ("id", "news", "break", "backsell")] == slots
+        assert flat[:2] == ["id", "news"] and flat.index("break") == 6 and flat[11] == "break"   # breaks after songs 4 and 8
+    assert st.separation["artist_hours"] == 4
+    assert all(c.rest_hours >= 72 for c in st.rotation.categories)                             # no track inside 72 hours
+
+
+def test_jazz_dayparts_cover_every_hour():
+    st = load_station("jazz")
+    assert [sum(c.covers(h) for c in st.clocks) for h in range(24)] == [1] * 24
+    assert set(st.styles) == {"contemporary", "uk_jazz", "spiritual_avant", "jazz_funk_fusion", "heritage", "vocal", "latin_brazilian_afro"}
+    assert all(set(fb) <= set(st.styles) for fb in st.styles.values())
+
+
+def test_uk_jazz_sampler_retired():  # kept as a config (40 tests use it as their test station), but nothing runs or lists it
+    from station.radio.model import active_stations
+    assert load_station("uk-jazz").retired is True
+    ids = [st.id for st in active_stations()]
+    assert "jazz" in ids and "uk-jazz" not in ids and ids[0] == "rhythm-lab"   # the flagship first

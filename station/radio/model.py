@@ -72,7 +72,9 @@ class StationConfig:
     separation: dict[str, Any] | None = None
     meeting: dict[str, Any] | None = None
     shape: dict[str, Any] | None = None
-    programmer: str = "sampler"  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
+    programmer: str = "sampler"
+    styles: dict[str, list[str]] | None = None  # jazz: each style and the styles it falls back to (clock slots name styles)
+    retired: bool = False  # kept as a config, never run or listed  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
 
     def clock_for(self, local_hour: int) -> Clock:
         return next(c for c in self.clocks if c.covers(local_hour))
@@ -88,7 +90,7 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
                          clocks=tuple(Clock(c["name"], c["from_hour"], c["to_hour"],
                                             tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
                          separation=d.get("separation"), meeting=d.get("meeting"), shape=d.get("shape"),
-                         programmer=d.get("programmer", "sampler"))
+                         programmer=d.get("programmer", "sampler"), styles=d.get("styles"), retired=bool(d.get("retired")))
 
 
 SCHEMA = """
@@ -132,3 +134,9 @@ def normalize(text: str) -> str:
 
 def candidate_id(artist: str, title: str, release: str) -> str:
     return hashlib.sha1("|".join(normalize(x) for x in (artist, title, release)).encode()).hexdigest()[:16]
+
+
+def active_stations(root: Path = STATIONS_ROOT) -> list[StationConfig]:
+    """Every station that runs and is listed, the flagship first."""
+    configs = [load_station(p.stem, root) for p in sorted(Path(root).glob("*.json"))]
+    return sorted((s for s in configs if not s.retired), key=lambda s: (s.type != "flagship", s.name))

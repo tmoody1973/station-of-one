@@ -549,12 +549,10 @@ def cmd_meeting(station_id: str) -> None:
 
 def cmd_radio_overnight() -> None:
     """Outside newscast hours: the clock stations (plan B1) schedule ahead and publish. No feed reading overnight."""
-    from station.radio.model import STATIONS_ROOT, load_station
+    from station.radio.model import active_stations
     from station.radio.run import run_station
     notes: list[str] = []
-    for sid in sorted(p.stem for p in STATIONS_ROOT.glob("*.json")):
-        if load_station(sid).programmer != "clock":
-            continue
+    for sid in [st.id for st in active_stations() if st.programmer == "clock"]:
         try:
             with closing(_db()) as db:
                 out = run_station(Gateway(), sid, db, datetime.now(UTC), load_prefs(), discover=False)
@@ -566,10 +564,10 @@ def cmd_radio_overnight() -> None:
 
 def cmd_radio(run: Path, station_id: str | None = None) -> None:
     """Build step after finish: update every music station (or one, by hand), each a note on failure."""
-    from station.radio.model import STATIONS_ROOT
+    from station.radio.model import active_stations
     from station.radio.run import run_station
 
-    ids = [station_id] if station_id else sorted(p.stem for p in STATIONS_ROOT.glob("*.json"))
+    ids = [station_id] if station_id else [st.id for st in active_stations()]
 
     def run_all() -> tuple[dict, list[str]]:
         totals: dict = {}

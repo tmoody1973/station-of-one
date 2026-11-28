@@ -1,0 +1,330 @@
+{
+  "id": "jazz",
+  "name": "ONE Jazz",
+  "type": "genre",
+  "programmer": "clock",
+  "brief": "ONE Jazz: jazz around the clock, from heritage and spiritual records to the current US and UK scenes, programmed from the Rhythm Lab Radio library and new releases",
+  "feeds": [
+    {
+      "type": "rss",
+      "ref": "https://ukvibe.org/feed/"
+    },
+    {
+      "type": "rss",
+      "ref": "https://www.brownswoodrecordings.com/feed"
+    },
+    {
+      "type": "rss",
+      "ref": "https://daily.bandcamp.com/feed"
+    },
+    {
+      "type": "subreddit",
+      "ref": "Jazz"
+    }
+  ],
+  "seeds": {
+    "artists": [
+      "Emma-Jean Thackray",
+      "Kassa Overall",
+      "BADBADNOTGOOD",
+      "Makaya McCraven",
+      "Sly5thAve",
+      "Soil & Pimp Sessions",
+      "Roy Ayers",
+      "Nubya Garcia",
+      "Toshio Matsuura Group",
+      "Jose James",
+      "Kamasi Washington",
+      "Lady Blackbird",
+      "Mark de Clive-Lowe",
+      "Ezra Collective",
+      "Zara McFarlane",
+      "Hypnotic Brass Ensemble",
+      "Quincy Jones",
+      "Dorothy Ashby",
+      "KOKOROKO",
+      "Melanie De Biasio",
+      "corto.alto",
+      "Moses Boyd",
+      "Robert Glasper",
+      "The Comet Is Coming",
+      "Theo Croker",
+      "Butcher Brown",
+      "Gregory Porter",
+      "Terrace Martin",
+      "John Carroll Kirby",
+      "Bernard Wright",
+      "Bobbi Humphrey",
+      "Cochemea",
+      "Hackney Colliery Band",
+      "Miles Davis",
+      "Nina Simone",
+      "Oscar Jerome",
+      "Angel Bat Dawid",
+      "Ashley Henry",
+      "George Duke",
+      "Jaimie Branch"
+    ],
+    "labels": [
+      "Brownswood Recordings",
+      "Jazz re:freshed",
+      "Impulse!",
+      "Gearbox Records"
+    ]
+  },
+  "era_mix": {
+    "new": 0.3,
+    "recent": 0.3,
+    "older": 0.4
+  },
+  "flow": {
+    "artist_gap_hours": 3,
+    "block_minutes": 50
+  },
+  "talk": {
+    "every": 3,
+    "seconds": [
+      20,
+      30
+    ]
+  },
+  "voice": {
+    "name": "Sulafat",
+    "style": "warm, unhurried, late-night"
+  },
+  "news": true,
+  "storefront": "us",
+  "apple_connection": "YlFQlsDQx9sk2cz9TI82Ng",
+  "rotation": [
+    {
+      "code": "P",
+      "name": "Power",
+      "size": 220,
+      "rest_hours": 72
+    },
+    {
+      "code": "M",
+      "name": "Rotation",
+      "size": 300,
+      "rest_hours": 120
+    },
+    {
+      "code": "G",
+      "name": "Library",
+      "size": 2000,
+      "rest_hours": 240
+    },
+    {
+      "code": "N",
+      "name": "New",
+      "size": 40,
+      "rest_hours": 72
+    }
+  ],
+  "clocks": [
+    {
+      "name": "rise",
+      "from_hour": 6,
+      "to_hour": 9,
+      "feel": "Bright start: vocals, Latin and Brazilian, cool-era classics",
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news",
+            "vocal",
+            "latin_brazilian_afro",
+            "heritage",
+            "contemporary",
+            "break",
+            "jazz_funk_fusion",
+            "uk_jazz",
+            "vocal",
+            "latin_brazilian_afro",
+            "break",
+            "contemporary",
+            "heritage",
+            "jazz_funk_fusion",
+            "backsell"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "workday",
+      "from_hour": 10,
+      "to_hour": 14,
+      "feel": "Steady and modern: contemporary and UK jazz with heritage anchors",
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news",
+            "contemporary",
+            "uk_jazz",
+            "jazz_funk_fusion",
+            "heritage",
+            "break",
+            "latin_brazilian_afro",
+            "contemporary",
+            "vocal",
+            "uk_jazz",
+            "break",
+            "jazz_funk_fusion",
+            "contemporary",
+            "heritage",
+            "backsell"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "drive",
+      "from_hour": 15,
+      "to_hour": 18,
+      "feel": "Energy up: jazz-funk, fusion, Latin, UK jazz",
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news",
+            "jazz_funk_fusion",
+            "uk_jazz",
+            "latin_brazilian_afro",
+            "contemporary",
+            "break",
+            "jazz_funk_fusion",
+            "vocal",
+            "uk_jazz",
+            "heritage",
+            "break",
+            "jazz_funk_fusion",
+            "latin_brazilian_afro",
+            "contemporary",
+            "backsell"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "after_hours",
+      "from_hour": 19,
+      "to_hour": 23,
+      "feel": "Lights low: heritage, vocals, spiritual jazz",
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news",
+            "heritage",
+            "vocal",
+            "spiritual_avant",
+            "contemporary",
+            "break",
+            "heritage",
+            "uk_jazz",
+            "spiritual_avant",
+            "vocal",
+            "break",
+            "contemporary",
+            "heritage",
+            "spiritual_avant",
+            "backsell"
+          ]
+        ]
+      ]
+    },
+    {
+      "name": "overnight",
+      "from_hour": 0,
+      "to_hour": 5,
+      "feel": "Deep listening: spiritual and avant, long-form",
+      "segments": [
+        [
+          0,
+          [
+            "id",
+            "news",
+            "spiritual_avant",
+            "contemporary",
+            "spiritual_avant",
+            "uk_jazz",
+            "break",
+            "heritage",
+            "spiritual_avant",
+            "latin_brazilian_afro",
+            "contemporary",
+            "break",
+            "spiritual_avant",
+            "heritage",
+            "spiritual_avant",
+            "backsell"
+          ]
+        ]
+      ]
+    }
+  ],
+  "styles": {
+    "contemporary": [
+      "uk_jazz",
+      "spiritual_avant",
+      "jazz_funk_fusion"
+    ],
+    "uk_jazz": [
+      "contemporary",
+      "jazz_funk_fusion",
+      "spiritual_avant"
+    ],
+    "spiritual_avant": [
+      "contemporary",
+      "heritage",
+      "uk_jazz"
+    ],
+    "jazz_funk_fusion": [
+      "latin_brazilian_afro",
+      "uk_jazz",
+      "contemporary"
+    ],
+    "heritage": [
+      "vocal",
+      "spiritual_avant",
+      "contemporary"
+    ],
+    "vocal": [
+      "heritage",
+      "latin_brazilian_afro",
+      "contemporary"
+    ],
+    "latin_brazilian_afro": [
+      "jazz_funk_fusion",
+      "vocal",
+      "contemporary"
+    ]
+  },
+  "separation": {
+    "artist_hours": 4,
+    "long_ms": 600000,
+    "max_energy_step": 1
+  },
+  "meeting": {
+    "new": "N",
+    "catalog": "G",
+    "top": "P",
+    "up": {
+      "N": "P"
+    },
+    "burn": {},
+    "age": {},
+    "down": {}
+  },
+  "shape": {
+    "holiday_only": {
+      "from": "11-22",
+      "to": "12-25"
+    }
+  }
+}

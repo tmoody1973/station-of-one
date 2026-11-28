@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from station.config import Prefs
-from station.radio.model import STATIONS_ROOT, load_station
+from station.radio.model import STATIONS_ROOT, active_stations
 
 RADIO_ROOT = Path("data/radio")
 
@@ -49,8 +49,7 @@ def stations_json(prefs: Prefs, newscast: dict | None, radio_root: Path = RADIO_
                                                "machine-edited from public posts.", "page": "/index.html",
                     "play": {"src": audio_path(newscast), "title": lead or label, "label": f"On air · {label}",
                              "chapters": newscast.get("chapters", []), "kind": "newscast", "start": 0}})
-    configs = [load_station(p.stem, stations_root) for p in sorted(Path(stations_root).glob("*.json"))]
-    for st in sorted(configs, key=lambda s: (s.type != "flagship", s.name)):  # the flagship first
+    for st in active_stations(stations_root):  # the flagship first; retired stations aren't listed
         latest = Path(radio_root) / st.id / "latest.json"
         if not latest.exists():
             continue  # never published: no chip linking to a page that isn't there
