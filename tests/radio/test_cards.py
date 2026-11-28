@@ -77,7 +77,7 @@ def test_track_card_keeps_only_cited_facts():
                                                                     {"text": "Invented.", "citation": 7},
                                                                     {"text": "No marker.", "citation": 0}])]})
     facts = sonar_facts(gw, "PPLX", {"artist": "Nubya Garcia", "title": "Pace", "album": "Source", "year": "2020"})
-    assert facts == [{"text": "Recorded in London.", "source_url": "https://en.wikipedia.org/wiki/Pace", "source_name": "en.wikipedia.org"}]
+    assert facts == [{"text": "Recorded in London.", "source_url": "https://en.wikipedia.org/wiki/Pace", "source_name": "Wikipedia"}]
 
 
 def test_disambiguation_in_query():
@@ -108,3 +108,17 @@ def test_a_failed_lookup_is_not_cached():
 def test_perplexity_connection_from_preferences():  # check 23's connector, an id (not a secret)
     from station.config import load_prefs
     assert load_prefs().perplexity == "oazmIvwPutdcMvFs9wauvg"
+
+
+def test_web_facts_set_aside_apples_date():  # rehearsal: "came out in June 1969, not 1964"
+    sonar = lambda gw, station, song: [{"text": "Recorded in 1969.", "source_url": "https://en.wikipedia.org/wiki/x", "source_name": "Wikipedia"},
+                                       {"text": "On Atlantic.", "source_url": "https://www.discogs.com/r/1", "source_name": "Discogs"}]
+    facts = facts_for(object(), db(), ST, "c1", NOW, sonar=sonar)
+    assert [f["source_name"] for f in facts] == ["Wikipedia", "UK Vibe", "Discogs"]   # one web fact, where it was found, the rest
+
+
+def test_source_names_are_spoken_names():
+    from station.radio.cards import source_name
+    assert [source_name(u) for u in ("https://music.apple.com/us/song/1", "https://markdeclivelowe.bandcamp.com/album/x",
+                                      "https://en.wikipedia.org/wiki/x", "https://www.allaboutjazz.com/x", "https://www.qobuz.com/x")] == \
+        ["Apple Music", "Bandcamp", "Wikipedia", "All About Jazz", "qobuz.com"]

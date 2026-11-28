@@ -21,6 +21,18 @@ _SYSTEM = ("You give short, checkable facts about one recording for a radio host
 SCHEMA = "CREATE TABLE IF NOT EXISTS cards (kind TEXT, key TEXT, facts TEXT, fetched_at TEXT, PRIMARY KEY (kind, key));"
 
 
+SPOKEN_NAMES = {"music.apple.com": "Apple Music", "bandcamp.com": "Bandcamp", "wikipedia.org": "Wikipedia", "discogs.com": "Discogs",
+                "allmusic.com": "AllMusic", "allaboutjazz.com": "All About Jazz", "genius.com": "Genius", "pitchfork.com": "Pitchfork",
+                "whosampled.com": "WhoSampled", "nprmusic.org": "NPR Music", "npr.org": "NPR", "theguardian.com": "The Guardian",
+                "spotify.com": "Spotify", "youtube.com": "YouTube"}
+
+
+def source_name(url: str) -> str:
+    """How the host says a source: a known site by name, otherwise its bare domain."""
+    host = urlparse(url).netloc.lower().removeprefix("www.")
+    return next((name for dom, name in SPOKEN_NAMES.items() if host == dom or host.endswith("." + dom)), host)
+
+
 def sonar_facts(gw, connection: str, song: dict) -> list[dict]:
     """Perplexity Sonar's facts about one recording, each linked to the search result it cites (links come from the
     response's `citations`, never from the model's text: Perplexity docs). Label and year disambiguate common names."""
@@ -36,7 +48,7 @@ def sonar_facts(gw, connection: str, song: dict) -> list[dict]:
     for f in json.loads(r["choices"][0]["message"]["content"]).get("facts") or []:
         n = f.get("citation")
         if isinstance(n, int) and 0 < n <= len(cites):
-            out.append({"text": str(f.get("text") or ""), "source_url": cites[n - 1], "source_name": urlparse(cites[n - 1]).netloc})
+            out.append({"text": str(f.get("text") or ""), "source_url": cites[n - 1], "source_name": source_name(cites[n - 1])})
     return _cited(out)
 
 
@@ -76,4 +88,8 @@ def facts_for(gw, db: sqlite3.Connection, station: StationConfig, candidate_id: 
             db.commit()
         except (GatewayError, KeyError, TypeError, ValueError):
             extra = []  # Perplexity down, refusing or odd: the station's own facts stand alone, and it's asked again next time
-    return (extra + own_facts(db, candidate_id))[:MAX_FACTS]
+    own = own_facts(db, candidate_id)
+    if extra:  # web facts set Apple's listed date aside (it is often a reissue: a host once argued "1969, not 1964")
+        found = [f for f in own if f["source_name"] != "Apple Music"]
+        return (extra[:1] + found + extra[1:])[:MAX_FACTS]  # one web fact, where it was found (PRD), then the rest
+    return own[:MAX_FACTS]
