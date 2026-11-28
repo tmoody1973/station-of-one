@@ -290,13 +290,15 @@ def test_now_follows_the_player(make_page):  # live-playlist Focus 1: the page n
     _rhythm_lab(pg)
     pg.locator("main button:has-text('Listen live')").click()
     pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
-    for _ in range(2):
-        pg.locator("#wone-skip-song").click()
-    pg.wait_for_timeout(1200)
-    s = pg.evaluate("""() => ({playing: String(MusicKit.getInstance().nowPlayingItem.id),
-        now: (document.querySelector('main li.trk.now') || {dataset: {}}).dataset.song,
-        box: document.querySelector('#onnow h2').textContent})""")
-    assert s["now"] == s["playing"]
+    pg.locator("#wone-skip-song").click()           # since B2 a block can be 1-2 songs: this may end it and start a break
+    pg.wait_for_timeout(1500)
+    s = pg.evaluate("""() => { const st = window.wone.state(), row = document.querySelector('main li.trk.now') || {dataset: {}};
+        const item = MusicKit.getInstance().nowPlayingItem;
+        return {inVoice: st.inVoice, playing: item ? String(item.id) : null, now: row.dataset.song, kind: row.dataset.kind}; }""")
+    if s["inVoice"]:
+        assert s["kind"] == "voice"                  # the break you hear is the row marked Now
+    else:
+        assert s["now"] == s["playing"]
 
 
 HUB_NOW = "id => document.querySelector(`main [data-now-of='${id}']`).textContent"

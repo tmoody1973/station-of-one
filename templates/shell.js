@@ -165,11 +165,12 @@
     const at = () => { try { voice.currentTime = seg.offset || 0; } catch (e) { /* not seekable yet */ } };
     voice.readyState ? at() : voice.addEventListener("loadedmetadata", at, { once: true });
     voicesPlayed += 1;
+    document.dispatchEvent(new CustomEvent("wone:song"));  // the playlist and strip mark the break as Now right away
     try { await voice.play(); } catch (e) {  // can't play it: skip, never stall — unless its error event already moved on
       if (tok === segTok && inVoice) { inVoice = false; return nextSegment(my); }
     }
   }
-  const voiceDone = () => { if (inVoice) { inVoice = false; nextSegment(); } };  // nextSegment bumps segTok, so a late catch stays put
+  const voiceDone = () => { if (inVoice) { inVoice = false; document.dispatchEvent(new CustomEvent("wone:song")); nextSegment(); } };  // nextSegment bumps segTok, so a late catch stays put
   voice.addEventListener("ended", voiceDone);
   voice.addEventListener("error", voiceDone);
   async function playStation(next) {
