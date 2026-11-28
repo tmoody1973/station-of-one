@@ -390,3 +390,11 @@ Spike `spikes/perplexity_check.py` (scratch), run on the Sprite. Connector `Perp
 - Angie Stone "Brotha": 5 facts, every `citation` number mapped to `citations[n-1]` (Wikipedia, Genius, a Discogs archive copy): J Records 2001; produced by Raphael Saadiq with Jake and the Phatman; players; studios; the original has no sample (the Part II remix does).
 - **Cost from `usage.cost`: $0.00519** (request $0.0025 + tokens). ~240 breaks/day for two stations ≈ $1.25/day before caching; a track's card is fetched once.
 - Not tried: `/chat/completions` (the first path worked).
+
+### 25. The Table's topic check: why Nov 27 had no episode, and the private-harm question (Nov 28, ~6:25 am)
+- **Logged answers:** Nov 26 (24 threads, harm not yet asked) had 3 threads passing dispute ≥ 0.6 and low-stakes ≥ 0.6. Nov 27 (12 threads, run at 9:58 am that day) had 0: every thread's private-harm answer was 0.20-0.41, at or over the 0.20 cut, including "Hard Drive pricing has gotten bad" (0.26).
+- **Pool:** threads with 6+ comments: Nov 26 30, Nov 27 26 (all day; the 9:58 am run saw 12).
+- **One shared request bleeds:** 22 real Nov 27 threads plus 3 made-up threads naming a private person (with workplace and accusations) in one Jev request: the 9 real threads nearest the fakes scored 0.68-0.84 harm. Alone, the same threads scored 0.01-0.12. The Table step sent up to 25 threads in one request.
+- **One thread per request, two wordings:** "Could discussing it on air harm a private individual?" → harmless 0.14-0.51 (5 of 22 under 0.20), made-up harmful 0.91-0.93. "Does it name, identify or single out a private individual (not a public figure; companies, products, projects and organizations are not private individuals) in a way that discussing it on air could harm them?" → harmless **0.01-0.12** (all 22 under 0.20), harmful **0.95-0.97**. The 0.20 cut stays.
+- **Fixed:** the Table scores each thread in its own request with the second wording. On all of Nov 27, "GPT 6.2 Astra Solves a Historical Mystery" (dispute 0.68, low-stakes 0.60) passes all four checks.
+- Not tested: real threads that target a private person (only made-up ones); a sample beyond one day.

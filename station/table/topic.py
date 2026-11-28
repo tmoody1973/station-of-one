@@ -17,8 +17,13 @@ def _questions(i: int) -> dict:
                             f"Is `threads[{i}]` low-stakes (tools, habits, taste or a sports-bar argument) rather "
                             "than something that affects people's safety, money or rights?"},
         f"hot_topic_{i}": hot_topic_question(i, "threads"),
-        f"private_harm_{i}": {"type": "noul", "instructions":  # spec: posts likely to harm a private person never air
-                              f"Could discussing `threads[{i}]` on air harm a private individual?"},
+        # spec: posts likely to harm a private person never air. Saying who counts (Nov 28 calibration, check 25): the vaguer
+        # "could discussing it harm a private individual?" scored harmless threads 0.14-0.51, so nothing passed the 0.20 cut;
+        # this wording scored them 0.01-0.12 and threads naming a private person 0.95-0.97.
+        f"private_harm_{i}": {"type": "noul", "instructions":
+                              f"Does `threads[{i}]` name, identify or single out a private individual (a person who is "
+                              "not a public figure; companies, products, projects and organizations are not private "
+                              "individuals) in a way that discussing it on air could harm them?"},
     }
 
 
@@ -28,18 +33,17 @@ def _state(t: Thread) -> dict:
 
 
 def score_threads(gw, threads: list[Thread], limit: int = 25) -> tuple[list[dict], str | None]:
-    threads = threads[:limit]
-    if not threads:
-        return [], None
-    req = {"model": MODEL, "state": {"threads": [_state(t) for t in threads]},
-           "questions": {k: v for i in range(len(threads)) for k, v in _questions(i).items()}}
-    resp = gw.json("POST", "typesafe", "/v1/systemone", req)
-    a = resp["answers"]
-    scored = [{"story_id": t.story.id, "dispute": float(a[f"dispute_{i}"]["noul"]),
-               "low_stakes": float(a[f"low_stakes_{i}"]["noul"]), "hot_topic": float(a[f"hot_topic_{i}"]["noul"]),
-               "private_harm": float(a[f"private_harm_{i}"]["noul"])}
-              for i, t in enumerate(threads)]
-    return scored, resp.get("model")
+    """One Jev request per thread (Nov 28 calibration): in a shared request, answers bled between neighbouring threads."""
+    scored, model = [], None
+    for t in threads[:limit]:  # ponytail: sequential, ~0.3 s each (under 10 s a day); parallel if the limit grows
+        resp = gw.json("POST", "typesafe", "/v1/systemone",
+                       {"model": MODEL, "state": {"threads": [_state(t)]}, "questions": _questions(0)})
+        a = resp["answers"]
+        scored.append({"story_id": t.story.id, "dispute": float(a["dispute_0"]["noul"]),
+                       "low_stakes": float(a["low_stakes_0"]["noul"]), "hot_topic": float(a["hot_topic_0"]["noul"]),
+                       "private_harm": float(a["private_harm_0"]["noul"])})
+        model = model or resp.get("model")
+    return scored, model
 
 
 def pick_topic(scored: list[dict], dispute_min: float = 0.6, low_stakes_min: float = 0.6,
