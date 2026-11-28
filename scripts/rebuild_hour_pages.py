@@ -9,7 +9,8 @@ from pathlib import Path
 from station.build import LOCK
 from station.config import load_prefs
 from station.gateway import Gateway
-from station.steps.page import all_newscasts, hour_pages
+from station.steps.page import all_newscasts, hour_pages, table_episodes
+from station.table.build import render_table, table_path
 from station.steps.publish import cache_control, put_object
 
 ap = argparse.ArgumentParser()
@@ -30,4 +31,10 @@ for n in sorted(all_newscasts(Path(args.runs)), key=lambda n: n["id"]):
             put_object(gw, prefs.hosting.bucket, key, html.encode(), "text/html; charset=utf-8", cache_control(key))
     total += len(pages)
     print(f"{n['id']}: {len(pages)} pages")
+for ep in table_episodes(Path("data/table")):  # The Table's pages too (Tarik, Nov 28: the Nov 26 page had the old look)
+    if not args.dry_run:
+        put_object(gw, prefs.hosting.bucket, table_path(ep["day"]), render_table(ep, prefs).encode(), "text/html; charset=utf-8",
+                   cache_control(table_path(ep["day"])))
+    total += 1
+    print(f"table {ep['day']}: 1 page")
 print(("would publish" if args.dry_run else "published"), total, "pages")

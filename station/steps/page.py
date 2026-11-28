@@ -143,11 +143,13 @@ def audio_path(n: dict) -> str:
 
 def render_front(current: dict, today: list[dict], prefs: Prefs, video_url: str | None = None,
                  table: dict | None = None, corrections: dict | None = None, extras: dict | None = None,
-                 picks: dict | None = None) -> str:
+                 picks: dict | None = None, table_note: str | None = None) -> str:
+    if table:  # the episode's own date: the newest published one may be days old (Tarik, Nov 28)
+        table = {**table, "day_label": datetime.strptime(table["day"], "%Y-%m-%d").strftime("%A, %B %-d")}
     if picks is not None and any("embed" not in p for p in picks.get("picks", [])):
         picks = {**picks, "picks": [{**p, "embed": embed_url(p)} for p in picks["picks"] if embed_url(p)]}
     return env().get_template("front.html").render(**_context(current, today, prefs, "front", extras),
-                                                   video_url=video_url, table=table, corrections=corrections, picks=picks)
+                                                   video_url=video_url, table=table, corrections=corrections, picks=picks, table_note=table_note)
 
 
 def render_hour(newscast: dict, prefs: Prefs, today: list[dict] | None = None, extras: dict | None = None) -> str:
@@ -337,6 +339,16 @@ def table_episodes(table_root: Path) -> list[dict]:
             if (f.parent / "published").exists()]  # never link an episode that failed to upload
 
 
+def table_note(day: str, table_root: Path | None = None) -> str | None:
+    """Why there is no Table episode today, when the day's attempt ended without one (else None)."""
+    root = Path(table_root or os.environ.get("STATION_TABLE", "data/table"))
+    try:
+        topic = json.loads((root / day / "topic.json").read_text())
+    except (OSError, ValueError):
+        return None
+    return "Jev found no thread that was both a real dispute and low-stakes" if topic.get("none") else None
+
+
 def render_feed(newscast: dict, prefs: Prefs, audio_bytes: int, table_episodes: list[dict] = ()) -> str:
     """Podcast feed (spec §9): one item, the latest newscast, replaced each hour."""
     from email.utils import format_datetime
@@ -400,7 +412,7 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     extras_file = run / "stories.json"  # written by the story step; absent when it was skipped
     extras = json.loads(extras_file.read_text()) if extras_file.exists() else None
     front.write_text(render_front(current, today, prefs, video_url=f"/video/{day}.mp4" if has_video else None,
-                                  table=episodes[0] if episodes else None,
+                                  table=episodes[0] if episodes else None, table_note=table_note(day),
                                   corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras,
                                   picks=picks))
     story_pages = []

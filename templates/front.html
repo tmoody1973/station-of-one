@@ -159,8 +159,9 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
   <section class="block">
     <h2 class="marker tri"><span class="num">3</span><span class="lbl">The Table</span></h2>
     <div class="table-card">
-      <span class="tag">The Table · daily debate</span>
+      <span class="tag">The Table · {{ table.day_label }}</span>
       <a class="q" href="/table/{{ table.day }}/index.html">{{ table.question }}</a>
+      {% if table_note %}<span style="font-weight:700">No episode today: {{ table_note }}.</span>{% endif %}
       <span style="color:var(--ink-2)">The Anchor vs. the Uncle, refereed by Jev. {{ {"anchor": "The Anchor took it", "uncle": "The Uncle took it", "draw": "A draw"}[table.verdict.winner] }}, {{ "%.2f" | format(table.verdict.anchor) }} to {{ "%.2f" | format(table.verdict.uncle) }}. Season: Anchor {{ table.record.anchor }}, Uncle {{ table.record.uncle }}.</span>
     </div>
   </section>
