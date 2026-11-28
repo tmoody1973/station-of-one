@@ -480,6 +480,19 @@
   markNow();
   setInterval(markNow, 30000);
   document.addEventListener("wone:page", markNow);
+  // The menu marks the section you're in (News covers past newscasts, stories and The Table; Music covers the
+  // stations, playlists and picks). Set from the address, since the header stays put while pages swap.
+  const section = (path) => (/\/(music|radio|playlists|m)\//.test(path) ? "music" : /\/control-room\//.test(path) ? "control"
+    : /\/settings\//.test(path) ? "settings" : "news");
+  function markNav() {
+    const here = section(location.pathname);
+    document.querySelectorAll("header.site nav a").forEach((a) => {
+      if (section(new URL(a.href, location.href).pathname) === here) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
+  }
+  markNav();
+  document.addEventListener("wone:page", markNav);
   document.addEventListener("wone:page", fillNow);
   document.addEventListener("wone:song", markNow);
 
