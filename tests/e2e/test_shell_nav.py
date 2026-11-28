@@ -86,7 +86,7 @@ def test_failed_fetch_falls_back(page):
 
 def test_controls_work_after_swap(page):
     _click(page, "#wone-strip a.st-now[href*='/radio/jazz/']")          # reached by a swap, not a page load
-    page.locator("main .pv:visible").first.click()
+    page.locator("main li.trk:not(.brk) .pv:visible").first.click()   # a song's preview, not a host break's "Hear it"
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('itunes.apple.com') }", timeout=15000)
     assert "preview" in page.locator("#wone-label").inner_text().lower()
     page.go_back()
