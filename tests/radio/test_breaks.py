@@ -97,3 +97,29 @@ def test_writer_knows_which_song_was_last():  # Rhythm Lab, 11:40 pm: "That was 
     import ast
     sent = ast.literal_eval(next(b for m, p, path, b in g.calls if p == "ollama")["messages"][-1]["content"])
     assert sent["last_song"] == PREV[-1] and sent["song_before"] == PREV[-2] and "just_played" not in sent
+
+
+# --- clock sync, Task 1: breaks fill their slot (the host talks to time) ---
+def _asked(g):
+    import ast
+    body = next(b for m, p, path, b in g.calls if p == "ollama")
+    return body["messages"][0]["content"], ast.literal_eval(body["messages"][-1]["content"])
+
+
+def test_break_written_to_its_slot():
+    long_, short = gw(), gw()
+    script_for(long_, db(), ST, item("break"), PREV, NEXT, PREFS, FACTS, target_s=80)
+    script_for(short, db(), ST, item("break"), PREV, NEXT, PREFS, FACTS, target_s=25)
+    assert "about 200 words" in _asked(long_)[0] and "about 62 words" in _asked(short)[0]
+    capped = gw()
+    script_for(capped, db(), ST, item("break"), PREV, NEXT, PREFS, FACTS, target_s=300)
+    assert "about 225 words" in _asked(capped)[0]                       # 90 s at most
+
+
+def test_long_slot_may_use_two_facts():
+    three = FACTS + [{**FACTS[0], "text": f"Fact {i}.", "source_url": f"https://example.org/{i}"} for i in (2, 3)]
+    long_, short = gw(), gw()
+    script_for(long_, db(), ST, item("break"), PREV, NEXT, PREFS, three, target_s=80)
+    script_for(short, db(), ST, item("break"), PREV, NEXT, PREFS, three, target_s=25)
+    assert len(_asked(long_)[1]["facts"]) == 3 and "one or two facts" in _asked(long_)[0]
+    assert len(_asked(short)[1]["facts"]) == 2 and "exactly one fact" in _asked(short)[0]

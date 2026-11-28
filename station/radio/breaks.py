@@ -15,10 +15,11 @@ from station.store import record_decision
 
 CUT_AT = 0.85  # Jev's probability that a script states something beyond its facts, at or above which it is cut. Check 24:
 # faithful scripts scored 0.68-0.74, scripts with a wrong year, wrong album or invented place 0.96-0.98 (12 answers)
-MIN_WORDS, MAX_WORDS = 25, 110
-RULES = ("You are the on-air host of {name}, a music station programmed by an agent. Write one voice break of 55 to 75 "
+MIN_WORDS = 25
+WORDS_PER_S, MAX_TALK_S, TWO_FACTS_S, DEFAULT_S = 2.5, 90, 45, 26  # clock sync: the host talks to the slot's length
+RULES = ("You are the on-air host of {name}, a music station programmed by an agent. Write one voice break of about {words} "
          "words, plain spoken English, no lists, no URLs, no stage directions. Back-announce what just played (artist and "
-         "title), give exactly one fact from the facts provided, naming where it comes from, and tease what is next. Use only "
+         "title), give {facts} from the facts provided, naming where each comes from, and tease what is next. Use only "
          "the facts provided; if none fits, say nothing beyond the back-announce. Never claim to have been anywhere or met "
          "anyone: you are an agent. One idea only.")
 
@@ -47,7 +48,8 @@ def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"https?://\S+", "", text or "")).strip()
 
 
-def _write(gw, prefs: Prefs, station: StationConfig, prev: list[dict], nxt: dict | None, facts: list[dict]) -> str:
+def _write(gw, prefs: Prefs, station: StationConfig, prev: list[dict], nxt: dict | None, facts: list[dict], words: int,
+           two_facts: bool) -> str:
     song = lambda s: {"artist": s.get("artist"), "title": s.get("title")}
     user = {"last_song": song(prev[-1]) if prev else None,  # named, not a list: a list was read newest-first once
             "song_before": song(prev[-2]) if len(prev) > 1 else None,
@@ -55,7 +57,9 @@ def _write(gw, prefs: Prefs, station: StationConfig, prev: list[dict], nxt: dict
             "facts": [{"fact": f["text"], "source": f["source_name"]} for f in facts]}
     reply = gw.json("POST", "ollama", "/api/chat", {
         "model": prefs.writer.model, "stream": False, "think": False,
-        "messages": [{"role": "system", "content": RULES.format(name=station.name)}, {"role": "user", "content": repr(user)}]})
+        "messages": [{"role": "system", "content": RULES.format(name=station.name, words=words,
+                                                                 facts="one or two facts" if two_facts else "exactly one fact")},
+                     {"role": "user", "content": repr(user)}]})
     return _clean(reply["message"]["content"])
 
 
@@ -73,7 +77,7 @@ def _beyond_facts(gw, text: str, facts: list[dict], prev: list[dict], nxt: dict 
 
 
 def script_for(gw, db: sqlite3.Connection, station: StationConfig, item: dict, prev_songs: list[dict], next_song: dict | None,
-               prefs: Prefs, facts: list[dict]) -> dict:
+               prefs: Prefs, facts: list[dict], target_s: float | None = None) -> dict:
     """The words for one spoken queue item: {"text", "sources": [{url, name}], "kind"}. A "news" item has no script."""
     kind, at = item["kind"], datetime.fromisoformat(item["starts_at"])
     if kind == "news":
@@ -85,13 +89,15 @@ def script_for(gw, db: sqlite3.Connection, station: StationConfig, item: dict, p
             text += " The news is at the top of the hour." if first <= at.hour + 1 <= last else f" More {station.name} after this."
         return {"text": text, "sources": [], "kind": kind}
     plain = {"text": plain_back_announce(station, prev_songs, next_song), "sources": [], "kind": kind}
-    facts = [f for f in facts if str(f.get("source_url", "")).startswith(("http://", "https://"))][:2]  # cite or cut
+    talk_s = min(target_s or DEFAULT_S, MAX_TALK_S)  # the host talks to the slot (clock sync), 90 s at most
+    words, two_facts = round(talk_s * WORDS_PER_S), talk_s >= TWO_FACTS_S
+    facts = [f for f in facts if str(f.get("source_url", "")).startswith(("http://", "https://"))][:3 if two_facts else 2]  # cite or cut
     if not facts:
         return plain
     try:
-        text = _write(gw, prefs, station, prev_songs, next_song, facts)
+        text = _write(gw, prefs, station, prev_songs, next_song, facts, words, two_facts)
         named = prev_songs and any(x and x.lower() in text.lower() for x in (prev_songs[-1].get("title"), prev_songs[-1].get("artist")))
-        if not named or not MIN_WORDS <= len(text.split()) <= MAX_WORDS:
+        if not named or not MIN_WORDS <= len(text.split()) <= words * 1.4 + 10:
             return plain
         p, answer, model = _beyond_facts(gw, text, facts, prev_songs, next_song)
     except (GatewayError, KeyError, TypeError, ValueError):

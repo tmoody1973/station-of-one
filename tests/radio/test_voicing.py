@@ -115,3 +115,14 @@ def test_voicing_stops_after_repeated_failures():
         q(d, m, "id")
     voice_spoken(object(), d, ST, PREFS, NOW, tts=r.tts, put=r.put, facts=lambda cid: [])
     assert r.calls <= 2
+
+
+def test_voicing_passes_the_slot_length(monkeypatch):  # clock sync Task 1
+    import station.radio.voicing as voicing
+    seen = []
+    real = voicing.script_for
+    monkeypatch.setattr(voicing, "script_for", lambda *a, **k: (seen.append(k.get("target_s")), real(*a, **k))[1])
+    d, r = db(), Rec()
+    hour(d)
+    voice_spoken(object(), d, ST, PREFS, NOW, tts=r.tts, put=r.put, facts=lambda cid: [])
+    assert sorted(seen) == [240.0, 240.0]                                # each item's planned slot (q() plans 240 s)

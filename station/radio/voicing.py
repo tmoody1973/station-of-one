@@ -52,12 +52,12 @@ def voice_spoken(gw, db: sqlite3.Connection, station: StationConfig, prefs: Pref
     facts = facts or (lambda cid: [])
     host = station.host or {"voice": prefs.voices.host, "language": "en-US"}
     tz = ZoneInfo(prefs.station.timezone)
-    rows = db.execute(f"SELECT starts_at, kind FROM queue WHERE station_id = ? AND kind IN ({','.join('?' * len(SPOKEN))}) "
+    rows = db.execute(f"SELECT starts_at, kind, duration_ms FROM queue WHERE station_id = ? AND kind IN ({','.join('?' * len(SPOKEN))}) "
                       "AND starts_at >= ? AND starts_at < ? AND audio_url IS NULL ORDER BY starts_at",
                       (station.id, *SPOKEN, now.isoformat(), (now + VOICE_AHEAD).isoformat())).fetchall()
     voiced, notes, made, failures = 0, [], {}, 0
     deadline = time.monotonic() + budget_s
-    for starts_at, kind in rows:
+    for starts_at, kind, slot_ms in rows:
         if time.monotonic() >= deadline or failures >= MAX_FAILURES:
             notes.append(f"voicing stopped ({'time budget used' if failures < MAX_FAILURES else 'repeated failures'}): "
                          "the rest wait for the next run")
@@ -70,7 +70,7 @@ def voice_spoken(gw, db: sqlite3.Connection, station: StationConfig, prefs: Pref
                              (station.id, starts_at)).fetchone()
             item = {"kind": kind, "starts_at": datetime.fromisoformat(starts_at).astimezone(tz).isoformat()}  # local hour for IDs/teases
             script = script_for(gw, db, station, item, prev, _song(db, nxt[0]) if nxt else None, prefs,
-                                facts(prev[-1]["candidate_id"]) if prev else [])
+                                facts(prev[-1]["candidate_id"]) if prev else [], target_s=(slot_ms or 0) / 1000 or None)
             if not script["text"]:
                 continue
             key = f"audio/radio/{station.id}/" + hashlib.sha1(f"{host['voice']}|{host.get('language')}|{script['text']}".encode()).hexdigest()[:16] + ".mp3"
