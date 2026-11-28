@@ -64,6 +64,10 @@ ONE Jazz runs on the same program director as Rhythm Lab, with one addition: eac
 
 Why this design and what it gave up: `docs/decisions/013-jazz-format.md`.
 
+### Host breaks, IDs and news between songs
+
+Each music station has its own synthetic host (Gemini voices chosen by ear: Algieba on Rhythm Lab, Sulafat on ONE Jazz). Every few songs the host back-announces what played, gives one fact and says where the agent found the record, then teases what's next. Facts come from a Perplexity web search, each linked to the page it cites, plus Apple Music and the post where the record was found; a fact without a link is cut. Jev checks every script against its facts and a script that says more is replaced by a plain back-announce (cutoff calibrated in check 24). Each hour the station voices the next two hours ahead of air. In the listener's player, songs play in blocks through Apple Music and the host, station IDs and the hour's newscast play between blocks, never over a song. The playlist shows each break's words and sources. Why and at what cost: `docs/decisions/014-voice-breaks.md`.
+
 Both stations' pages show Apple's 30-second previews (they play only when tapped and never advance on their own) and a "Listen on Apple Music" link; listeners with Apple Music can connect it in Settings and hear the full songs live. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: voice breaks with cited facts and news on the music stations.
 
 ## How the site plays
