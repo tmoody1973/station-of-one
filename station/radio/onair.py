@@ -213,6 +213,9 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     pages += ((explainer_path(station.id), explainer, "text/html; charset=utf-8"),)  # one per station (two used to overwrite one)
     if station.type == "flagship":
         pages += ((EXPLAINER_PATH, explainer, "text/html; charset=utf-8"),)  # the address older pages link to
+    templates = Path(__file__).resolve().parents[2] / "templates"  # the player, every hour (B2's waited for the 6:48 am build)
+    pages += tuple((key, (templates / src).read_bytes(), ctype) for key, src, ctype in (
+        ("shell.js", "shell.js", "text/javascript"), ("live.js", "live.js", "text/javascript"), ("shell.css", "_shell.css", "text/css")))
     if station.replaces:
         pages += ((sampler_path(station.replaces), render_moved(station).encode(), "text/html; charset=utf-8"),)
     for key, body, ctype in pages:

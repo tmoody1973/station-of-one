@@ -183,4 +183,20 @@ def held_report(db: sqlite3.Connection, path: Path) -> int:
     return len(rows)
 
 
-__all__ = ["import_tracks", "to_match", "match_library", "held_report", "library_energy", "library_track", "seed_rotation", "AppleRefused"]
+def drop_non_songs(db: sqlite3.Connection, dry_run: bool = True) -> list[tuple[str, str, str]]:
+    """Spoken tracks matched by mistake (commentary, interviews, skits) out of every station's rotation; a library
+    row is marked held so a reload never brings it back. Returns (station, artist, title) for each."""
+    from station.radio.resolve import is_non_song
+    rows = db.execute("SELECT ro.station_id, ro.candidate_id, COALESCE(c.matched_artist, c.artist), COALESCE(c.matched_title, c.title) "
+                      "FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id").fetchall()
+    hits = [(sid, cid, artist, title) for sid, cid, artist, title in rows if is_non_song(title or "")]
+    if not dry_run:
+        for sid, cid, _, _ in hits:
+            db.execute("DELETE FROM rotation WHERE station_id = ? AND candidate_id = ?", (sid, cid))
+            if cid.startswith("lib:"):
+                db.execute("UPDATE library_tracks SET match_status = 'held' WHERE track_id = ?", (cid[4:],))
+        db.commit()
+    return [(sid, artist, title) for sid, _, artist, title in hits]
+
+
+__all__ = ["drop_non_songs", "import_tracks", "to_match", "match_library", "held_report", "library_energy", "library_track", "seed_rotation", "AppleRefused"]

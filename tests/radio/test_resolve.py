@@ -99,3 +99,10 @@ def test_dj_mix_versions_lose():
     mixed = match_score(w, {"artistName": "Kelis", "name": "Runnin' (Machinedrum Remix) [Mixed]"})
     plain = match_score(w, {"artistName": "Kelis", "name": "Runnin' (Machinedrum Remix)"})
     assert plain > mixed and mixed < MATCH_MIN
+
+
+def test_spoken_tracks_are_not_the_song():  # Rhythm Lab aired "The Lung (Nai Palm) [Commentary]", Nov 27 11:27 pm
+    from station.radio.resolve import has_version, is_non_song
+    for name in ("The Lung (Nai Palm) [Commentary]", "Brotha (Interview)", "Intro (Skit)", "Track by Track: Odyssey", "Voice Memo 3"):
+        assert has_version(name) and is_non_song(name), name
+    assert not is_non_song("Abusey Junction (Remix)") and not is_non_song("Live at the Barbican")   # versions stay, Rhythm Lab aired them

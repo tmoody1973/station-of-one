@@ -1,5 +1,6 @@
 """Plan B1, Task 6: the queue kept 2 hours ahead and published; the schedule on the station page; the meeting page."""
 import json
+from pathlib import Path
 from datetime import UTC, datetime, timedelta
 
 import station.radio.onair as onair
@@ -268,3 +269,10 @@ def test_station_page_links_the_schedule():
     db = rl_db()
     html = onair.station_page(db, load_station(RL), load_prefs(), NOW)
     assert "The program director: schedule and music meeting" in html
+
+
+def test_every_radio_run_publishes_the_player(tmp_path, monkeypatch):  # Tarik, 11:30 pm: B2's player waited for the 6:48 am build
+    db = rl_db()
+    _, uploads = run(db, tmp_path, monkeypatch)
+    for f in ("shell.js", "live.js", "shell.css"):
+        assert f in uploads and uploads[f] == (Path("templates") / ("_shell.css" if f == "shell.css" else f)).read_bytes(), f
