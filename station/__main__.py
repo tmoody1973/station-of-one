@@ -617,6 +617,7 @@ def cmd_build(hour: str | None) -> None:
     if not hour and not in_broadcast_hours(datetime.now(ZoneInfo(tz)), load_prefs()):
         cmd_radio_overnight()  # no newscast and no Sprite checkpoint: the 24/7 stations stay 2 hours ahead
         print(f"build {when:%Y-%m-%dT%H}: outside broadcast hours, music stations only")
+        _rebuild_if_redesigned()
         return
     last_hour = int(load_prefs().station.last_newscast.split(":")[0])
     first_hour = int(load_prefs().station.first_newscast.split(":")[0])
@@ -627,6 +628,16 @@ def cmd_build(hour: str | None) -> None:
              else {})
     result = build_mod.build(when, on_failure=manager.on_failure, **extra)
     print(f"build {when:%Y-%m-%dT%H}: {'skipped, another build holds the lock' if result is None else result}")
+    if result is not None:
+        _rebuild_if_redesigned()
+
+
+def _rebuild_if_redesigned() -> None:
+    """Every page in today's design: a no-op unless the site's design files changed (station/steps/rebuild.py)."""
+    from station.steps.rebuild import safe_rebuild
+    note = safe_rebuild(Gateway(), load_prefs())
+    if note:
+        print(note)
 
 
 def main(argv: list[str] | None = None) -> int:
