@@ -13,6 +13,7 @@ from station.gateway import GatewayError
 from station.radio.buzz import buzz
 from station.radio.model import StationConfig
 from station.radio.program import era
+from station.radio.scout import DEEPEN_FEED
 from station.steps.judge import MODEL
 from station.store import record_decision
 
@@ -27,6 +28,45 @@ QUESTIONS = {
     "up": "Has `songs[{i}]` earned more airplay on this station (moving up from its current category)?",
     "burned": "Has `songs[{i}]` been played so much on this station that listeners are likely tired of it?",
 }
+
+
+STYLE_DESCRIPTIONS = {  # ONE Jazz's styles (Tarik's jazz library README), for Jev's style question
+    "contemporary": "Current US jazz",
+    "uk_jazz": "The current UK jazz scene",
+    "spiritual_avant": "Spiritual, cosmic or avant-garde jazz",
+    "jazz_funk_fusion": "Jazz-funk or fusion",
+    "heritage": "Classic jazz from the 1940s to the 1970s",
+    "vocal": "Jazz singing",
+    "latin_brazilian_afro": "Latin, Brazilian or Afro jazz",
+    "not_jazz": "Not jazz: pop, house, hip-hop or other music with no real jazz in it",
+}
+
+
+def _ask_styles(gw, station, songs: list[dict], db, now, notes) -> dict[str, tuple[str, float]]:
+    """Jev's style for each song (a choice among the station's styles, or not_jazz) and whether it is a holiday record
+    (a probability), both logged; {candidate: (style, p_holiday)}."""
+    criteria = {k: v for k, v in STYLE_DESCRIPTIONS.items() if k in (station.styles or {}) or k == "not_jazz"}
+    out: dict[str, tuple[str, float]] = {}
+    for start in range(0, len(songs), BATCH):
+        batch = songs[start:start + BATCH]
+        questions = {}
+        for i in range(len(batch)):
+            questions[f"style_{i}"] = {"type": "choice", "instructions": f"Which style of jazz is the recording `songs[{i}]`?",
+                                       "criteria": criteria}
+            questions[f"holiday_{i}"] = {"type": "noul", "instructions": f"Is the recording `songs[{i}]` a Christmas or holiday record?"}
+        try:
+            resp = gw.json("POST", "typesafe", "/v1/systemone",
+                           {"model": MODEL, "state": {"station": {"brief": station.brief}, "songs": batch}, "questions": questions})
+            answers = [(s["id"], resp["answers"][f"style_{i}"], resp["answers"][f"holiday_{i}"]) for i, s in enumerate(batch)]
+            parsed = [(str(a["choice"]), float(h["noul"])) for _, a, h in answers]
+        except (GatewayError, KeyError, TypeError, ValueError) as e:
+            notes.append(f"meeting: Jev style question failed for {len(batch)} songs: {str(e)[:100]}")
+            continue
+        for (cid, a, h), (style, ph) in zip(answers, parsed):
+            record_decision(db, f"radio:{cid}", "meeting:style", a, resp.get("model") or MODEL, now.isoformat())
+            record_decision(db, f"radio:{cid}", "meeting:holiday", h, resp.get("model") or MODEL, now.isoformat())
+            out[cid] = (style, ph)
+    return out
 
 
 @dataclass
@@ -143,18 +183,31 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
     for prob, cid, frm, to, reason in sorted(proposals, key=lambda x: (-x[0], x[1])):
         move(cid, frm, to, prob, reason)
 
+    styles = {}
+    if station.styles:  # a styled station (ONE Jazz): Jev names each passing find's style before it can be added
+        styles = _ask_styles(gw, station, [s for s in addable if p.get(("add", s["id"]), 0.0) >= ADD_MIN], db, now, res.notes)
     catalog_before = f"{now.year - CATALOG_YEARS:04d}{now.strftime('-%m-%d')}"
     for s in sorted(addable, key=lambda s: (-p.get(("add", s["id"]), 0.0), s["id"])):
         pa = p.get(("add", s["id"]), 0.0)
         if pa < ADD_MIN:
             continue
+        style, p_holiday = styles.get(s["id"], ("", 0.0)) if station.styles else (None, 0.0)
+        if station.styles and style not in station.styles:
+            res.notes.append(f"{s['id']}: not added (Jev: {'not jazz' if style == 'not_jazz' else 'no style'})")
+            continue
         released = db.execute("SELECT release_date FROM candidates WHERE id = ?", (s["id"],)).fetchone()[0] or ""
-        to = rules["catalog"] if released and released < catalog_before else rules["new"]
+        deepen = s["source"] == DEEPEN_FEED  # catalog deepening for a thin style: never the New category
+        to = rules["catalog"] if deepen or (released and released < catalog_before) else rules["new"]
         if count.get(to, 0) >= size.get(to, 0):
             res.notes.append(f"{s['id']}: no room in {to}")
             continue
-        db.execute("INSERT INTO rotation (station_id, candidate_id, category, added_at, moved_at) VALUES (?,?,?,?,?)",
-                   (sid, s["id"], to, held, held))
+        if db.execute("SELECT 1 FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id JOIN candidates n ON n.id = ? "
+                      "WHERE ro.station_id = ? AND ((c.song_id = n.song_id AND n.song_id != '') OR (c.isrc = n.isrc AND n.isrc != ''))",
+                      (s["id"], sid)).fetchone():
+            res.notes.append(f"{s['id']}: not added (this recording is already in the rotation)")  # review C2
+            continue
+        db.execute("INSERT INTO rotation (station_id, candidate_id, category, added_at, moved_at, style, tags) VALUES (?,?,?,?,?,?,?)",
+                   (sid, s["id"], to, held, held, style, "holiday_only" if p_holiday >= ADD_MIN else ""))
         count[to] = count.get(to, 0) + 1
         res.adds.append(s["id"])
         log(s["id"], "add", None, to, pa, f"Jev: join the rotation ({pa:.2f})" + (" as a catalog record" if to == rules["catalog"] else ""))

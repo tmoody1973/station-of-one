@@ -315,7 +315,7 @@ def test_overnight_build_runs_radio_only(monkeypatch, capsys):  # plan B1 Task 7
     ran = []
     monkeypatch.setattr(run_mod, "run_station", lambda gw, sid, db, now, prefs, **kw: (ran.append((sid, kw.get("discover"))), {"notes": []})[1])
     assert main(["build"]) == 0
-    assert ran == [("rhythm-lab", False)]          # clock stations only; schedule and publish, no feed reading
+    assert ran == [("rhythm-lab", False), ("jazz", False)]   # clock stations only (flagship first); no feed reading
     assert "music stations only" in capsys.readouterr().out
 
 

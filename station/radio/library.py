@@ -49,16 +49,18 @@ def import_tracks(db: sqlite3.Connection, path: Path) -> int:
     return len(rows)
 
 
-def to_match(db: sqlite3.Connection, min_plays: int = 2, include_segments: bool = False, limit: int = 100000) -> list[tuple]:
+def to_match(db: sqlite3.Connection, min_plays: int = 2, include_segments: bool = False, limit: int = 100000,
+             only: set[str] | None = None) -> list[tuple]:
     seg = "" if include_segments else "AND in_segment = 0 "
-    return db.execute("SELECT track_id, artist, base_title, version, album, label FROM library_tracks "
-                      f"WHERE play_count >= ? {seg}AND match_status IS NULL ORDER BY play_count DESC, track_id LIMIT ?",
-                      (min_plays, limit)).fetchall()
+    rows = db.execute("SELECT track_id, artist, base_title, version, album, label FROM library_tracks "
+                      f"WHERE play_count >= ? {seg}AND match_status IS NULL ORDER BY play_count DESC, track_id",
+                      (min_plays,)).fetchall()
+    return [r for r in rows if only is None or r[0] in only][:limit]
 
 
 def match_library(gw, conn: str, storefront: str, db: sqlite3.Connection, min_plays: int = 2, workers: int = 4,
-                  limit: int = 100000, progress=None) -> dict[str, int]:
-    todo = to_match(db, min_plays, limit=limit)
+                  limit: int = 100000, progress=None, only: set[str] | None = None) -> dict[str, int]:
+    todo = to_match(db, min_plays, limit=limit, only=only)
 
     def look(row):
         track_id, artist, base_title, version, album, label = row
@@ -115,9 +117,10 @@ def _note(first_played: str) -> str:
         return "First aired on Rhythm Lab Radio"
 
 
-def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
+def seed_rotation(db: sqlite3.Connection, station, only: dict[str, dict] | None = None, category=None) -> dict[str, int]:
     """Matched, non-guest-mix library tracks into the station's rotation (and the song pool the scheduler reads).
-    Safe to run again: existing rows keep their plays and last-played time."""
+    Safe to run again: existing rows keep their plays and last-played time. `only` limits it to some tracks
+    ({track_id: {"style", "holiday_only"}}, the jazz cut); `category(tier, last_played)` overrides the tier mapping."""
     rows = db.execute("SELECT track_id, tier, first_played, last_played, hour1_plays, hour2_plays, opener_count, closer_count, "
                       "apple_music_id, isrc, match_confidence, apple_url, preview_url, artwork_url, duration_ms, release_date, "
                       "matched_artist, matched_title, matched_album, version, special_tags FROM library_tracks "
@@ -126,6 +129,11 @@ def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
     now = datetime.now(UTC).isoformat()
     for (tid, tier, first, last, h1, h2, opens, closes, song_id, isrc, conf, apple_url, preview, art, dur, released,
          artist, title, album, version, tags) in rows:
+        if only is not None and tid not in only:
+            continue
+        extra = (only or {}).get(tid, {})
+        if extra.get("holiday_only"):
+            tags = ";".join(t for t in [tags, "holiday_only"] if t)
         cid = f"lib:{tid}"
         db.execute("INSERT INTO candidates (id, kind, artist, title, version, status, song_id, match_confidence, apple_url, "
                    "preview_url, artwork_url, duration_ms, isrc, release_date, album, matched_artist, matched_title, resolved_at) "
@@ -134,12 +142,13 @@ def seed_rotation(db: sqlite3.Connection, station) -> dict[str, int]:
                    "duration_ms = excluded.duration_ms",
                    (cid, artist, title, version or "", song_id, conf, apple_url, preview, art, dur, isrc, released, album,
                     artist, title, now))
-        cat = _category(tier, last)  # the starting category only: once a song is in, the music meeting owns it
-        db.execute("INSERT INTO rotation (station_id, candidate_id, category, energy, added_at, opener, closer, source_note, tags) "
-                   "VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(station_id, candidate_id) DO UPDATE SET energy = excluded.energy, "
-                   "opener = excluded.opener, closer = excluded.closer, source_note = excluded.source_note, tags = excluded.tags",
+        cat = (category or _category)(tier, last)  # the starting category only: once a song is in, the meeting owns it
+        db.execute("INSERT INTO rotation (station_id, candidate_id, category, energy, added_at, opener, closer, source_note, tags, style) "
+                   "VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(station_id, candidate_id) DO UPDATE SET energy = excluded.energy, "
+                   "opener = excluded.opener, closer = excluded.closer, source_note = excluded.source_note, tags = excluded.tags, "
+                   "style = excluded.style",
                    (station.id, cid, cat, library_energy(h1, h2), now, int((opens or 0) > 0), int((closes or 0) > 0), _note(first),
-                    tags or ""))
+                    tags or "", extra.get("style")))
         counts[cat] = counts.get(cat, 0) + 1
     db.commit()
     return counts

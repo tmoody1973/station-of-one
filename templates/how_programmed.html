@@ -62,11 +62,23 @@ td.n{font-family:var(--mono)}
     {% endfor %}
     </tbody>
   </table>
+  {% if styles %}
+  <p>On {{ st.name }} every song also has a style of jazz, and each clock slot names a style. When no rested song of that style passes the rules, the slot tries the next style on its list, then any jazz. The category still decides how long a song rests.</p>
+  <table>
+    <thead><tr><th>Style</th><th>Songs now</th><th>Aiming for</th><th>If none can play, tries</th></tr></thead>
+    <tbody>
+    {% for s in styles %}
+      <tr data-style="{{ s.key }}"><td><span class="sw" style="background:{{ s.color }}"></span><b>{{ s.label }}</b></td>
+        <td class="n">{{ s.count }}</td><td class="n">{{ s.target or "" }}</td><td>{{ s.fallbacks | join(", ") }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
 </section>
 
 <section class="sec">
   <h2 class="marker ci"><span class="num">3</span><span class="lbl">The hour clocks</span></h2>
-  <p>Each hour follows a clock: a fixed order of slots, starting at the top. :00 and :30 always start on time. A song that would run past one is swapped for a shorter one, and any time left over goes to the break before it.</p>
+  <p>Each hour follows a clock: a fixed order of slots, starting at the top.{% if styles %} {{ st.name }} has {{ clocks | length }}, one for each part of the day.{% endif %} {% if half %}:00 and :30 always start on time. A song that would run past one{% else %}The top of the hour always starts on time. A song that would run past it{% endif %} is swapped for a shorter one, and any time left over goes to the break before it.</p>
   <div class="clocks">
   {% for c in clocks %}
     <figure>
@@ -81,7 +93,8 @@ td.n{font-family:var(--mono)}
   {% endfor %}
   </div>
   <div class="legend">
-    {% for c in st.rotation.categories %}<span><span class="sw" style="background:{{ clocks[0].arcs | selectattr('slot', 'equalto', c.code) | map(attribute='fill') | first | default('var(--card)') }}"></span>{{ c.code }} {{ c.name }}</span>{% endfor %}
+    {% if styles %}{% for s in styles %}<span><span class="sw" style="background:{{ s.color }}"></span>{{ s.label }}</span>{% endfor %}
+    {% else %}{% for c in st.rotation.categories %}<span><span class="sw" style="background:{{ clocks[0].arcs | selectattr('slot', 'equalto', c.code) | map(attribute='fill') | first | default('var(--card)') }}"></span>{{ c.code }} {{ c.name }}</span>{% endfor %}{% endif %}
     <span><span class="sw" style="background:var(--paper)"></span>IDs, news, breaks</span>
   </div>
 </section>
@@ -94,7 +107,7 @@ td.n{font-family:var(--mono)}
     <li>No two songs of {{ (st.separation.long_ms / 60000) | round | int }} minutes or longer back to back.</li>
     <li>Energy (low, mid, high) never jumps by two between neighbours.</li>
   </ul>
-  <p>Then softer preferences choose among the songs that pass. When there aren't enough songs to honour them all, they give way in this order: era alternation first, then the mix of sung and instrumental records{% if st.shape %}, then {{ st.name }}'s own hour shape (pairings Tarik played back to back, lower energy in the first half hour, an opener after the news and a closer at the end, a holiday record in season){% endif %}. If nothing passes the hard rules, the slot stays empty and the break runs longer; an artist is never repeated to fill it.</p>
+  <p>Then softer preferences choose among the songs that pass. When there aren't enough songs to honour them all, they give way in this order: era alternation first, then the mix of sung and instrumental records{% if st.type == "flagship" %}, then {{ st.name }}'s own hour shape (pairings Tarik played back to back, lower energy in the first half hour, an opener after the news and a closer at the end, a holiday record in season){% endif %}. If nothing passes the hard rules, the slot stays empty and the break runs longer; an artist is never repeated to fill it.{% if holiday and st.type != "flagship" %} Holiday records play only from {{ holiday }}.{% endif %}</p>
 </section>
 
 <section class="sec">
@@ -105,12 +118,12 @@ td.n{font-family:var(--mono)}
 
 <section class="sec">
   <h2 class="marker ci"><span class="num">6</span><span class="lbl">Where songs come from</span></h2>
-  <p>The agent reads the station's feeds{% if st.feeds %} ({{ st.feeds | length }} music sites and communities){% endif %}, pulls out the records each item names, and Jev rates each one against the station's brief; finds rated {{ n.fit_floor }} or more can go to the music meeting. Each record is matched on Apple Music; a match under {{ (n.match * 100) | round | int }}% confidence is held for a person to check, and originals are preferred over remasters, live takes and edits.{% if st.type == "flagship" %} {{ st.name }} also draws on its own library: thirteen years of Rhythm Lab Radio playlists, where each track starts in the category its play count earned.{% endif %}</p>
+  <p>The agent reads the station's feeds{% if st.feeds %} ({{ st.feeds | length }} music sites and communities){% endif %}, pulls out the records each item names, and Jev rates each one against the station's brief; finds rated {{ n.fit_floor }} or more can go to the music meeting. Each record is matched on Apple Music; a match under {{ (n.match * 100) | round | int }}% confidence is held for a person to check, and originals are preferred over remasters, live takes and edits.{% if st.type == "flagship" %} {{ st.name }} also draws on its own library: thirteen years of Rhythm Lab Radio playlists, where each track starts in the category its play count earned.{% endif %}{% if styles %} {{ st.name }} starts from the jazz in Rhythm Lab Radio's library, each record filed under its style and the category its plays earned. At each music meeting the agent also checks the station's artists for records released in the last {{ n.recent_days }} days, and fills thin styles with well-known recordings by their artists. Jev names each new record's style; a record Jev calls not jazz is never added.{% endif %}</p>
 </section>
 
 <section class="sec">
   <h2 class="marker ci"><span class="num">7</span><span class="lbl">Breaks, IDs and news</span></h2>
-  <p>The clock reserves time for station IDs ({{ (n.spoken.id / 1000) | int }} seconds), breaks ({{ (n.spoken["break"] / 1000) | int }} seconds), a tease at :30 and a back-announce before the top of the hour{% if st.news %}, plus the hourly newscast at :00 from 7 am to 6 pm{% endif %}. The voices are synthetic. What gets said in breaks (short facts about the records, each one cited or cut) is being built next.</p>
+  <p>The clock reserves time for station IDs ({{ (n.spoken.id / 1000) | int }} seconds), breaks ({{ (n.spoken["break"] / 1000) | int }} seconds), {% if half %}a tease at :30 and {% endif %}a back-announce before the top of the hour{% if st.news %}, plus the hourly newscast at :00 from {{ n.news_hours }}{% endif %}. The voices are synthetic. What gets said in breaks (short facts about the records, each one cited or cut) is being built next.</p>
 </section>
 
 <section class="sec">

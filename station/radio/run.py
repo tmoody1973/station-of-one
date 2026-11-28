@@ -19,6 +19,9 @@ from station.radio.page import render_sampler, sampler_path
 from station.radio.poll import FeedItem, poll
 from station.radio.program import FIT_MIN, mark_scheduled, program_block
 from station.radio.resolve import AppleRefused, resolve
+from station.radio.jazz import artists_by_style, scout_artists
+from station.radio.meeting import meeting_due
+from station.radio.scout import deepen_styles, scout_new_releases
 from station.radio.seeds import seed_candidates
 from station.steps.publish import cache_control, put_object
 from station.store import record_decision
@@ -119,6 +122,18 @@ def run_station(gw, station_id: str, db: sqlite3.Connection, now: datetime, pref
         seeds, seed_notes = seed_candidates(gw, station, db, now)  # the core, when the feeds run thin (Tarik, Nov 27)
         notes += seed_notes
         counts["seeds"] = len(seeds)
+        if station.styles and meeting_due(db, station, now):  # ONE Jazz: new releases from its artists, before fit scoring
+            try:
+                scouted, scout_notes = scout_new_releases(gw, station, db, now, scout_artists(station))
+                notes += scout_notes
+                counts["scouted"] = len(scouted)
+                if station.deepen:  # thin styles: best-known recordings by their artists
+                    deepened, by_style, deepen_notes = deepen_styles(gw, station, db, now, station.deepen, artists_by_style())
+                    notes += deepen_notes
+                    counts["deepened"] = by_style
+            except Exception as e:  # noqa: BLE001 — review I3: a scout bug must never stop the station's schedule
+                db.rollback()
+                notes.append(f"scout failed, the station plays on: {type(e).__name__}: {str(e)[:120]}")
         cands = _unscored(db, station.id)
         if cands:
             scores, raw, model, fit_notes = fit_scores(gw, station, cands)

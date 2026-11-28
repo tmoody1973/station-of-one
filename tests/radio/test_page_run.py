@@ -164,6 +164,10 @@ def test_new_set_updates_the_station_strip(db, tmp_path, monkeypatch):  # site s
     _seed_pool(db, 20)
     uploads = {}
     monkeypatch.setattr(run_mod, "put_object", lambda gw, bucket, key, data, *a: uploads.__setitem__(key, data))
+    from dataclasses import replace
+
+    import station.steps.stations as stations_mod
+    monkeypatch.setattr(stations_mod, "active_stations", lambda root=None: [replace(load_station("uk-jazz"), retired=False)])  # a sampler station
     run_mod.run_station(object(), "uk-jazz", db, NOW, load_prefs(), out_root=tmp_path)
     strip = json.loads(uploads["data/stations.json"])
     jazz = next(s for s in strip["stations"] if s["id"] == "uk-jazz")

@@ -39,7 +39,7 @@ def test_explainer_escaped_and_linked_from_sampler():
     assert f"/radio/{st.id}/meeting/index.html" in html
     assert EXPLAINER_PATH == "radio/how-it-works/index.html"
     sampler = render_sampler(st, Block(st.id, "b", "2026-11-27T18:00:00+00:00", []), {}, load_prefs())
-    assert '/radio/how-it-works/index.html' in sampler
+    assert f'/radio/{st.id}/how-it-works/index.html' in sampler          # its own explainer (jazz plan Task 6)
 
 
 def test_burnout_described_only_where_it_runs():  # Rhythm Lab's core gold never burns out

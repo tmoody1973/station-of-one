@@ -38,7 +38,7 @@ def test_navigation_keeps_audio_playing(page):
     _start(page)
     t0 = page.evaluate(STATE)["t"]
     _click(page, "main a[href*='/s/']")                        # a story page
-    _click(page, "#wone-strip a:has-text('ONE Jazz')")        # the jazz sampler
+    _click(page, "#wone-strip a.st-now[href*='/radio/jazz/']")        # the jazz sampler
     _click(page, "header.site nav a:has-text('Settings')")
     s = page.evaluate(STATE)
     assert s["marker"] and not s["paused"] and s["t"] > t0 + 2
@@ -46,13 +46,13 @@ def test_navigation_keeps_audio_playing(page):
 
 def test_back_forward_keeps_playing(page):
     _start(page)
-    _click(page, "#wone-strip a:has-text('ONE Jazz')")
+    _click(page, "#wone-strip a.st-now[href*='/radio/jazz/']")
     _click(page, "header.site nav a:has-text('Settings')")
     for step in ("back", "back", "forward"):
         getattr(page, f"go_{step}")()
         page.wait_for_timeout(1500)
     s = page.evaluate(STATE)
-    assert s["marker"] and not s["paused"] and s["path"].endswith("/radio/uk-jazz/index.html")
+    assert s["marker"] and not s["paused"] and s["path"].endswith("/radio/jazz/index.html")
 
 
 def test_title_and_address_update(page):
@@ -85,8 +85,8 @@ def test_failed_fetch_falls_back(page):
 
 
 def test_controls_work_after_swap(page):
-    _click(page, "#wone-strip a:has-text('ONE Jazz')")          # reached by a swap, not a page load
-    page.locator("main .pv").first.click()
+    _click(page, "#wone-strip a.st-now[href*='/radio/jazz/']")          # reached by a swap, not a page load
+    page.locator("main .pv:visible").first.click()
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('itunes.apple.com') }", timeout=15000)
     assert "preview" in page.locator("#wone-label").inner_text().lower()
     page.go_back()
@@ -105,9 +105,9 @@ def test_station_strip(page):  # KCRW pattern: a name box with play, what's on n
     assert names[0] == "News" and "ONE Jazz" in names
     page.locator("#wone-strip .st-name", has_text="News").click()           # the name box plays
     page.wait_for_function("() => { const a = document.getElementById('wone-audio'); return !a.paused && a.src.includes('/audio/') }", timeout=15000)
-    _click(page, "#wone-strip a.st-name:has-text('ONE Jazz')")               # a station with no live stream opens its page
+    _click(page, "#wone-strip a.st-now[href*='/radio/jazz/']")                  # what's on now opens the station's page; the newscast keeps playing
     s = page.evaluate(STATE)
-    assert s["path"].endswith("/radio/uk-jazz/index.html") and not s["paused"] and s["marker"]
+    assert s["path"].endswith("/radio/jazz/index.html") and not s["paused"] and s["marker"]
 
 
 def test_more_station_info_panel(page):
@@ -118,13 +118,13 @@ def test_more_station_info_panel(page):
     text = panel.text_content()   # raw text: the panel's styling lowercases headings
     assert panel.is_visible() and "five minutes on the hour" in text and "Next up" in text and "Rhythm Lab" in text
     hrefs = panel.locator("a").evaluate_all("els => els.map(e => e.getAttribute('href'))")
-    assert any(h.endswith("/radio/how-it-works/index.html") for h in hrefs)   # Tarik, 5:36 pm: no direct link to it
+    assert any(h.endswith("/radio/rhythm-lab/how-it-works/index.html") for h in hrefs)   # Tarik, 5:36 pm: no direct link to it
 
 
 def test_strip_now_links_to_station_page(page):
     page.wait_for_selector("#wone-strip .st-now", timeout=10000)
     hrefs = page.locator("#wone-strip .st-now").evaluate_all("els => els.map(e => e.getAttribute('href'))")
-    assert any(h.endswith("/radio/rhythm-lab/index.html") for h in hrefs) and any(h.endswith("/radio/uk-jazz/index.html") for h in hrefs)
+    assert any(h.endswith("/radio/rhythm-lab/index.html") for h in hrefs) and any(h.endswith("/radio/jazz/index.html") for h in hrefs)
 
 
 

@@ -31,7 +31,7 @@ td.p{font-family:var(--mono);white-space:nowrap}
 <section class="intro">
   <span class="tag kicker">The program director</span>
   <h1>This week's music meeting</h1>
-  <p>Jev answers yes-or-no questions about each song, as probabilities; code applies the rules: a song joins or moves up at 0.6 or more, no category changes more than a quarter of its songs in one meeting. A language model never picks the next song. <a href="/radio/{{ st.id }}/index.html">Back to {{ st.name }}</a> · <a href="/radio/how-it-works/index.html">How the station is programmed</a>.</p>
+  <p>Jev answers yes-or-no questions about each song, as probabilities; code applies the rules: a song joins or moves up at 0.6 or more, no category changes more than a quarter of its songs in one meeting. A language model never picks the next song. <a href="/radio/{{ st.id }}/index.html">Back to {{ st.name }}</a> · <a href="/radio/{{ st.id }}/how-it-works/index.html">How the station is programmed</a>.</p>
 </section>
 <section>
   <h2 class="marker ci"><span class="num">1</span><span class="lbl">Decisions</span></h2>
@@ -59,6 +59,14 @@ td.p{font-family:var(--mono);white-space:nowrap}
     </div>
   {% endfor %}
   </div>
+  {% if styles %}
+  <h3>Styles</h3>
+  <table class="styles">
+    <thead><tr><th>Style</th><th>Songs now</th><th>Aiming for</th></tr></thead>
+    <tbody>{% for s in styles %}<tr data-style="{{ s.key }}"><td>{{ s.label }}</td><td>{{ s.count }}</td><td>{{ s.target or "" }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p>Each hour's clock names a style for every slot; the five daypart clocks are drawn on <a href="/radio/{{ st.id }}/how-it-works/index.html">how the station is programmed</a>.</p>
+  {% endif %}
 </section>
 <footer>
   <span>Machine-programmed. Decisions are logged with Jev's probability; the code's thresholds are shown above.</span>

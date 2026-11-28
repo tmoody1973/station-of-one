@@ -72,7 +72,11 @@ class StationConfig:
     separation: dict[str, Any] | None = None
     meeting: dict[str, Any] | None = None
     shape: dict[str, Any] | None = None
-    programmer: str = "sampler"  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
+    programmer: str = "sampler"
+    styles: dict[str, list[str]] | None = None  # jazz: each style and the styles it falls back to (clock slots name styles)
+    retired: bool = False  # kept as a config, never run or listed
+    deepen: dict[str, int] | None = None  # ONE Jazz: playable-song targets for thin styles
+    replaces: str | None = None  # a retired station whose old page now points here  # "clock": the program director's 24/7 queue (plan B1); "sampler": an hourly set (plan A)  # soft hour shape: energy by half hour, holiday window (Rhythm Lab)  # the station's ladder: new, catalog, top, up, burn, age, down
 
     def clock_for(self, local_hour: int) -> Clock:
         return next(c for c in self.clocks if c.covers(local_hour))
@@ -88,7 +92,8 @@ def load_station(station_id: str, root: Path = STATIONS_ROOT) -> StationConfig:
                          clocks=tuple(Clock(c["name"], c["from_hour"], c["to_hour"],
                                             tuple((m, tuple(slots)) for m, slots in c["segments"])) for c in d.get("clocks", [])),
                          separation=d.get("separation"), meeting=d.get("meeting"), shape=d.get("shape"),
-                         programmer=d.get("programmer", "sampler"))
+                         programmer=d.get("programmer", "sampler"), styles=d.get("styles"), retired=bool(d.get("retired")),
+                         deepen=d.get("deepen"), replaces=d.get("replaces"))
 
 
 SCHEMA = """
@@ -105,7 +110,7 @@ CREATE TABLE IF NOT EXISTS station_candidates (
   PRIMARY KEY (station_id, candidate_id));
 CREATE TABLE IF NOT EXISTS rotation (
   station_id TEXT, candidate_id TEXT, category TEXT, energy INTEGER, vocal INTEGER, added_at TEXT, moved_at TEXT,
-  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT, tags TEXT,
+  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT, tags TEXT, style TEXT,
   PRIMARY KEY (station_id, candidate_id));
 CREATE TABLE IF NOT EXISTS queue (
   station_id TEXT, starts_at TEXT, kind TEXT, candidate_id TEXT, song_id TEXT, duration_ms INTEGER, category TEXT,
@@ -118,6 +123,10 @@ CREATE TABLE IF NOT EXISTS meeting (
 
 def open_radio(db: sqlite3.Connection) -> None:
     db.executescript(SCHEMA)
+    have = {r[1] for r in db.execute("PRAGMA table_info(rotation)")}
+    for col in ("opener INTEGER DEFAULT 0", "closer INTEGER DEFAULT 0", "source_note TEXT", "tags TEXT", "style TEXT"):
+        if col.split()[0] not in have:  # databases created before the column existed
+            db.execute(f"ALTER TABLE rotation ADD COLUMN {col}")
     db.commit()
 
 
@@ -128,3 +137,9 @@ def normalize(text: str) -> str:
 
 def candidate_id(artist: str, title: str, release: str) -> str:
     return hashlib.sha1("|".join(normalize(x) for x in (artist, title, release)).encode()).hexdigest()[:16]
+
+
+def active_stations(root: Path = STATIONS_ROOT) -> list[StationConfig]:
+    """Every station that runs and is listed, the flagship first."""
+    configs = [load_station(p.stem, root) for p in sorted(Path(root).glob("*.json"))]
+    return sorted((s for s in configs if not s.retired), key=lambda s: (s.type != "flagship", s.name))

@@ -155,7 +155,7 @@ def test_playlists_page_has_a_tab_per_station(tmp_path, monkeypatch):
     db = rl_db()
     run(db, tmp_path, monkeypatch)
     html = playlists_page(db, NOW, load_prefs())
-    assert 'href="#rhythm-lab"' in html and 'id="rhythm-lab"' in html and 'href="#uk-jazz"' in html
+    assert 'href="#rhythm-lab"' in html and 'id="rhythm-lab"' in html and 'href="#jazz"' in html and 'href="#uk-jazz"' not in html
     assert "<script>" not in html
 
 
@@ -165,3 +165,61 @@ def test_empty_queue_page():  # live-playlist Focus 5
     db.executescript(STORE_SCHEMA)
     html = station_page(db, load_station(RL), load_prefs(), NOW)
     assert "Nothing scheduled yet" in html and '<li class="trk"' not in html
+
+
+def test_news_follows_newscast_hours():  # jazz plan Task 2: jazz dayparts aren't named "day"
+    from zoneinfo import ZoneInfo
+    from station.radio.onair import news_for_hour
+    chi = ZoneInfo("America/Chicago")
+    st = load_station("jazz")
+    assert news_for_hour(st, datetime(2026, 11, 27, 12, tzinfo=chi), load_prefs(), 165000) == 165000
+    assert news_for_hour(st, datetime(2026, 11, 27, 19, tzinfo=chi), load_prefs(), 165000) == 165000   # the 7 pm newscast
+    assert news_for_hour(st, datetime(2026, 11, 27, 22, tzinfo=chi), load_prefs(), 165000) == 0
+
+
+def test_each_clock_station_has_its_own_explainer(tmp_path, monkeypatch):  # jazz plan Task 6: one shared path was overwritten
+    db = rl_db()
+    _, uploads = run(db, tmp_path, monkeypatch)
+    assert "radio/rhythm-lab/how-it-works/index.html" in uploads and "radio/how-it-works/index.html" in uploads   # the flagship keeps the old address
+    monkeypatch.setattr(onair, "meeting_due", lambda db, st, n: False)
+    jazz_uploads = {}
+    put = lambda gw, bucket, key, data, *a: jazz_uploads.__setitem__(key, data)
+    monkeypatch.setattr(onair, "put_object", put)
+    monkeypatch.setattr(run_mod, "put_object", put)
+    run_mod.run_station(object(), "jazz", db, NOW, load_prefs(), out_root=tmp_path, discover=False)
+    assert "radio/jazz/how-it-works/index.html" in jazz_uploads and "radio/how-it-works/index.html" not in jazz_uploads
+
+
+def test_jazz_explainer_shows_styles_and_dayparts():
+    import re
+    from station.radio.page import render_explainer
+    st = load_station("jazz")
+    html = render_explainer(st, {"P": 140, "M": 174, "G": 600}, None, load_prefs(), style_counts={"heritage": 86, "vocal": 52})
+    for style in st.styles:
+        assert f'data-style="{style}"' in html
+    assert re.search(r'<tr data-style="heritage">.*?86.*?150', html, re.S)                  # playable now, and the target
+    assert set(re.findall(r'data-clock="([a-z_]+)"', html)) == {"rise", "workday", "drive", "after_hours", "overnight"}
+    heritage = set(re.findall(r'data-slot="heritage"', html)) and re.search(r'fill="([^"]+)"[^>]*data-slot="heritage"', html).group(1)
+    vocal = re.search(r'fill="([^"]+)"[^>]*data-slot="vocal"', html).group(1)
+    assert heritage != vocal                                                                 # the clocks are colored by style
+    assert ":30 always" not in html                                                          # jazz clocks have one fixed point
+
+
+def test_retired_sampler_page_points_to_jazz(tmp_path, monkeypatch):  # jazz plan Task 6: the frozen sampler page stops showing
+    db = rl_db()
+    monkeypatch.setattr(onair, "meeting_due", lambda db, st, n: False)
+    uploads = {}
+    put = lambda gw, bucket, key, data, *a: uploads.__setitem__(key, data)
+    monkeypatch.setattr(onair, "put_object", put)
+    monkeypatch.setattr(run_mod, "put_object", put)
+    run_mod.run_station(object(), "jazz", db, NOW, load_prefs(), out_root=tmp_path, discover=False)
+    page = uploads["radio/uk-jazz/index.html"].decode()
+    assert 'url=/radio/jazz/index.html' in page and 'href="/radio/jazz/index.html"' in page
+
+
+def test_jazz_pd_page_shows_styles():
+    from station.radio.page import render_meeting
+    st = load_station("jazz")
+    html = render_meeting(st, [], [], load_prefs(), styles={"heritage": 86, "vocal": 52})
+    assert 'data-style="heritage"' in html and "86" in html and "150" in html
+    assert 'href="/radio/jazz/how-it-works/index.html"' in html

@@ -62,3 +62,8 @@ def test_held_report_lists_held_and_missing(tmp_path):  # Rhythm Lab plan, Task 
     assert held_report(db, out) == 2
     rows = list(csv.DictReader(open(out)))
     assert [r["track_id"] for r in rows] == ["t2", "t3"] and rows[0]["match_status"] == "held"
+
+
+def test_to_match_can_take_only_some_tracks():  # jazz plan Task 1: match the core jazz deep cuts, nothing else
+    d = db()
+    assert [t[0] for t in to_match(d, min_plays=1, only={"RLT00004", "RLT00013"})] == ["RLT00004"]   # 13 is a guest mix

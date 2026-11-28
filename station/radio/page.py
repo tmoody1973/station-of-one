@@ -5,7 +5,9 @@ plays only when tapped (one at a time, never advancing on its own), and a "Liste
 """
 from __future__ import annotations
 
+import calendar
 import math
+from html import escape
 
 from station.config import Prefs
 from station.radio.model import Clock, StationConfig
@@ -27,14 +29,51 @@ def render_sampler(station: StationConfig, block: Block, counts: dict, prefs: Pr
                                                    station=prefs.station, on_now=on_now)
 
 
-def render_meeting(station: StationConfig, rows: list[dict], board: list[dict], prefs: Prefs) -> str:
-    return env().get_template("meeting.html").render(st=station, rows=rows, board=board, station=prefs.station)
+def render_meeting(station: StationConfig, rows: list[dict], board: list[dict], prefs: Prefs, styles: dict | None = None) -> str:
+    return env().get_template("meeting.html").render(st=station, rows=rows, board=board, station=prefs.station,
+                                                     styles=style_rows(station, styles or {}))
 
 
-EXPLAINER_PATH = "radio/how-it-works/index.html"
+def explainer_path(station_id: str) -> str:
+    return f"radio/{station_id}/how-it-works/index.html"
+
+
+def render_moved(new: StationConfig) -> str:
+    """A retired station's old page: sends listeners to the station that replaced it."""
+    to, name = f"/radio/{new.id}/index.html", escape(new.name)
+    return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url={to}">'
+            f'<title>{name}</title></head><body><p>This station is now <a href="{to}">{name}</a>: jazz around the clock.</p></body></html>')
+
+
+EXPLAINER_PATH = "radio/how-it-works/index.html"  # the flagship's explainer, at its first address too
 SONG_MS = 240000  # a typical song, for drawing the clock
 NEWS_MS = 165000
-COLORS = ("var(--red)", "var(--yellow)", "var(--blue)", "#3a3833", "#9b9277", "#c9a227")
+COLORS = ("var(--red)", "var(--yellow)", "var(--blue)", "#3a3833", "#9b9277", "#c9a227", "#5f7f6a")
+
+
+def slot_colors(station: StationConfig) -> dict[str, str]:
+    """A color per thing a clock slot names: styles on a styled station (ONE Jazz), else rotation categories."""
+    keys = list(station.styles) if station.styles else [c.code for c in station.rotation.categories]
+    return {k: COLORS[i % len(COLORS)] for i, k in enumerate(keys)}
+
+
+def style_rows(station: StationConfig, counts: dict[str, int]) -> list[dict]:
+    """A styled station's styles: label, songs now, deepening target, fallbacks (empty for other stations)."""
+    from station.radio.meeting import STYLE_DESCRIPTIONS
+    color = slot_colors(station)
+    return [{"key": k, "label": STYLE_DESCRIPTIONS.get(k, k), "count": counts.get(k, 0), "color": color[k],
+             "target": (station.deepen or {}).get(k), "fallbacks": [STYLE_DESCRIPTIONS.get(f, f) for f in fb]}
+            for k, fb in (station.styles or {}).items()]
+
+
+def _hour(hhmm: str) -> str:
+    h = int(hhmm.split(":")[0])
+    return f"{h % 12 or 12} {'am' if h < 12 else 'pm'}"
+
+
+def _month_day(md: str) -> str:
+    m, d = (int(x) for x in md.split("-"))
+    return f"{calendar.month_name[m]} {d}"
 
 
 def _arc(cx: float, cy: float, r1: float, r2: float, a0: float, a1: float) -> str:
@@ -54,7 +93,7 @@ def clock_arcs(station: StationConfig, clock: Clock) -> list[dict]:
             blocks.append((minute, list(slots)))
         else:
             blocks[-1][1].extend(slots)
-    color = {c.code: COLORS[i % len(COLORS)] for i, c in enumerate(station.rotation.categories)}
+    color = slot_colors(station)
     arcs = []
     for n, (minute, slots) in enumerate(blocks):
         end = blocks[n + 1][0] if n + 1 < len(blocks) else 60
@@ -69,14 +108,20 @@ def clock_arcs(station: StationConfig, clock: Clock) -> list[dict]:
     return arcs
 
 
-def render_explainer(station: StationConfig, counts: dict[str, int], last_meeting: str | None, prefs: Prefs) -> str:
-    from station.radio import meeting, resolve, scheduler
+def render_explainer(station: StationConfig, counts: dict[str, int], last_meeting: str | None, prefs: Prefs,
+                     style_counts: dict[str, int] | None = None) -> str:
+    from station.radio import meeting, resolve, scheduler, scout
     numbers = {"add": meeting.ADD_MIN, "up": meeting.UP_MIN, "burn": meeting.BURN_MIN, "burn_days": meeting.BURN_DAYS,
                "churn": round(meeting.CHURN * 100), "fit_floor": meeting.FIT_FLOOR, "match": resolve.MATCH_MIN,
-               "spoken": scheduler.SPOKEN_MS}
+               "spoken": scheduler.SPOKEN_MS, "recent_days": scout.RECENT_DAYS,
+               "news_hours": f"{_hour(prefs.station.first_newscast)} to {_hour(prefs.station.last_newscast)}"}
     clocks = [{"clock": c, "arcs": clock_arcs(station, c)} for c in station.clocks]
+    half = any(minute == scheduler.FIXED_MINUTES[-1] for c in station.clocks for minute, _ in c.segments)  # a :30 fixed point
+    holiday = (station.shape or {}).get("holiday_only")
+    holiday = f"{_month_day(holiday['from'])} to {_month_day(holiday['to'])}" if holiday else None
     return env().get_template("how_programmed.html").render(st=station, counts=counts, last_meeting=last_meeting, n=numbers,
-                                                            clocks=clocks, station=prefs.station)
+                                                            clocks=clocks, station=prefs.station, half=half, holiday=holiday,
+                                                            styles=style_rows(station, style_counts or {}))
 
 
 PLAYLISTS_PATH = "playlists/index.html"
