@@ -95,3 +95,16 @@ def test_archive_survives_odd_files(tmp_path):  # review I3: one odd file must n
         (root / h / "newscast.json").write_text(json.dumps(newscast(h, **over)))
     html = render_archive(all_newscasts(root), PREFS)
     assert 'id="2026-11-26"' in html and 'href="/h/2026-11-26/1100/index.html"' in html
+
+
+def test_hour_pages_rebuild_an_old_hour_with_todays_frame(tmp_path):  # Tarik, 8:51 pm: old story pages had no menu or player
+    from station.steps.page import hour_pages
+    root = runs(tmp_path, "2026-11-26T11")
+    n = newscast("2026-11-26T11")
+    (root / "2026-11-26T11" / "stories.json").write_text(json.dumps({s["id"]: {} for s in n["stories"]}))
+    pages = hour_pages(root / "2026-11-26T11", PREFS, runs_root=root)
+    assert "h/2026-11-26/1100/index.html" in pages and "index.html" not in pages          # never the front page
+    stories = [k for k in pages if k.startswith("s/2026-11-26/1100/")]
+    assert len(stories) == len(n["stories"])
+    for key, html in pages.items():
+        assert '<a href="/music/index.html">Music</a>' in html and 'src="/shell.js"' in html and 'id="wone-strip"' in html, key
