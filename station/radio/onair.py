@@ -127,10 +127,13 @@ def station_page(db: sqlite3.Connection, station: StationConfig, prefs: Prefs, n
     now = now.astimezone(UTC)
     tz = ZoneInfo(prefs.station.timezone)
     hour0 = now.replace(minute=0, second=0, microsecond=0)
-    songs = [it for it in _timed(window(db, station.id, now - timedelta(hours=PAGE_BACK_HOURS), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
-             if it["kind"] == "song"]
+    rows = [it for it in _timed(window(db, station.id, now - timedelta(hours=PAGE_BACK_HOURS), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
+            if it["kind"] == "song" or (it["kind"] in ("break", "backsell") and it.get("audio_url"))]  # breaks show their work (B2)
+    for it in rows:
+        it["sources"] = json.loads(it.get("sources") or "[]") if it["kind"] != "song" else []
+    songs = [it for it in rows if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
-    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), list(reversed(songs)))
+    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), list(reversed(rows)))
     return render_sampler(station, block, counts or {}, prefs, on_now=on_now)
 
 

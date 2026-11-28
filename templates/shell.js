@@ -429,6 +429,9 @@
         const id = String(mk.nowPlayingItem.id);
         cur = rows.filter((r) => r.dataset.song === id).sort((a, b) => Math.abs(at(a, "starts") - t) - Math.abs(at(b, "starts") - t))[0] || null;
       }
+      if (station && station.src === list.dataset.stationSrc && inVoice) {  // listening here, between songs: the break you hear
+        cur = rows.filter((r) => r.dataset.kind === "voice").sort((a, b) => Math.abs(at(a, "starts") - t) - Math.abs(at(b, "starts") - t))[0] || cur;
+      }
       if (!cur) cur = rows.find((r) => at(r, "starts") <= t && t < at(r, "ends")) || null;
       const edge = cur ? at(cur, "starts") : t;
       const next = cur ? null : rows.filter((r) => at(r, "starts") > t).sort((a, b) => at(a, "starts") - at(b, "starts"))[0] || null;
