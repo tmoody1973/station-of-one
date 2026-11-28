@@ -74,7 +74,7 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
 
 
 <main class="wrap">
-{% if mode == "hour" %}<p style="margin:0;color:var(--muted)">{{ n.hour_label }} newscast · {{ date_label }} · <a href="/index.html">Latest newscast</a></p>{% endif %}
+{% if mode == "hour" %}<p style="margin:0;color:var(--muted)">{{ n.hour_label }} newscast · {{ date_label }} · <a href="/index.html">Latest newscast</a> · <a href="/archive/index.html#{{ n.id[:10] }}">← Past newscasts</a></p>{% endif %}
 <div class="grid">
   {% if lead %}
   <article class="lead">
@@ -178,12 +178,21 @@ details.sources ul{margin:8px 0 0;padding-left:18px;line-height:1.6;font-weight:
     </div>
     {% endfor %}
     </div>
-    <p style="margin:14px 0 0;font-weight:700"><a href="/archive/index.html">Past newscasts</a></p>
   </section>
+
+  {% if past_days %}
+  <section class="block" id="past">
+    <h2 class="marker ci"><span class="num">5</span><span class="lbl">Past newscasts</span></h2>
+    <p style="margin:0;color:var(--ink-2)">Every hour the station has aired, playable in place. Pick a day:</p>
+    <div class="days" style="display:flex;flex-wrap:wrap;gap:10px">
+    {% for d in past_days %}<a class="btn-line" href="/archive/index.html#{{ d.id }}">{{ d.label }}</a>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   {% if picks and picks.picks %}
   <section class="block" id="music">
-    <h2 class="marker ci"><span class="num">5</span><span class="lbl">Music picks</span></h2>
+    <h2 class="marker ci"><span class="num">6</span><span class="lbl">Music picks</span></h2>
     <p style="margin:0;color:var(--ink-2)">New releases from the labels and channels the station follows, ranked by Jev. Players are the artists' official Bandcamp and YouTube embeds and load only when you tap Play.</p>
     <div class="cards">
     {% include "_picks.html" %}
