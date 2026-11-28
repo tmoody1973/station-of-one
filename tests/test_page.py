@@ -82,7 +82,7 @@ def test_page_writes_front_and_hour_files(tmp_path):
         (runs / h / "newscast.json").write_text(json.dumps(newscast(h)))
     written = page(runs / "2026-11-26T17", PREFS, runs_root=runs)
     names = sorted(str(p.relative_to(runs / "2026-11-26T17" / "site")) for p in written)
-    assert names == ["data/stations.json", "feed.xml", "h/2026-11-26/1700/index.html", "index.html", "live.js", "music/index.html",
+    assert names == ["archive/index.html", "data/stations.json", "feed.xml", "h/2026-11-26/1700/index.html", "index.html", "live.js", "music/index.html",
                      "shell.css", "shell.js"]   # the Music hub (music hub plan, Task 1)
 
 

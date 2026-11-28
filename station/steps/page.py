@@ -262,6 +262,60 @@ def render_control_room(run_log: dict, decisions: list[dict], newscast: dict, pr
 
 
 MUSIC_HUB_PATH = "music/index.html"
+ARCHIVE_PATH = "archive/index.html"
+_RUN_NAME = re.compile(r"\d{4}-\d\d-\d\dT\d\d")
+
+
+def _published(folder: Path) -> bool:
+    try:
+        steps = json.loads((folder / "run_log.json").read_text()).get("steps") or []
+    except (OSError, ValueError, AttributeError):
+        return False
+    return any(isinstance(st, dict) and st.get("name") == "publish" and st.get("status") == "done" for st in steps)
+
+
+def all_newscasts(runs_root: Path, current: str | None = None) -> list[dict]:
+    """Every newscast that aired: hour folders whose newscast.json is a voiced newscast for that hour and whose publish
+    step finished (the current hour publishes right after the page step), newest first. Anything odd is skipped,
+    never fatal: one bad file must not stop the page step every hour (archive plan, review I2/I3)."""
+    out = []
+    for f in Path(runs_root).glob("*/newscast.json"):
+        hour = f.parent.name
+        if not _RUN_NAME.fullmatch(hour):
+            continue  # test-friday, rss-backfill: not newscast hours
+        try:
+            n = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        audio = n.get("audio") if isinstance(n, dict) else None
+        voiced = isinstance(audio, dict) and isinstance(audio.get("duration_ms"), int) and audio["duration_ms"] > 0
+        if voiced and n.get("id") == hour and (hour == current or _published(f.parent)):
+            out.append(n)
+    return sorted(out, key=lambda n: n["id"], reverse=True)
+
+
+def _archive_row(n: dict) -> dict:
+    stories = n.get("stories") or []
+    return {"hour_label": _hour_label(n), "page": "/" + hour_path(n["id"]), "audio_url": audio_path(n),
+            "chapters": n.get("chapters", []), "lead": str(stories[0].get("headline") or "") if stories else "",
+            "duration_ms": n["audio"]["duration_ms"], "stories": len(stories), "day_label": _date_label(n)}
+
+
+def render_archive(newscasts: list[dict], prefs: Prefs) -> str:
+    """Past newscasts: a section per day, newest first, each day labelled by its date (the page is rebuilt only in
+    newscast hours, so "Today" would be wrong overnight; review I1).
+    ponytail: one page; per-day pages or a date picker once the history passes ~60 days."""
+    days: list[dict] = []
+    for n in newscasts:
+        try:
+            row = _archive_row(n)
+        except (KeyError, TypeError, ValueError, AttributeError, IndexError):
+            continue  # an odd file shows nothing rather than stopping the page
+        day = n["id"][:10]
+        if not days or days[-1]["id"] != day:
+            days.append({"id": day, "label": row["day_label"], "hours": []})
+        days[-1]["hours"].append(row)
+    return env().get_template("archive.html").render(days=days, station=prefs.station)
 
 
 def render_hub(stations: list[dict], picks: dict | None, prefs: Prefs) -> str:
@@ -362,13 +416,16 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
     hub = site / MUSIC_HUB_PATH  # the Music hub; its on-now lines are filled live by shell.js
     hub.parent.mkdir(parents=True, exist_ok=True)
     hub.write_text(render_hub(strip_data["stations"], picks, prefs))
+    archive_page = site / ARCHIVE_PATH  # past newscasts (archive plan)
+    archive_page.parent.mkdir(parents=True, exist_ok=True)
+    archive_page.write_text(render_archive(all_newscasts(runs_root, current=current["id"]), prefs))
     feed = site / "feed.xml"
     mp3 = run / "newscast.mp3"
     feed.write_text(render_feed(current, prefs, mp3.stat().st_size if mp3.exists() else 0, episodes))
     for asset in ("cover-one.png", "logo-one.png"):  # a changed asset gets a new name: images are cached long
         if (TEMPLATES.parent / "assets" / asset).exists():
             (site / asset).write_bytes((TEMPLATES.parent / "assets" / asset).read_bytes())
-    written = [front, hour, player, live_js, shell_css, strip, hub, feed, *story_pages]
+    written = [front, hour, player, live_js, shell_css, strip, hub, archive_page, feed, *story_pages]
     mk = musickit_config(musickit_token)
     if mk:  # public by design: MusicKit on the Web needs it in the browser; Apple honours it only from our origin
         mk_path = site / "data" / "musickit.json"
