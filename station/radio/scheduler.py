@@ -39,13 +39,13 @@ def _songs(db: sqlite3.Connection, station_id: str) -> list[dict]:
     rows = db.execute(
         "SELECT ro.candidate_id, ro.category, COALESCE(ro.energy, 2), ro.vocal, ro.last_played_at, ro.added_at, c.song_id, "
         "c.duration_ms, COALESCE(c.matched_artist, c.artist), c.release_date, ro.source_note, fi.feed, fi.title, fi.link, "
-        "COALESCE(ro.opener, 0), COALESCE(ro.closer, 0), COALESCE(ro.tags, '') "
+        "COALESCE(ro.opener, 0), COALESCE(ro.closer, 0), COALESCE(ro.tags, ''), ro.style "
         "FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id LEFT JOIN feed_items fi ON fi.id = c.feed_item_id "
         "WHERE ro.station_id = ? AND c.duration_ms > 0 AND c.song_id IS NOT NULL ORDER BY ro.candidate_id", (station_id,)).fetchall()
     return [{"id": r[0], "category": r[1], "energy": r[2], "vocal": r[3], "last_played": r[4], "added_at": r[5],
              "song_id": r[6], "duration_ms": r[7], "artist": normalize(r[8]), "released": r[9],
              "note": r[10] or (f"Found in {r[11]}: {r[12]}" if r[11] else ""), "source_url": "" if r[10] else (r[13] or ""),
-             "opener": r[14], "closer": r[15], "tags": r[16]}
+             "opener": r[14], "closer": r[15], "tags": r[16], "style": r[17]}
             for r in rows]
 
 
@@ -114,8 +114,12 @@ class _Hour:
         self.adjacent = True
 
 
-def _pool(songs, slot: str, codes: list[str], at: datetime) -> list[tuple[str, list[dict]]]:
-    """Where a slot looks, in order: its own category, then every category in config order."""
+def _pool(songs, slot: str, codes: list[str], at: datetime, styles: dict | None = None) -> list[tuple[str, list[dict]]]:
+    """Where a slot looks, in order. A style slot (ONE Jazz): that style, its fallback styles, then any song.
+    A category slot: its own category, then every category in config order."""
+    if styles and slot in styles:
+        return ([(slot, [s for s in songs if s["style"] == slot])] +
+                [(fb, [s for s in songs if s["style"] == fb]) for fb in styles[slot]] + [("any", songs)])
     if slot == "N" and "N" not in codes:
         recent = [s for s in songs if s["category"] == "C" and s["added_at"] and at - datetime.fromisoformat(s["added_at"]) <= timedelta(days=NEW_DAYS)]
         first = [("N", recent)]
@@ -135,6 +139,9 @@ def schedule_hour(station: StationConfig, db: sqlite3.Connection, hour_start_loc
         db.execute("DELETE FROM queue WHERE station_id = ? AND starts_at >= ? AND starts_at < ?", (station.id, start.isoformat(), end.isoformat()))
     clock = station.clock_for(hour_start_local.hour)  # local wall-clock hour: daylight saving can't double a clock
     songs = _songs(db, station.id)
+    holiday = (station.shape or {}).get("holiday_only")  # holiday-only records play only in their window
+    in_window = bool(holiday) and holiday["from"] <= hour_start_local.strftime("%m-%d") <= holiday["to"]
+    songs = [s for s in songs if in_window or "holiday_only" not in s["tags"].split(";")]
     codes = [c.code for c in station.rotation.categories]
     rules = _Hour(station, db, start)
     shape = station.shape or {}
@@ -173,7 +180,7 @@ def schedule_hour(station: StationConfig, db: sqlite3.Connection, hour_start_loc
             ctx = {"first": first_song, "room": room, "band": (shape.get("energy") or {}).get(half),
                    "holiday": holiday.get("tag") if in_season and minute == 30 and not any(i.kind == "song" for i in seg_items) else None}
             pick = None
-            for cat, pool in _pool(songs, slot, codes, cursor):
+            for cat, pool in _pool(songs, slot, codes, cursor, station.styles):
                 fits = [s for s in pool if s["id"] not in used and s["duration_ms"] <= room
                         and rules.allowed(s, cursor, s["category"])]
                 if fits:
@@ -183,6 +190,8 @@ def schedule_hour(station: StationConfig, db: sqlite3.Connection, hour_start_loc
             if not pick:
                 continue  # nothing eligible fits: the time goes to the break
             cat, s = pick
+            if station.styles and slot in station.styles:
+                cat = s["category"]  # a style slot: the queue records the song's rotation category
             first_song = False
             used.add(s["id"])
             rules.take(s, cursor)

@@ -166,3 +166,77 @@ def test_an_hour_without_songs_is_refilled():  # review I3: scheduled before the
     again = schedule_hour(st, db, NOON)
     assert len(music(again)) >= 11
     assert db.execute("SELECT COUNT(*) FROM queue WHERE kind = 'id' AND starts_at = ?", (again[0].starts_at,)).fetchone()[0] == 1
+
+
+# --- ONE Jazz: style slots (jazz station plan, Task 3) ---
+JAZZ_STYLES = ["contemporary", "uk_jazz", "spiritual_avant", "jazz_funk_fusion", "heritage", "vocal", "latin_brazilian_afro"]
+
+
+def jazz_song(db, cid, style, artist, minutes=4.5, tags="", cat="P"):
+    add(db, cid, cat, artist=artist, minutes=minutes, station="jazz")
+    db.execute("UPDATE rotation SET style = ?, tags = ? WHERE candidate_id = ?", (style, tags, cid))
+
+
+def jazz_library(db, per_style=50, skip=()):
+    n = 0
+    for style in JAZZ_STYLES:
+        if style in skip:
+            continue
+        for i in range(per_style):
+            jazz_song(db, f"{style}-{i}", style, f"Artist {n % 70}")
+            n += 1
+
+
+def styles_of(db, items):
+    return [db.execute("SELECT style FROM rotation WHERE candidate_id = ?", (it.candidate_id,)).fetchone()[0] for it in music(items)]
+
+
+def test_style_slot_draws_that_style():
+    db = station_db()
+    jazz_library(db)
+    items = schedule_hour(load_station("jazz"), db, datetime(2026, 11, 27, 12, 0, tzinfo=CHI), news_ms=165000)   # workday
+    from tests.radio.test_model import TARIK_JAZZ_CLOCKS
+    got = styles_of(db, items)
+    slots = TARIK_JAZZ_CLOCKS["workday"][1]
+    assert got[:len(slots)] == slots[:len(got)] and len(got) >= 9      # the clock's 11 in order; leftover time may add one more
+
+
+def test_style_slot_falls_back():  # jazz plan Review Focus 1
+    db = station_db()
+    jazz_library(db, skip=("latin_brazilian_afro",))
+    items = schedule_hour(load_station("jazz"), db, datetime(2026, 11, 27, 7, 0, tzinfo=CHI), news_ms=165000)      # rise: slot 2 is Latin
+    assert styles_of(db, items)[1] == "jazz_funk_fusion"          # Latin's first fallback
+    assert all(it.candidate_id for it in music(items))
+
+
+def test_jazz_rules_hold_over_a_day():  # jazz plan Review Focus 2
+    db = station_db()
+    jazz_library(db)
+    st = load_station("jazz")
+    day = []
+    for h in range(24):
+        hour = datetime(2026, 11, 27, 0, 0, tzinfo=CHI) + timedelta(hours=h)
+        items = schedule_hour(st, db, hour, news_ms=165000 if 7 <= h <= 19 else 0)
+        kinds = [it.kind for it in items]
+        if kinds.count("song") >= 9:
+            first, second = [i for i, k in enumerate(kinds) if k == "break"][:2]
+            assert kinds[:first].count("song") == 4 and kinds[first:second].count("song") == 4, h
+        day += music(items)
+    ids = [it.candidate_id for it in day]
+    assert len(ids) == len(set(ids))                               # no track twice (72 h rest) in a day
+    by_artist = {}
+    for it in day:
+        artist = db.execute("SELECT matched_artist FROM candidates WHERE id = ?", (it.candidate_id,)).fetchone()[0]
+        when = datetime.fromisoformat(it.starts_at)
+        assert all(when - prev >= timedelta(hours=4) for prev in by_artist.get(artist, [])), artist
+        by_artist.setdefault(artist, []).append(when)
+
+
+def test_holiday_only_outside_window():  # jazz plan Review Focus 4
+    for day, allowed in ((datetime(2026, 12, 10, 12, 0, tzinfo=CHI), True), (datetime(2026, 12, 27, 12, 0, tzinfo=CHI), False)):
+        db = station_db()
+        jazz_library(db, per_style=3)
+        for i in range(20):
+            jazz_song(db, f"xmas-{i}", "contemporary", f"Holiday {i}", tags="holiday_only")
+        ids = [it.candidate_id for it in music(schedule_hour(load_station("jazz"), db, day, news_ms=165000))]
+        assert any(i.startswith("xmas") for i in ids) is allowed, day
