@@ -45,7 +45,7 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
   <span class="tag kicker">Music station · {% if st.programmer == "clock" %}on air around the clock{% else %}sampler{% endif %}</span>
   <h1>{{ st.name }}</h1>
   <p>{{ st.brief }}</p>
-  {% if st.programmer == "clock" %}<p style="font-size:15px">Programmed around the clock by the station's program director: Jev decides what joins the rotation and what moves; code applies the categories, rest times and hour clocks. <a href="/radio/{{ st.id }}/meeting/index.html">This week's music meeting</a> · <a href="/radio/how-it-works/index.html">How the station is programmed</a>.</p>
+  {% if st.programmer == "clock" %}<p style="font-size:15px">Programmed around the clock by the station's program director: Jev decides what joins the rotation and what moves; code applies the categories, rest times and hour clocks. <a href="/radio/{{ st.id }}/meeting/index.html">This week's music meeting</a> · <a href="/radio/{{ st.id }}/how-it-works/index.html">How the station is programmed</a>.</p>
   {% else %}<p style="font-size:15px">An agent read the station's feeds, Jev judged each find against that brief, and code programmed this {{ minutes }}-minute set from what matched on Apple Music. Every track links to where it was found. <a href="/radio/how-it-works/index.html">How the station is programmed</a>.</p>{% endif %}
   {% if st.programmer == "clock" %}<button class="listen" {{ play("/data/radio/" ~ st.id ~ "/queue.json", st.name, st.name ~ " · live", 0, [], "station") }}>Listen live</button>
   <span class="hint">Full songs, joined live, through your own Apple Music subscription. Without one, tap any song's preview below.</span>

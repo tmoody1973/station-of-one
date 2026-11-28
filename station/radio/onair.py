@@ -12,8 +12,8 @@ from zoneinfo import ZoneInfo
 from station.config import Prefs
 from station.radio.meeting import meeting_due, music_meeting
 from station.radio.model import StationConfig
-from station.radio.page import (EXPLAINER_PATH, PLAYLISTS_PATH, meeting_path, render_explainer, render_meeting, render_playlists,
-                                render_sampler, sampler_path)
+from station.radio.page import (EXPLAINER_PATH, PLAYLISTS_PATH, explainer_path, meeting_path, render_explainer, render_meeting,
+                                render_moved, render_playlists, render_sampler, sampler_path)
 from station.radio.program import Block
 from station.radio.scheduler import schedule_hour
 from station.radio.tags import tag_songs
@@ -96,10 +96,15 @@ def meeting_view(db: sqlite3.Connection, station: StationConfig) -> tuple[list[d
     return rows, board
 
 
+def _style_counts(db, station: StationConfig) -> dict[str, int]:
+    return dict(db.execute("SELECT style, COUNT(*) FROM rotation WHERE station_id = ? AND style IS NOT NULL GROUP BY style",
+                           (station.id,)).fetchall())
+
+
 def _explainer(db, station: StationConfig, prefs: Prefs) -> str:
     counts = dict(db.execute("SELECT category, COUNT(*) FROM rotation WHERE station_id = ? GROUP BY category", (station.id,)).fetchall())
     last = db.execute("SELECT MAX(held_at) FROM meeting WHERE station_id = ?", (station.id,)).fetchone()[0]
-    return render_explainer(station, counts, last, prefs)
+    return render_explainer(station, counts, last, prefs, _style_counts(db, station))
 
 
 PAGE_BACK_HOURS = 3  # the tracklist shows what played in the last 3 hours
@@ -174,8 +179,14 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     pages = ((f"data/radio/{station.id}/queue.json", json.dumps(queue).encode(), "application/json"),
              (sampler_path(station.id), station_page(db, station, prefs, now, counts).encode(), "text/html; charset=utf-8"),
              (PLAYLISTS_PATH, playlists_page(db, now, prefs).encode(), "text/html; charset=utf-8"),
-             (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs).encode(), "text/html; charset=utf-8"),
-             (EXPLAINER_PATH, _explainer(db, station, prefs).encode(), "text/html; charset=utf-8"))
+             (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs, _style_counts(db, station)).encode(),
+              "text/html; charset=utf-8"))
+    explainer = _explainer(db, station, prefs).encode()
+    pages += ((explainer_path(station.id), explainer, "text/html; charset=utf-8"),)  # one per station (two used to overwrite one)
+    if station.type == "flagship":
+        pages += ((EXPLAINER_PATH, explainer, "text/html; charset=utf-8"),)  # the address older pages link to
+    if station.replaces:
+        pages += ((sampler_path(station.replaces), render_moved(station).encode(), "text/html; charset=utf-8"),)
     for key, body, ctype in pages:
         put_object(gw, prefs.hosting.bucket, key, body, ctype, cache_control(key))
     return counts

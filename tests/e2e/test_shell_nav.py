@@ -118,7 +118,7 @@ def test_more_station_info_panel(page):
     text = panel.text_content()   # raw text: the panel's styling lowercases headings
     assert panel.is_visible() and "five minutes on the hour" in text and "Next up" in text and "Rhythm Lab" in text
     hrefs = panel.locator("a").evaluate_all("els => els.map(e => e.getAttribute('href'))")
-    assert any(h.endswith("/radio/how-it-works/index.html") for h in hrefs)   # Tarik, 5:36 pm: no direct link to it
+    assert any(h.endswith("/radio/rhythm-lab/how-it-works/index.html") for h in hrefs)   # Tarik, 5:36 pm: no direct link to it
 
 
 def test_strip_now_links_to_station_page(page):

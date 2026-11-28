@@ -331,5 +331,6 @@
     "heritage": 150,
     "vocal": 120,
     "latin_brazilian_afro": 120
-  }
+  },
+  "replaces": "uk-jazz"
 }
