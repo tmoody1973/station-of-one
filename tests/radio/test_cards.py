@@ -59,3 +59,52 @@ def test_feed_title_is_never_fed_to_the_writer():  # review I3c: scraped text st
 
 def test_year_is_worded_as_apple_lists_it():  # review I3a: Apple's date is often a reissue
     assert own_facts(db(), "c1")[0]["text"] == "Apple Music lists Pace on Nubya Garcia's album Source, dated 2020."
+
+
+# --- part 2: Perplexity Sonar (check 23) ---
+import json as _json
+
+from station.radio.cards import sonar_facts
+from tests.fakes import FakeGateway, ok
+
+
+def sonar_reply(facts, cites=("https://en.wikipedia.org/wiki/Pace",)):
+    return ok({"choices": [{"message": {"content": _json.dumps({"facts": facts})}}], "citations": list(cites), "model": "sonar"})
+
+
+def test_track_card_keeps_only_cited_facts():
+    gw = FakeGateway({("POST", "PPLX", "/v1/sonar"): [sonar_reply([{"text": "Recorded in London.", "citation": 1},
+                                                                    {"text": "Invented.", "citation": 7},
+                                                                    {"text": "No marker.", "citation": 0}])]})
+    facts = sonar_facts(gw, "PPLX", {"artist": "Nubya Garcia", "title": "Pace", "album": "Source", "year": "2020"})
+    assert facts == [{"text": "Recorded in London.", "source_url": "https://en.wikipedia.org/wiki/Pace", "source_name": "en.wikipedia.org"}]
+
+
+def test_disambiguation_in_query():
+    gw = FakeGateway({("POST", "PPLX", "/v1/sonar"): [sonar_reply([])]})
+    sonar_facts(gw, "PPLX", {"artist": "Nubya Garcia", "title": "Pace", "album": "Source", "year": "2020"})
+    ask = gw.calls[0][3]["messages"][-1]["content"]
+    assert "Source" in ask and "2020" in ask and gw.calls[0][3]["model"] == "sonar"
+
+
+def test_cards_are_cached():
+    d, calls = db(), []
+    sonar = lambda gw, station, song: (calls.append(song), [{"text": "Recorded in London.", "source_url": "https://e.org/a", "source_name": "e.org"}])[1]
+    first = facts_for(object(), d, ST, "c1", NOW, sonar=sonar)
+    again = facts_for(object(), d, ST, "c1", NOW, sonar=sonar)
+    assert first == again and first[0]["text"] == "Recorded in London." and len(calls) == 1
+
+
+def test_a_failed_lookup_is_not_cached():
+    d, calls = db(), []
+    def sonar(gw, station, song):
+        calls.append(1)
+        raise GatewayError("pplx", 503, "busy")
+    facts_for(object(), d, ST, "c1", NOW, sonar=sonar)
+    facts_for(object(), d, ST, "c1", NOW, sonar=sonar)
+    assert len(calls) == 2                                          # retried next time, never remembered as "no facts"
+
+
+def test_perplexity_connection_from_preferences():  # check 23's connector, an id (not a secret)
+    from station.config import load_prefs
+    assert load_prefs().perplexity == "oazmIvwPutdcMvFs9wauvg"

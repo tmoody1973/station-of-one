@@ -17,7 +17,7 @@ from station.radio.page import (EXPLAINER_PATH, PLAYLISTS_PATH, explainer_path, 
 from station.radio.program import Block
 from station.radio.scheduler import schedule_hour
 from station.radio.tags import tag_songs
-from station.radio.cards import facts_for
+from station.radio.cards import facts_for, sonar_facts
 from station.radio.voicing import voice_spoken
 from station.runs import RUNS_ROOT
 from station.steps.publish import cache_control, put_object
@@ -171,8 +171,9 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     for k in range(AHEAD_HOURS + 1):  # this hour and the next two; an hour already scheduled is left alone
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
         schedule_hour(station, db, local, news_for_hour(station, local, prefs, news))
+    web = (lambda g, st, song: sonar_facts(g, prefs.perplexity, song)) if prefs.perplexity else None  # check 23
     voiced = voice_spoken(gw, db, station, prefs, now,  # Plan B2: IDs, teases and breaks in the host's voice
-                          facts=lambda cid: facts_for(gw, db, station, cid, now))  # Perplexity joins after check 23
+                          facts=lambda cid: facts_for(gw, db, station, cid, now, sonar=web))
     counts["voiced"] = voiced["voiced"]
     notes += voiced["notes"]
     items = _timed(window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)

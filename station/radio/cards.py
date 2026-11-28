@@ -4,13 +4,40 @@ record). Perplexity's cards come first once check 23 pins its request shape (Tar
 and whenever Perplexity fails, the station's own facts stand alone."""
 from __future__ import annotations
 
+import json
 import sqlite3
 from datetime import datetime
+from urllib.parse import urlparse
 
 from station.gateway import GatewayError
 from station.radio.model import StationConfig
 
 MAX_FACTS = 5
+SONAR_PATH = "/v1/sonar"  # check 23: 200 in 2.6 s, $0.0052 per lookup
+_SCHEMA = {"type": "object", "properties": {"facts": {"type": "array", "items": {"type": "object", "properties": {
+    "text": {"type": "string"}, "citation": {"type": "integer"}}, "required": ["text", "citation"]}}}, "required": ["facts"]}
+_SYSTEM = ("You give short, checkable facts about one recording for a radio host. Each fact is one sentence and must be supported "
+           "by a numbered search result; set `citation` to that result's number ([1] is 1). No opinions, no links in the text.")
+SCHEMA = "CREATE TABLE IF NOT EXISTS cards (kind TEXT, key TEXT, facts TEXT, fetched_at TEXT, PRIMARY KEY (kind, key));"
+
+
+def sonar_facts(gw, connection: str, song: dict) -> list[dict]:
+    """Perplexity Sonar's facts about one recording, each linked to the search result it cites (links come from the
+    response's `citations`, never from the model's text: Perplexity docs). Label and year disambiguate common names."""
+    ask = (f"Facts about the song \"{song['title']}\" by {song['artist']}" + (f" (album {song['album']}" if song.get("album") else "")
+           + (f", {song['year']})" if song.get("year") and song.get("album") else (")" if song.get("album") else ""))
+           + ": release year, label, producer, players, samples, where it was recorded. 3 to 5 facts.")
+    r = gw.json("POST", connection, SONAR_PATH, {"model": "sonar", "messages": [{"role": "system", "content": _SYSTEM},
+                                                                                 {"role": "user", "content": ask}],
+                                                 "response_format": {"type": "json_schema", "json_schema": {"name": "facts", "schema": _SCHEMA}}},
+                timeout=60)
+    cites = r.get("citations") or []
+    out = []
+    for f in json.loads(r["choices"][0]["message"]["content"]).get("facts") or []:
+        n = f.get("citation")
+        if isinstance(n, int) and 0 < n <= len(cites):
+            out.append({"text": str(f.get("text") or ""), "source_url": cites[n - 1], "source_name": urlparse(cites[n - 1]).netloc})
+    return _cited(out)
 
 
 def _cited(facts: list[dict]) -> list[dict]:
@@ -37,10 +64,16 @@ def facts_for(gw, db: sqlite3.Connection, station: StationConfig, candidate_id: 
     """Perplexity's cited facts first (when available), then the station's own; at most 5, every one linked."""
     song = db.execute("SELECT COALESCE(matched_artist, artist), COALESCE(matched_title, title), album, release_date FROM candidates "
                       "WHERE id = ?", (candidate_id,)).fetchone()
+    db.executescript(SCHEMA)
     extra: list[dict] = []
-    if sonar and song:
+    cached = db.execute("SELECT facts FROM cards WHERE kind = 'track' AND key = ?", (candidate_id,)).fetchone()
+    if cached:
+        extra = json.loads(cached[0])  # a track card is fetched once (PRD: track cards don't expire)
+    elif sonar and song:
         try:
             extra = _cited(sonar(gw, station, {"artist": song[0], "title": song[1], "album": song[2], "year": (song[3] or "")[:4]}))
+            db.execute("INSERT OR REPLACE INTO cards VALUES ('track', ?, ?, ?)", (candidate_id, json.dumps(extra), now.isoformat()))
+            db.commit()
         except (GatewayError, KeyError, TypeError, ValueError):
-            extra = []  # Perplexity down, refusing or odd: the station's own facts stand alone (B2 Focus 1)
+            extra = []  # Perplexity down, refusing or odd: the station's own facts stand alone, and it's asked again next time
     return (extra + own_facts(db, candidate_id))[:MAX_FACTS]
