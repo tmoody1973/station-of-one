@@ -290,13 +290,15 @@ def test_now_follows_the_player(make_page):  # live-playlist Focus 1: the page n
     _rhythm_lab(pg)
     pg.locator("main button:has-text('Listen live')").click()
     pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
-    for _ in range(2):
-        pg.locator("#wone-skip-song").click()
-    pg.wait_for_timeout(1200)
-    s = pg.evaluate("""() => ({playing: String(MusicKit.getInstance().nowPlayingItem.id),
-        now: (document.querySelector('main li.trk.now') || {dataset: {}}).dataset.song,
-        box: document.querySelector('#onnow h2').textContent})""")
-    assert s["now"] == s["playing"]
+    pg.locator("#wone-skip-song").click()           # since B2 a block can be 1-2 songs: this may end it and start a break
+    pg.wait_for_timeout(1500)
+    s = pg.evaluate("""() => { const st = window.wone.state(), row = document.querySelector('main li.trk.now') || {dataset: {}};
+        const item = MusicKit.getInstance().nowPlayingItem;
+        return {inVoice: st.inVoice, playing: item ? String(item.id) : null, now: row.dataset.song, kind: row.dataset.kind}; }""")
+    if s["inVoice"]:
+        assert s["kind"] == "voice"                  # the break you hear is the row marked Now
+    else:
+        assert s["now"] == s["playing"]
 
 
 HUB_NOW = "id => document.querySelector(`main [data-now-of='${id}']`).textContent"
@@ -432,3 +434,15 @@ def test_break_skipped_when_its_song_failed(make_page):  # Tarik, 11:37 pm: the 
     pg.locator("#wone-skip-song").click()                             # s1 ends; sX won't play here
     pg.wait_for_function("() => window.__mk.calls.filter(c => c[0] === 'setQueue').length === 2", timeout=8000)
     assert calls(pg, "setQueue")[1][1] == ["s2", "s3"] and pg.evaluate("() => window.wone.state().voicesPlayed") == 0
+
+
+def test_a_skipped_song_says_why(make_page):  # Tarik, 11:49 pm: show the reason instead of guessing
+    pg = make_page()
+    pg.route("**/test-station/queue.json", lambda route: route.fulfill(json=queue()))
+    pg.evaluate("() => { window.__mk.failSongs = ['s2'] }")
+    tune(pg)
+    pg.locator("#wone-skip-song").click()                             # on to s2, which won't play here
+    pg.wait_for_function("() => document.getElementById('wone-msg').textContent.includes('Skipped')", timeout=8000)
+    msg = pg.locator("#wone-msg").text_content()
+    assert "Song s2" in msg and "unavailable s2" in msg
+    assert pg.evaluate("() => window.wone.state().lastSkip.title") == "Artist s2 · Song s2"

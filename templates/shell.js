@@ -28,7 +28,7 @@
   const voice = new Audio();
   voice.preload = "auto";
   let segs = [], inVoice = false, segTok = 0, starting = false;
-  let blockFailed = false, voicesPlayed = 0;  // a break never back-announces a song that didn't play here  // segTok: only the segment playing now may advance the player (review C2)
+  let blockFailed = false, voicesPlayed = 0, lastSkip = null;  // a break never back-announces a song that didn't play here  // segTok: only the segment playing now may advance the player (review C2)
   const SILENT = "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
   const playing = () => (mk.isPlaying ?? (mk.playbackState === MusicKit.PlaybackStates.playing));  // isPlaying unconfirmed (I6)
@@ -104,6 +104,14 @@
     if (err && err.name === "NotAllowedError") { say("Tap ▶ to start."); return; }  // the browser wants a tap, not a skip (I3)
     errors += 1;
     blockFailed = true;
+    // say which song and Apple's own reason, so a skip is evidence rather than a guess (Tarik, Nov 27 11:49 pm)
+    const song = mk && mk.nowPlayingItem;
+    const title = song ? [song.artistName, song.title].filter(Boolean).join(" · ") : "a song";
+    const reason = (err && (err.errorCode || err.message || err.name)) || "no reason given";
+    lastSkip = { title, reason, at: new Date().toISOString() };
+    const note = `Skipped ${title}: Apple Music said \u201c${reason}\u201d.`;
+    say(note);
+    setTimeout(() => { if (msgEl && msgEl.textContent === note) say(""); }, 10000);
     if (errors >= 3) {
       say("Some songs won't play here: they may not be available in your country, or your Apple Music subscription may not be active.");
       return;
@@ -157,11 +165,12 @@
     const at = () => { try { voice.currentTime = seg.offset || 0; } catch (e) { /* not seekable yet */ } };
     voice.readyState ? at() : voice.addEventListener("loadedmetadata", at, { once: true });
     voicesPlayed += 1;
+    document.dispatchEvent(new CustomEvent("wone:song"));  // the playlist and strip mark the break as Now right away
     try { await voice.play(); } catch (e) {  // can't play it: skip, never stall — unless its error event already moved on
       if (tok === segTok && inVoice) { inVoice = false; return nextSegment(my); }
     }
   }
-  const voiceDone = () => { if (inVoice) { inVoice = false; nextSegment(); } };  // nextSegment bumps segTok, so a late catch stays put
+  const voiceDone = () => { if (inVoice) { inVoice = false; document.dispatchEvent(new CustomEvent("wone:song")); nextSegment(); } };  // nextSegment bumps segTok, so a late catch stays put
   voice.addEventListener("ended", voiceDone);
   voice.addEventListener("error", voiceDone);
   async function playStation(next) {
@@ -242,7 +251,7 @@
 
   window.wone = {
     play, pause: () => (station ? (inVoice ? voice.pause() : mk.pause()) : audio.pause()), seek: (s) => { audio.currentTime = s; }, now: () => item,
-    state: () => ({ inVoice, voicePaused: voice.paused, voiceTime: voice.currentTime, segments: segs.length, voicesPlayed }),  // for tests and the page
+    state: () => ({ inVoice, voicePaused: voice.paused, voiceTime: voice.currentTime, segments: segs.length, voicesPlayed, lastSkip }),  // for tests and the page
     connect: signIn,
     disconnect: async () => { leaveStation(); try { await getMK(); await mk.unauthorize(); } catch (e) { /* nothing to undo */ } },
     connected: async () => { try { return (await getMK()).isAuthorized; } catch (e) { return false; } },
