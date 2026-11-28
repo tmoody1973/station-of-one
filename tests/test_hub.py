@@ -54,3 +54,12 @@ def test_hub_escapes_text(tmp_path):
 
 def test_hub_path():
     assert MUSIC_HUB_PATH == "music/index.html"
+
+
+def test_picks_are_not_called_todays(tmp_path):  # review I1: overnight the newest picks are yesterday's
+    html = render_hub(stations(tmp_path), pick(), PREFS)
+    assert "Today's picks" not in html and "Music picks" in html
+
+
+def test_footer_names_the_official_players(tmp_path):  # the picks play through Bandcamp and YouTube, not Apple Music
+    assert "official players" in render_hub(stations(tmp_path), pick(), PREFS)

@@ -59,7 +59,7 @@ main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:colum
 </section>
 
 <section class="block" id="picks">
-  <h2 class="marker ci"><span class="num">1</span><span class="lbl">Today's picks</span></h2>
+  <h2 class="marker ci"><span class="num">1</span><span class="lbl">Music picks</span></h2>
   {% if picks and picks.picks %}
   <p style="margin:0 0 14px;color:var(--ink-2)">New releases from the labels and channels the station follows, ranked by Jev. Players are the artists' official Bandcamp and YouTube embeds and load only when you tap Play.</p>
   <div class="cards">
@@ -74,7 +74,7 @@ main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:colum
 </section>
 
 <footer>
-  <span>Machine-programmed. Voices are synthetic. Songs play through each listener's own Apple Music; no audio is stored by this station.</span>
+  <span>Machine-programmed. Voices are synthetic. Station songs play through each listener's own Apple Music; picks appear only as the artists' official players, loaded when you tap. No audio is stored by this station.</span>
   <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
 </footer>
 </main>
