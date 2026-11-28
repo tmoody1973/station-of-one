@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import sqlite3
+import time
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
@@ -21,6 +22,22 @@ SCOUT_FEED = "Apple Music new releases"
 DEEPEN_FEED = "Apple Music catalog, to deepen a thin style"
 TOP_SONGS = 10
 RECENT_DAYS = 60
+BUDGET_S = 300  # a scout or a deepening pass never runs longer than this (the build lock goes stale at 20 minutes)
+
+
+class _Stop(Exception):
+    """Apple rate-limited us or the time budget ran out: keep what was found, try again next meeting."""
+
+
+def _guard(e: GatewayError, notes: list[str], name: str, what: str) -> None:
+    if e.status == 429:
+        raise _Stop(f"{what} stopped: Apple Music rate limit (429) at {name}; the rest waits for the next meeting")
+    notes.append(f"{what} lookup failed for {name}: {e.status}")
+
+
+def _check_time(deadline: float, what: str) -> None:
+    if time.monotonic() >= deadline:
+        raise _Stop(f"{what} stopped: time budget used; the rest waits for the next meeting")
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS apple_artists (name TEXT PRIMARY KEY, artist_id TEXT, checked_at TEXT);
 CREATE TABLE IF NOT EXISTS scouted_albums (station_id TEXT, album_id TEXT, seen_at TEXT, PRIMARY KEY (station_id, album_id));
@@ -43,8 +60,8 @@ def _artist_id(gw, station: StationConfig, db: sqlite3.Connection, name: str, no
 def _add(db, station, item: FeedItem, song: dict, now: datetime) -> tuple[str, Extracted, FeedItem] | None:
     m = _match(song, 1.0)
     cid = candidate_id(m.artist, m.title, "")
-    if db.execute("SELECT 1 FROM candidates WHERE id = ?", (cid,)).fetchone():
-        return None
+    if db.execute("SELECT 1 FROM candidates WHERE id = ? OR (song_id = ? AND song_id != '')", (cid, m.song_id)).fetchone():
+        return None  # already held, possibly under another id (a library row): never the same recording twice
     db.execute("INSERT OR IGNORE INTO feed_items (id, station_id, feed, guid, title, link, published_at, excerpt, seen_at, extracted_at) "
                "VALUES (?,?,?,?,?,?,?,?,?,?)", (item.id, station.id, item.feed, item.guid, item.title, item.link, item.published_at,
                                                 item.excerpt, now.isoformat(), now.isoformat()))
@@ -58,15 +75,17 @@ def _add(db, station, item: FeedItem, song: dict, now: datetime) -> tuple[str, E
 
 
 def scout_new_releases(gw, station: StationConfig, db: sqlite3.Connection, now: datetime, artists: list[str],
-                       days: int = RECENT_DAYS) -> tuple[list[tuple[str, Extracted, FeedItem]], list[str]]:
+                       days: int = RECENT_DAYS, budget_s: float = BUDGET_S) -> tuple[list[tuple[str, Extracted, FeedItem]], list[str]]:
     """Candidates from albums released in the last `days` by `artists`. An Apple refusal stops the scout (kept so far);
     a failed lookup is a note and the scout moves on (retried next time)."""
     db.executescript(SCHEMA)
     out: list[tuple[str, Extracted, FeedItem]] = []
     notes: list[str] = []
     cutoff = (now - timedelta(days=days)).date().isoformat()
+    deadline = time.monotonic() + budget_s
     for name in artists:  # ponytail: one artist at a time (~2 lookups each, cached); parallel if the list grows past ~500
         try:
+            _check_time(deadline, "scout")
             aid = _artist_id(gw, station, db, name, now)
             if not aid:
                 continue
@@ -86,17 +105,22 @@ def scout_new_releases(gw, station: StationConfig, db: sqlite3.Connection, now: 
                         if added:
                             out.append(added)
                 db.execute("INSERT OR IGNORE INTO scouted_albums VALUES (?,?,?)", (station.id, al["id"], now.isoformat()))
-        except AppleRefused as e:
+        except (AppleRefused, _Stop) as e:
             notes.append(str(e))
             break
         except GatewayError as e:
-            notes.append(f"scout lookup failed for {name}: {e.status}")
+            try:
+                _guard(e, notes, name, "scout")
+            except _Stop as stop:
+                notes.append(str(stop))
+                break
     db.commit()
     return out, notes
 
 
 def deepen_styles(gw, station: StationConfig, db: sqlite3.Connection, now: datetime, targets: dict[str, int],
-                  artists_by_style: dict[str, list[str]]) -> tuple[list[tuple[str, Extracted, FeedItem]], dict[str, int], list[str]]:
+                  artists_by_style: dict[str, list[str]], budget_s: float = BUDGET_S
+                  ) -> tuple[list[tuple[str, Extracted, FeedItem]], dict[str, int], list[str]]:
     """For each style with fewer playable songs than its target: well-known recordings by that style's artists (Apple's
     top songs for each, artists checked once), up to twice the gap, as candidates. Jev still rates fit and names the style;
     the meeting files them under the catalog category."""
@@ -104,6 +128,7 @@ def deepen_styles(gw, station: StationConfig, db: sqlite3.Connection, now: datet
     out: list[tuple[str, Extracted, FeedItem]] = []
     counts: dict[str, int] = {}
     notes: list[str] = []
+    deadline = time.monotonic() + budget_s
     for style, target in targets.items():
         have = db.execute("SELECT COUNT(*) FROM rotation WHERE station_id = ? AND style = ?", (station.id, style)).fetchone()[0]
         want = 2 * (target - have)
@@ -113,6 +138,7 @@ def deepen_styles(gw, station: StationConfig, db: sqlite3.Connection, now: datet
             if counts.get(style, 0) >= want:
                 break
             try:
+                _check_time(deadline, "deepening")
                 aid = _artist_id(gw, station, db, name, now)
                 if not aid or db.execute("SELECT 1 FROM scouted_albums WHERE station_id = ? AND album_id = ?",
                                          (station.id, f"top:{aid}")).fetchone():
@@ -130,11 +156,16 @@ def deepen_styles(gw, station: StationConfig, db: sqlite3.Connection, now: datet
                             out.append(added)
                             counts[style] = counts.get(style, 0) + 1
                 db.execute("INSERT OR IGNORE INTO scouted_albums VALUES (?,?,?)", (station.id, f"top:{aid}", now.isoformat()))
-            except AppleRefused as e:
+            except (AppleRefused, _Stop) as e:
                 notes.append(str(e))
                 db.commit()
                 return out, counts, notes
             except GatewayError as e:
-                notes.append(f"deepening lookup failed for {name}: {e.status}")
+                try:
+                    _guard(e, notes, name, "deepening")
+                except _Stop as stop:
+                    notes.append(str(stop))
+                    db.commit()
+                    return out, counts, notes
     db.commit()
     return out, counts, notes

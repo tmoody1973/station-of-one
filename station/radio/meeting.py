@@ -42,24 +42,30 @@ STYLE_DESCRIPTIONS = {  # ONE Jazz's styles (Tarik's jazz library README), for J
 }
 
 
-def _ask_styles(gw, station, songs: list[dict], db, now, notes) -> dict[str, str]:
-    """Jev's style for each song (a choice among the station's styles, or not_jazz), logged; {candidate: style}."""
+def _ask_styles(gw, station, songs: list[dict], db, now, notes) -> dict[str, tuple[str, float]]:
+    """Jev's style for each song (a choice among the station's styles, or not_jazz) and whether it is a holiday record
+    (a probability), both logged; {candidate: (style, p_holiday)}."""
     criteria = {k: v for k, v in STYLE_DESCRIPTIONS.items() if k in (station.styles or {}) or k == "not_jazz"}
-    out: dict[str, str] = {}
+    out: dict[str, tuple[str, float]] = {}
     for start in range(0, len(songs), BATCH):
         batch = songs[start:start + BATCH]
-        questions = {f"style_{i}": {"type": "choice", "instructions": f"Which style of jazz is the recording `songs[{i}]`?",
-                                    "criteria": criteria} for i in range(len(batch))}
+        questions = {}
+        for i in range(len(batch)):
+            questions[f"style_{i}"] = {"type": "choice", "instructions": f"Which style of jazz is the recording `songs[{i}]`?",
+                                       "criteria": criteria}
+            questions[f"holiday_{i}"] = {"type": "noul", "instructions": f"Is the recording `songs[{i}]` a Christmas or holiday record?"}
         try:
             resp = gw.json("POST", "typesafe", "/v1/systemone",
                            {"model": MODEL, "state": {"station": {"brief": station.brief}, "songs": batch}, "questions": questions})
-            answers = [(s["id"], resp["answers"][f"style_{i}"]) for i, s in enumerate(batch)]
-        except (GatewayError, KeyError, TypeError) as e:
+            answers = [(s["id"], resp["answers"][f"style_{i}"], resp["answers"][f"holiday_{i}"]) for i, s in enumerate(batch)]
+            parsed = [(str(a["choice"]), float(h["noul"])) for _, a, h in answers]
+        except (GatewayError, KeyError, TypeError, ValueError) as e:
             notes.append(f"meeting: Jev style question failed for {len(batch)} songs: {str(e)[:100]}")
             continue
-        for cid, a in answers:
+        for (cid, a, h), (style, ph) in zip(answers, parsed):
             record_decision(db, f"radio:{cid}", "meeting:style", a, resp.get("model") or MODEL, now.isoformat())
-            out[cid] = a.get("choice", "")
+            record_decision(db, f"radio:{cid}", "meeting:holiday", h, resp.get("model") or MODEL, now.isoformat())
+            out[cid] = (style, ph)
     return out
 
 
@@ -185,7 +191,7 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
         pa = p.get(("add", s["id"]), 0.0)
         if pa < ADD_MIN:
             continue
-        style = styles.get(s["id"]) if station.styles else None
+        style, p_holiday = styles.get(s["id"], ("", 0.0)) if station.styles else (None, 0.0)
         if station.styles and style not in station.styles:
             res.notes.append(f"{s['id']}: not added (Jev: {'not jazz' if style == 'not_jazz' else 'no style'})")
             continue
@@ -195,8 +201,13 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
         if count.get(to, 0) >= size.get(to, 0):
             res.notes.append(f"{s['id']}: no room in {to}")
             continue
-        db.execute("INSERT INTO rotation (station_id, candidate_id, category, added_at, moved_at, style) VALUES (?,?,?,?,?,?)",
-                   (sid, s["id"], to, held, held, style))
+        if db.execute("SELECT 1 FROM rotation ro JOIN candidates c ON c.id = ro.candidate_id JOIN candidates n ON n.id = ? "
+                      "WHERE ro.station_id = ? AND ((c.song_id = n.song_id AND n.song_id != '') OR (c.isrc = n.isrc AND n.isrc != ''))",
+                      (s["id"], sid)).fetchone():
+            res.notes.append(f"{s['id']}: not added (this recording is already in the rotation)")  # review C2
+            continue
+        db.execute("INSERT INTO rotation (station_id, candidate_id, category, added_at, moved_at, style, tags) VALUES (?,?,?,?,?,?,?)",
+                   (sid, s["id"], to, held, held, style, "holiday_only" if p_holiday >= ADD_MIN else ""))
         count[to] = count.get(to, 0) + 1
         res.adds.append(s["id"])
         log(s["id"], "add", None, to, pa, f"Jev: join the rotation ({pa:.2f})" + (" as a catalog record" if to == rules["catalog"] else ""))

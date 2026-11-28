@@ -240,3 +240,22 @@ def test_holiday_only_outside_window():  # jazz plan Review Focus 4
             jazz_song(db, f"xmas-{i}", "contemporary", f"Holiday {i}", tags="holiday_only")
         ids = [it.candidate_id for it in music(schedule_hour(load_station("jazz"), db, day, news_ms=165000))]
         assert any(i.startswith("xmas") for i in ids) is allowed, day
+
+
+def test_jazz_catalog_fills_every_hour_for_a_week():  # review C1: with 5- and 10-day rests the catalog ran dry by day 4
+    db = station_db()
+    real = {"contemporary": 293, "uk_jazz": 181, "spiritual_avant": 152, "jazz_funk_fusion": 138, "heritage": 86, "vocal": 52,
+            "latin_brazilian_afro": 46}   # check 22's playable core, by style
+    n = 0
+    for style, k in real.items():
+        for i in range(k):
+            cat = "P" if n % 948 < 140 else "M" if n % 948 < 314 else "G"   # the rehearsal's split: P 140, M 174, G 634
+            jazz_song(db, f"{style}-{i}", style, f"Artist {n % 400}", minutes=5, cat=cat)
+            n += 1
+    st = load_station("jazz")
+    start = datetime(2026, 11, 28, 0, 0, tzinfo=CHI)
+    for h in range(24 * 8):
+        hour = start + timedelta(hours=h)
+        items = schedule_hour(st, db, hour, news_ms=165000 if 7 <= hour.hour <= 19 else 0)
+        minutes = sum(it.duration_ms for it in music(items)) / 60000
+        assert minutes >= 45, (hour.isoformat(), minutes)

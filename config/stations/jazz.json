@@ -106,13 +106,13 @@
       "code": "M",
       "name": "Rotation",
       "size": 300,
-      "rest_hours": 120
+      "rest_hours": 78
     },
     {
       "code": "G",
       "name": "Library",
       "size": 2000,
-      "rest_hours": 240
+      "rest_hours": 84
     },
     {
       "code": "N",

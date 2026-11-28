@@ -59,16 +59,18 @@ def test_scout_survives_apple_errors():  # jazz plan Review Focus 5
 
 # --- the meeting's style question ---
 class Jev:
-    def __init__(self, add=0.9, style="heritage"):
-        self.add, self.style, self.calls = add, style, []
+    def __init__(self, add=0.9, style="heritage", holiday=0.1, raw_style=None):
+        self.add, self.style, self.holiday, self.raw_style, self.calls = add, style, holiday, raw_style, []
 
     def json(self, method, provider, path, body):
         self.calls.append(body)
         answers = {}
         for key in body["questions"]:
             kind = key.rsplit("_", 1)[0]
-            answers[key] = ({"type": "choice", "choice": self.style, "confidence": 0.8} if kind == "style"
-                            else {"type": "noul", "noul": self.add})
+            if kind == "style":
+                answers[key] = self.raw_style if self.raw_style is not None else {"type": "choice", "choice": self.style, "confidence": 0.8}
+            else:
+                answers[key] = {"type": "noul", "noul": self.holiday if kind == "holiday" else self.add}
         return {"model": "jev-1", "answers": answers}
 
 
@@ -125,6 +127,7 @@ def test_only_styles_under_target_are_deepened():  # jazz plan Task 5
     d = db()
     for i in range(3):   # vocal already has 3 playable; target 3 -> nothing to do
         addable(d, f"v{i}")
+        d.execute("UPDATE candidates SET song_id = ? WHERE id = ?", (f"sv{i}", f"v{i}"))   # each its own recording
         d.execute("INSERT INTO rotation (station_id, candidate_id, category, style) VALUES ('jazz', ?, 'G', 'vocal')", (f"v{i}",))
     gw = FakeGateway({("GET", C, "/v1/catalog/us/search"): [artist_hit("7", "Dorothy Ashby")],
                       ("GET", C, "/v1/catalog/us/artists/7/view/top-songs"): [tracks("Soul Vibrations", "Afro-Harping", artist="Dorothy Ashby")]})
@@ -144,3 +147,77 @@ def test_deepened_tracks_go_to_catalog_with_style():
     d.execute("UPDATE candidates SET feed_item_id = 'f1', release_date = '2024-05-01' WHERE id = 'new1'")   # recent, but catalog deepening
     music_meeting(Jev(style="vocal"), ST, d, NOW)
     assert d.execute("SELECT category, style FROM rotation WHERE candidate_id = 'new1'").fetchone() == ("G", "vocal")
+
+
+# --- review fixes (jazz plan, final review) ---
+def test_same_recording_never_joins_twice():  # review C2: a deepened top song already in the library
+    from station.radio.meeting import music_meeting
+    d = db()
+    d.execute("INSERT INTO candidates (id, kind, artist, title, status, song_id, isrc) VALUES ('lib:1', 'track', 'Nubya Garcia', 'Monsters', 'resolved', 's1', 'GB1')")
+    d.execute("INSERT INTO rotation (station_id, candidate_id, category, style) VALUES ('jazz', 'lib:1', 'P', 'uk_jazz')")
+    addable(d)                                                                     # new1 is Apple song s1 again
+    addable(d, "new2")
+    d.execute("UPDATE candidates SET song_id = 's9', isrc = 'GB1' WHERE id = 'new2'")   # same recording, another Apple id
+    music_meeting(Jev(style="uk_jazz"), ST, d, NOW)
+    assert d.execute("SELECT candidate_id FROM rotation ORDER BY candidate_id").fetchall() == [("lib:1",)]
+
+
+def test_scout_skips_a_song_it_already_holds():
+    from station.radio.scout import deepen_styles
+    d = db()
+    d.execute("INSERT INTO candidates (id, kind, artist, title, status, song_id) VALUES ('lib:1', 'track', 'Dorothy Ashby', 'Soul Vibrations', 'resolved', 's0')")
+    gw = FakeGateway({("GET", C, "/v1/catalog/us/search"): [artist_hit("7", "Dorothy Ashby")],
+                      ("GET", C, "/v1/catalog/us/artists/7/view/top-songs"): [tracks("Soul Vibrations", "Afro-Harping", artist="Dorothy Ashby")]})
+    found, _, _ = deepen_styles(gw, ST, d, NOW, {"heritage": 5}, {"heritage": ["Dorothy Ashby"]})
+    assert [e.title for _, e, _ in found] == ["Afro-Harping"]
+
+
+def test_holiday_finds_play_only_in_season():  # review I1
+    from station.radio.meeting import music_meeting
+    d = db()
+    addable(d)
+    music_meeting(Jev(style="vocal", holiday=0.9), ST, d, NOW)
+    tags = d.execute("SELECT tags FROM rotation WHERE candidate_id = 'new1'").fetchone()[0] or ""
+    assert "holiday_only" in tags.split(";")
+    assert d.execute("SELECT 1 FROM decisions WHERE post_id = 'radio:new1' AND question_id = 'meeting:holiday'").fetchone()
+
+
+def test_a_broken_style_answer_never_stops_the_meeting():
+    from station.radio.meeting import music_meeting
+    d = db()
+    addable(d)
+    music_meeting(Jev(raw_style="garbage"), ST, d, NOW)
+    assert d.execute("SELECT COUNT(*) FROM rotation").fetchone()[0] == 0
+
+
+def test_scout_stops_on_rate_limit():  # review I2: 400 artists x a 429 each ran past the build lock
+    d = db()
+    gw = FakeGateway({("GET", C, "/v1/catalog/us/search"): [ok({}, 429), artist_hit("1", "Nubya Garcia")]})
+    found, notes = scout_new_releases(gw, ST, d, NOW, ["First", "Nubya Garcia"])
+    assert found == [] and any("rate" in n for n in notes)
+
+
+def test_scout_keeps_to_its_time_budget():
+    d = db()
+    gw = FakeGateway({})
+    found, notes = scout_new_releases(gw, ST, d, NOW, ["Nubya Garcia"], budget_s=0)
+    assert found == [] and any("time" in n for n in notes)
+
+
+def test_scout_crash_never_stops_the_station(tmp_path, monkeypatch):  # review I3
+    import station.radio.onair as onair
+    import station.radio.run as run_mod
+    from station.config import load_prefs
+    d = db()
+    for name in ("poll",):
+        monkeypatch.setattr(run_mod, name, lambda gw, st, dd, n: ([], []))
+    monkeypatch.setattr(run_mod, "extract", lambda gw, m, items: ({}, []))
+    monkeypatch.setattr(run_mod, "seed_candidates", lambda gw, st, dd, n: ([], []))
+    monkeypatch.setattr(run_mod, "meeting_due", lambda dd, st, n: True)
+    monkeypatch.setattr(run_mod, "scout_new_releases", lambda *a: {}["boom"])
+    monkeypatch.setattr(run_mod, "put_object", lambda *a: None)
+    monkeypatch.setattr(onair, "put_object", lambda *a: None)
+    monkeypatch.setattr(onair, "meeting_due", lambda dd, st, n: False)
+    log = run_mod.run_station(object(), "jazz", d, NOW, load_prefs(), out_root=tmp_path)
+    assert (tmp_path / "jazz" / "latest.json").exists()                            # the clock still ran
+    assert any("scout" in n for n in (log.get("notes") or []))
