@@ -126,3 +126,10 @@ def test_menu_names_destinations_only():  # Tarik, Nov 28 5:56 am: "Archive" alo
     for name, html in pages().items():
         assert '<nav><a href="/index.html">News</a><a href="/music/index.html">Music</a><a href="/control-room/index.html">Control room</a>' \
                '<a href="/settings/index.html">Settings</a></nav>' in html, name
+
+
+def test_no_page_restyles_the_site_player():  # Tarik, Nov 28 6:08 am: the Table page's own ".player" box turned the bar yellow
+    shell = re.compile(r"/\* wone-shell-css \*/.*?/\* /wone-shell-css \*/", re.S)
+    for name, html in _with_content().items():
+        own = shell.sub("", " ".join(re.findall(r"<style[^>]*>(.*?)</style>", html, re.S)))
+        assert not re.search(r"\.player\b", own), name
