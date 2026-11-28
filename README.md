@@ -1,6 +1,6 @@
 # Station of One · ONE 1.0 FM
 
-**A radio station with exactly one listener, run by an agent on a Fly.io Sprite.** Every hour from 7 am to 7 pm Central it reads public posts (about 1,300 a day), lets TypeSafe AI's Jev decide what airs, and publishes a five-minute newscast with synthetic voices, chapters, a live front page and a control room that shows every decision; each morning it also grades last week's calls (Corrections) and stages a debate show, The Table, that Jev referees. Around the clock it also programs music stations the way a radio program director would; the flagship, **Rhythm Lab**, is built from 13 years of Tarik's Rhythm Lab Radio playlists.
+**A radio station with exactly one listener, run by an agent on a Fly.io Sprite.** Every hour from 7 am to 7 pm Central it reads public posts (about 1,300 a day), lets TypeSafe AI's Jev decide what airs, and publishes a five-minute newscast with synthetic voices, chapters, a live front page and a control room that shows every decision; each morning it also grades last week's calls (Corrections) and stages a debate show, The Table, that Jev referees. Around the clock it also programs two music stations the way a radio program director would, each with its own synthetic host between songs: the flagship, **Rhythm Lab**, built from 13 years of Tarik's Rhythm Lab Radio playlists, and **ONE Jazz**, programmed by style.
 
 Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and the show is machine-edited. ONE 1.0 FM is a fictional station.
 
@@ -9,16 +9,19 @@ Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and th
 | What | Link |
 | --- | --- |
 | Front page (latest newscast, player, stories, Corrections, almost-made-air) | https://patient-mountain-3400.fly.storage.tigris.dev/index.html |
+| Past newscasts: every hour aired, newest day first, playable in place | https://patient-mountain-3400.fly.storage.tigris.dev/archive/index.html |
 | Control room (every step, tool, timing and Jev decision for the hour) | https://patient-mountain-3400.fly.storage.tigris.dev/control-room/index.html |
 | Settings (beats, sources, thresholds, connectors; read-only) | https://patient-mountain-3400.fly.storage.tigris.dev/settings/index.html |
 | The Table, episode 1 ("Is Intel One Mono worth switching to?") | https://patient-mountain-3400.fly.storage.tigris.dev/table/2026-11-26/index.html |
 | Daily vertical video | https://patient-mountain-3400.fly.storage.tigris.dev/video/2026-11-26.mp4 |
 | Podcast feed (latest newscast plus every Table episode) | https://patient-mountain-3400.fly.storage.tigris.dev/feed.xml |
-| Rhythm Lab, the flagship music station (on now, what's coming up, with start times) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/index.html |
+| Music: every station live with ▶ and what's on now, today's music picks, playlists | https://patient-mountain-3400.fly.storage.tigris.dev/music/index.html |
+| Rhythm Lab, the flagship music station (live tracklist with host breaks and their sources, Listen live) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/index.html |
 | This week's music meeting (every add, move and drop, with Jev's probability and reason; the rotation board) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/meeting/index.html |
 | How the station is programmed (rotation, hour clocks, separation, the meeting) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/how-it-works/index.html |
 | ONE Jazz, 24/7 jazz programmed by style (tracklist, Listen live) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/jazz/index.html |
 | How ONE Jazz is programmed (its seven styles, five daypart clocks, where new records come from) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/jazz/how-it-works/index.html |
+| Playlists, every station (what each has played today) | https://patient-mountain-3400.fly.storage.tigris.dev/playlists/index.html |
 
 ## What happens each hour
 
@@ -66,9 +69,9 @@ Why this design and what it gave up: `docs/decisions/013-jazz-format.md`.
 
 ### Host breaks, IDs and news between songs
 
-Each music station has its own synthetic host (Gemini voices chosen by ear: Algieba on Rhythm Lab, Sulafat on ONE Jazz). Every few songs the host back-announces what played, gives one fact and says where the agent found the record, then teases what's next. Facts come from a Perplexity web search, each linked to the page it cites, plus Apple Music and the post where the record was found; a fact without a link is cut. Jev checks every script against its facts and a script that says more is replaced by a plain back-announce (cutoff calibrated in check 24). Each hour the station voices the next two hours ahead of air. In the listener's player, songs play in blocks through Apple Music and the host, station IDs and the hour's newscast play between blocks, never over a song. The playlist shows each break's words and sources. Why and at what cost: `docs/decisions/014-voice-breaks.md`.
+Each music station has its own synthetic host (Gemini voices chosen by ear: Algieba on Rhythm Lab, Sulafat on ONE Jazz). Every few songs the host back-announces what played, gives one fact and says where the agent found the record, then teases what's next. Facts come from a Perplexity web search, each linked to the page it cites, plus Apple Music and the post where the record was found; a fact without a link is cut. Jev checks every script against its facts and a script that says more is replaced by a plain back-announce (cutoff calibrated in check 24). Each hour the station voices the next two hours ahead of air, in at most 4 minutes per station (about $2.50–4.50 a day for both: Gemini voicing plus Perplexity at $0.005 a lookup, each song's facts fetched once). In the listener's player, songs play in blocks through Apple Music and the host, station IDs and the hour's newscast play between blocks, never over a song. The playlist shows each break's words and sources. Why and at what cost: `docs/decisions/014-voice-breaks.md`.
 
-Both stations' pages show Apple's 30-second previews (they play only when tapped and never advance on their own) and a "Listen on Apple Music" link; listeners with Apple Music can connect it in Settings and hear the full songs live. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: voice breaks with cited facts and news on the music stations.
+Both stations' pages show Apple's 30-second previews (they play only when tapped and never advance on their own) and a "Listen on Apple Music" link; listeners with Apple Music can connect it in Settings and hear the full songs live. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`); the browser's own web token is public by design and locked to the site's address (`docs/decisions/012-public-web-token.md`).
 
 ## How the site plays
 
@@ -78,6 +81,8 @@ Every page shares one player bar, pinned to the bottom, and one strip of station
 2. When you follow a link to another page of the site, `shell.js` fetches that page and swaps in only its main content. The bar, the masthead and the strip never reload, so the audio keeps playing, including through Back and Forward. Anything unusual (another site, the RSS feed, a download, a failed fetch) is an ordinary page load.
 3. The strip reads `/data/stations.json` every minute: News with the latest newscast, then each music station that has published a set (the flagship first) with what is on now. The page step writes it each hour; the radio step rewrites it after each run.
 4. A music pick's page keeps its big player on the page; "Keep it playing as you browse" docks it in the bar instead.
+5. A music station plays in segments (`templates/live.js`): a block of songs through the listener's Apple Music, then the host break, station ID or the hour's newscast in a separate player, then the next block. Our audio never plays over a song; an item that isn't voiced yet is skipped. The station page, the strip and the Music hub all name the song the player is actually playing.
+6. The Music hub (`/music/`) and the Archive (`/archive/`) are rebuilt each newscast hour. Pages from earlier hours are rebuilt in the current design by `scripts/rebuild_hour_pages.py`, so an old story found through the Archive has the same menu and player.
 
 Nothing plays until you tap. Why the main-content swap and not a library such as Turbo: `docs/decisions/010-persistent-player.md` (check 19).
 
@@ -88,14 +93,15 @@ No API key is in the Sprite, the code, the config or this repo. Every call goes 
 | Connector | Its job here | Where to see it |
 | --- | --- | --- |
 | **Apify** | Scrapes every news source each hour (5 Actors), reads each story's preview photo (Cheerio Scraper) and the music stations' feeds. On a paid plan since Nov 27: the free plan's $5 a month ran out that afternoon and every scrape was refused until the upgrade | Control room, "Scrape sources"; story pages |
-| **TypeSafe AI (Jev)** | Every editorial decision, as typed answers with probabilities: what airs, duplicates, airtime, hot topics, The Table's topic and every claim's ruling, Corrections; for music, whether a find fits a station, the music meeting's adds and moves, and each new song's energy and vocals | Control room decision log; Table rulings; music meeting page |
-| **Ollama Cloud** | Writes the newscast scripts and The Table's claims, and lists the music each feed item names (`deepseek-v4.1-flash`) | Any newscast; Table page |
-| **Google Gemini** | Voices: host/reporter for the news, Anchor/Uncle for The Table (`gemini-3.8-flash-tts`); Bauhaus illustrations for stories with no photo (`gemini-3.1-flash-image`) | The audio; story pages |
+| **TypeSafe AI (Jev)** | Every editorial decision, as typed answers with probabilities: what airs, duplicates, airtime, hot topics, The Table's topic and every claim's ruling, Corrections; for music, whether a find fits a station, the music meeting's adds and moves, each new song's energy, vocals, jazz style and whether it's a holiday record, and whether a host break says more than its facts | Control room decision log; Table rulings; music meeting page |
+| **Ollama Cloud** | Writes the newscast scripts, The Table's claims and the music hosts' breaks, and lists the music each feed item names (`deepseek-v4.1-flash`) | Any newscast; Table page; host breaks |
+| **Google Gemini** | Voices: host/reporter for the news, Anchor/Uncle for The Table, and a host per music station (Algieba, Sulafat) (`gemini-3.8-flash-tts`); Bauhaus illustrations for stories with no photo (`gemini-3.1-flash-image`) | The audio; story pages |
 | **Pinecone** | Same-story detection across hours, and the memory Corrections searches for follow-ups | Control room, "Find duplicates"; Corrections box |
 | **Box** | Archive of every newscast and Table episode with its full decision log | "Station of One archive" folder |
 | **Tigris** | Public hosting of pages, audio, feed and video | Every link above |
 | **Deepgram** | Word timestamps for the video captions | The vertical video |
 | **Apple Music** (Custom API connector) | Finds each record in Apple's catalog: song ids, previews, artwork and links for the music stations | Every music page |
+| **Perplexity** (Custom API connector) | Cited facts about each song a host back-announces (Sonar, `/v1/sonar`; check 23); every fact keeps the link it cites | Host breaks and their sources on each station's playlist |
 | **Anthropic** | Station manager: picks a repair when a step fails (headless Claude CLI). The planned daily "source scout" was not built. | Control room, "Station manager" |
 
 The hourly trigger itself runs on a Cloudflare Worker (`trigger/`), after GitHub Actions' schedule skipped its first two slots (`docs/decisions/005-cloudflare-trigger.md`). Since Nov 27 it fires every hour, so the music station runs overnight.
@@ -116,7 +122,8 @@ The Sprite holds the state (SQLite, run folders); the code is plain Python, one 
 
 ```bash
 uv sync
-uv run pytest -q                                              # 469 tests
+uv run pytest -q                                              # 566 tests
+node --test tests/js/                                         # 9 tests of the station player's queue logic
 uv run python -m station scrape   --run data/runs/2026-11-27T09   # one step
 uv run python -m station judge    --run data/runs/2026-11-27T09
 uv run python -m station build    --hour 2026-11-27T09            # a whole newscast
@@ -126,17 +133,19 @@ uv run python -m station radio    --station rhythm-lab            # one music st
 uv run python -m station radio    --station rhythm-lab --meeting  # hold its music meeting now
 uv run python scripts/rhythm_lab_golive.py --db /tmp/copy.db     # load the library (rehearse on a copy)
 uv run python scripts/library_report.py                         # private list of unmatched library tracks
+uv run python scripts/jazz_golive.py --db /tmp/copy.db           # load ONE Jazz's catalog (rehearse on a copy)
+uv run python scripts/rebuild_hour_pages.py --dry-run           # rebuild past hours' pages in the current design
 ```
 
-Browser tests for the shared player (system Chrome, against a test copy in the bucket): `STATION_E2E=1 uv run --with playwright pytest -q tests/e2e`.
+Browser tests for the shared player and the music stations' playback (45 tests, system Chrome with a stand-in Apple Music, against a test copy in the bucket published by `spikes/shell_e2e_publish.py`): `STATION_E2E=1 uv run --with playwright pytest -q tests/e2e`.
 
 The network steps need the Sprites connector gateway, so they run on a Sprite with the connectors above attached. `config/preferences.json` holds the beats, sources, thresholds and voices; the settings page is rendered from it.
 
 ## How it was built
 
 - `docs/SPEC.md`: what the station must do. `docs/THURSDAY-CHECKS.md`: every risky assumption, proven or corrected with real runs (request shapes, timings, costs, failures).
-- `docs/decisions/`: the decisions where a reasonable person could have chosen differently, with what was given up.
-- `docs/superpowers/plans/`: the eight implementation plans (the newscast, The Table, story pages, music picks, the UK jazz sampler, the site shell, the program director, Rhythm Lab), executed task by task with tests written first, each closed by an independent code review.
-- `docs/LATER.md`: work agreed for after the hackathon (moving the site to Next.js).
+- `docs/decisions/`: the 14 decisions where a reasonable person could have chosen differently, with what was given up (001 the sting through 014 voice breaks).
+- `docs/superpowers/plans/`: the 14 implementation plans (the newscast, The Table, story pages, music picks, the UK jazz sampler, the site shell, the program director, Rhythm Lab, full songs through Apple Music, the live playlist, ONE Jazz, the Music hub, the Archive, voice breaks), executed task by task with tests written first, each closed by an independent code review.
+- `docs/LATER.md`: work agreed for after the hackathon (moving the site to Next.js, a native iPhone app for crossfades, loading the 24 held jazz tracks).
 
 Station identity: ONE at 1.0 FM, an invented frequency. It was WONE until Nov 27; real US call signs start with K or W, so the station now uses no call letters at all (`docs/decisions/011-rename-to-one.md`).
