@@ -56,10 +56,14 @@ def _write(gw, prefs: Prefs, station: StationConfig, prev: list[dict], nxt: dict
     return _clean(reply["message"]["content"])
 
 
-def _beyond_facts(gw, text: str, facts: list[dict]) -> tuple[float, dict, str]:
-    resp = gw.json("POST", "typesafe", "/v1/systemone", {"model": JEV, "state": {"script": text, "facts": [f["text"] for f in facts]},
+def _beyond_facts(gw, text: str, facts: list[dict], prev: list[dict], nxt: dict | None) -> tuple[float, dict, str]:
+    playlist = {"just_played": [{"artist": s.get("artist"), "title": s.get("title")} for s in prev[-2:]],
+                "next": {"artist": nxt.get("artist"), "title": nxt.get("title")} if nxt else None}
+    resp = gw.json("POST", "typesafe", "/v1/systemone", {"model": JEV,
+        "state": {"script": text, "facts": [f["text"] for f in facts], "playlist": playlist},
         "questions": {"beyond_facts": {"type": "noul", "instructions": "Does `script` state any fact about the music or the artists "
-                                       "that is not in `facts`? Song titles, artist names and the station's name don't count."}}})
+                                       "that is not in `facts`? Naming the songs and artists in `playlist`, the station's name, "
+                                       "and mood or opinion words (warm, classic, a groove) are not facts and don't count."}}})
     answer = resp["answers"]["beyond_facts"]
     return float(answer["noul"]), answer, resp.get("model") or JEV
 
@@ -85,7 +89,7 @@ def script_for(gw, db: sqlite3.Connection, station: StationConfig, item: dict, p
         named = prev_songs and any(x and x.lower() in text.lower() for x in (prev_songs[-1].get("title"), prev_songs[-1].get("artist")))
         if not named or not MIN_WORDS <= len(text.split()) <= MAX_WORDS:
             return plain
-        p, answer, model = _beyond_facts(gw, text, facts)
+        p, answer, model = _beyond_facts(gw, text, facts, prev_songs, next_song)
     except (GatewayError, KeyError, TypeError, ValueError):
         return plain  # no script, or no check: the plain back-announce is always safe
     record_decision(db, f"radio:{station.id}:{item['starts_at']}", "break:beyond_facts", answer, model, at.isoformat())

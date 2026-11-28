@@ -72,3 +72,11 @@ def test_tease_promises_news_only_before_a_newscast_hour():
 def test_script_never_reads_urls():
     out = script_for(gw(script=GOOD + " Read more at https://example.org/x"), db(), ST, item("break"), PREV, NEXT, PREFS, FACTS)
     assert "http" not in out["text"]
+
+
+def test_jev_sees_the_playlist():  # rehearsal, Nov 27 9:40 pm: without it, every named song looked like an unsupported claim (0.94)
+    g = gw()
+    script_for(g, db(), ST, item("break"), PREV, NEXT, PREFS, FACTS)
+    body = next(b for m, p, path, b in g.calls if p == "typesafe")
+    assert body["state"]["playlist"] == {"just_played": PREV, "next": NEXT}
+    assert "mood" in body["questions"]["beyond_facts"]["instructions"]
