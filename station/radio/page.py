@@ -29,9 +29,10 @@ def render_sampler(station: StationConfig, block: Block, counts: dict, prefs: Pr
                                                    station=prefs.station, on_now=on_now)
 
 
-def render_meeting(station: StationConfig, rows: list[dict], board: list[dict], prefs: Prefs, styles: dict | None = None) -> str:
+def render_meeting(station: StationConfig, rows: list[dict], board: list[dict], prefs: Prefs, styles: dict | None = None,
+                   schedule: list[dict] | None = None) -> str:
     return env().get_template("meeting.html").render(st=station, rows=rows, board=board, station=prefs.station,
-                                                     styles=style_rows(station, styles or {}))
+                                                     styles=style_rows(station, styles or {}), schedule=schedule or [])
 
 
 def explainer_path(station_id: str) -> str:

@@ -98,6 +98,23 @@ def meeting_view(db: sqlite3.Connection, station: StationConfig) -> tuple[list[d
     return rows, board
 
 
+SLOT_LABELS = {"break": "Host break", "backsell": "Host break", "id": "Station ID", "id_tease": "Station ID", "news": "News"}
+
+
+def schedule_view(db: sqlite3.Connection, station: StationConfig, now: datetime, prefs: Prefs) -> list[dict]:
+    """The next two hours as the program director planned them (live-playlist Task 4): songs with category and
+    energy, and the spoken slots with what the host will say and its sources."""
+    now = now.astimezone(UTC)
+    rows = _timed(window(db, station.id, now, now + timedelta(hours=AHEAD_HOURS)), ZoneInfo(prefs.station.timezone))
+    for it in rows:
+        it["label"] = SLOT_LABELS.get(it["kind"], "")
+        it["sources"] = json.loads(it.get("sources") or "[]") if it["kind"] != "song" else []
+        r = db.execute("SELECT energy FROM rotation WHERE station_id = ? AND candidate_id = ?", (station.id, it["candidate_id"])).fetchone() \
+            if it["kind"] == "song" else None
+        it["energy"] = r[0] if r else None
+    return rows
+
+
 def _style_counts(db, station: StationConfig) -> dict[str, int]:
     return dict(db.execute("SELECT style, COUNT(*) FROM rotation WHERE station_id = ? AND style IS NOT NULL GROUP BY style",
                            (station.id,)).fetchall())
@@ -189,7 +206,8 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     pages = ((f"data/radio/{station.id}/queue.json", json.dumps(queue).encode(), "application/json"),
              (sampler_path(station.id), station_page(db, station, prefs, now, counts).encode(), "text/html; charset=utf-8"),
              (PLAYLISTS_PATH, playlists_page(db, now, prefs).encode(), "text/html; charset=utf-8"),
-             (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs, _style_counts(db, station)).encode(),
+             (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs, _style_counts(db, station),
+                                                       schedule=schedule_view(db, station, now, prefs)).encode(),
               "text/html; charset=utf-8"))
     explainer = _explainer(db, station, prefs).encode()
     pages += ((explainer_path(station.id), explainer, "text/html; charset=utf-8"),)  # one per station (two used to overwrite one)

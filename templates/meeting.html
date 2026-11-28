@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="/logo-one.png" type="image/png">
-<title>Music meeting · {{ st.name }} · {{ station.name }}</title>
+<title>The program director · {{ st.name }} · {{ station.name }}</title>
 <meta name="description" content="What the program director added, moved and dropped this week on {{ st.name }}, and why.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
@@ -17,6 +17,10 @@ th{text-align:left;font-size:12px;letter-spacing:.12em;text-transform:lowercase;
 td{border-bottom:1px solid #cfc6ae;padding:10px 10px 10px 0;vertical-align:top}
 td.p{font-family:var(--mono);white-space:nowrap}
 .act{font-weight:800;text-transform:lowercase}
+.sched{list-style:none;margin:0;padding:0}
+.sched li{display:grid;grid-template-columns:86px 34px minmax(0,1fr);gap:12px;align-items:baseline;border-top:1px solid #cfc6ae;padding:8px 0;font-size:16px}
+.sched .t{font-family:var(--mono);font-size:14px}.sched .cat{font-family:var(--mono);font-weight:800}
+.sched li:not(.song){background:var(--card)}.sched .en{font-size:13px;color:var(--muted)}.sched .src{display:block;font-size:13px}
 .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px}
 .cat{background:var(--card);border:2px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:14px 16px}
 .cat h3{margin:0 0 4px;font-size:20px}.cat .meta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:8px}
@@ -29,9 +33,22 @@ td.p{font-family:var(--mono);white-space:nowrap}
 {% set masthead_line = st.name ~ " · music meeting" %}{% include "_masthead.html" %}
 <main class="wrap">
 <section class="intro">
-  <span class="tag kicker">The program director</span>
-  <h1>This week's music meeting</h1>
+  <span class="tag kicker">{{ st.name }}</span>
+  <h1>The program director</h1>
   <p>Jev answers yes-or-no questions about each song, as probabilities; code applies the rules: a song joins or moves up at 0.6 or more, no category changes more than a quarter of its songs in one meeting. A language model never picks the next song. <a href="/radio/{{ st.id }}/index.html">Back to {{ st.name }}</a> · <a href="/radio/{{ st.id }}/how-it-works/index.html">How the station is programmed</a>.</p>
+</section>
+<section id="schedule">
+  <h2 class="marker ci"><span class="num">0</span><span class="lbl">On the schedule</span></h2>
+  <p>The next two hours as planned, in Central time: every song with its rotation category and energy (1 low, 3 high), and every station ID, host break and newscast slot with what the host will say and where its fact comes from. A break with no words yet is voiced on the next hourly run.</p>
+  {% if schedule %}<ol class="sched">
+  {% for it in schedule %}
+    <li class="slot {{ it.kind }}"><span class="t">{{ it.at }}</span>
+      {% if it.kind == "song" %}<span class="cat">{{ it.category }}</span><span><b>{{ it.title }}</b> · {{ it.artist }}{% if it.energy %} <span class="en">energy {{ it.energy }}</span>{% endif %}</span>
+      {% else %}<span class="cat">·</span><span><b>{{ it.label }}</b>{% if it.text %}: {{ it.text }}{% elif it.kind != "news" %} <span class="en">not voiced yet</span>{% endif %}
+        {% if it.sources %}<span class="src">Source: {% for s in it.sources %}<a href="{{ s.url | safe_url }}" rel="noopener" target="_blank">{{ s.name }}</a>{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</span>{% endif %}
+    </li>
+  {% endfor %}
+  </ol>{% else %}<p>Nothing scheduled in the next two hours yet.</p>{% endif %}
 </section>
 <section>
   <h2 class="marker ci"><span class="num">1</span><span class="lbl">Decisions</span></h2>
