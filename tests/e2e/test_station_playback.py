@@ -297,3 +297,40 @@ def test_now_follows_the_player(make_page):  # live-playlist Focus 1: the page n
         now: (document.querySelector('main li.trk.now') || {dataset: {}}).dataset.song,
         box: document.querySelector('#onnow h2').textContent})""")
     assert s["now"] == s["playing"]
+
+
+HUB_NOW = "id => document.querySelector(`main [data-now-of='${id}']`).textContent"
+
+
+def test_hub_listen_live_tunes_in(make_page):  # music hub plan, Task 2
+    pg = make_page()
+    pg.route("**/data/radio/rhythm-lab/queue.json", lambda route: route.fulfill(json=queue()))
+    pg.goto(f"{BASE}/music/index.html", wait_until="networkidle")
+    pg.locator("main #rhythm-lab button[data-play]").click()
+    pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
+
+
+def test_hub_now_matches_strip(make_page):  # music hub Focus 1: the player is ahead of the clock
+    pg = make_page()
+    pg.route("**/data/radio/rhythm-lab/queue.json", lambda route: route.fulfill(json=queue()))
+    pg.goto(f"{BASE}/music/index.html", wait_until="networkidle")
+    pg.locator("main #rhythm-lab button[data-play]").click()
+    pg.wait_for_function(f"() => ({HUB_NOW})('rhythm-lab').includes('Song s1')", timeout=8000)
+    pg.locator("#wone-skip-song").click()
+    pg.wait_for_function(f"() => ({HUB_NOW})('rhythm-lab').includes('Song s2')", timeout=8000)
+    same = pg.evaluate("""() => [...document.querySelectorAll('#wone-strip .st')].every(s => {
+        const card = [...document.querySelectorAll('main .stn')].find(c => c.querySelector('h2').textContent === s.querySelector('.nm').textContent);
+        return !card || card.querySelector('[data-now-of]').textContent === s.querySelector('.st-now').textContent })""")
+    assert same
+
+
+def test_hub_now_after_swap(make_page):  # music hub Focus 5: reached by a page swap, not a load
+    pg = make_page()
+    pg.route("**/data/radio/rhythm-lab/queue.json", lambda route: route.fulfill(json=queue()))
+    pg.wait_for_selector("#wone-strip .st-name:has-text('Rhythm Lab')", timeout=10000)
+    pg.locator("#wone-strip .st-name", has_text="Rhythm Lab").click()
+    pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
+    pg.locator("header.site nav a:has-text('Music')").click()
+    pg.wait_for_function("() => location.pathname.endsWith('/music/index.html')", timeout=10000)
+    assert pg.evaluate("() => window.__marker") == 1                      # a swap: the player kept going
+    pg.wait_for_function(f"() => ({HUB_NOW})('rhythm-lab').includes('Song s1')", timeout=8000)
