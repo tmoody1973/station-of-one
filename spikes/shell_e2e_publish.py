@@ -32,6 +32,7 @@ from datetime import UTC as _UTC, datetime as _dt
 from station.radio.onair import playlists_page, station_page
 _db = _sqlite3.connect("data/station.db")
 pages["radio/rhythm-lab/index.html"] = station_page(_db, load_station("rhythm-lab"), prefs, _dt.now(_UTC))
+pages["radio/jazz/index.html"] = station_page(_db, load_station("jazz"), prefs, _dt.now(_UTC))  # ONE Jazz, 24/7 since Nov 27
 pages["playlists/index.html"] = playlists_page(_db, _dt.now(_UTC), prefs)
 pages["old/index.html"] = '<!doctype html><title>an older page</title><main><p>an older page, built before the shell</p><audio src="/x.mp3"></audio></main>'
 pages["broken/index.html"] = '<!doctype html><title>no main here</title><p>deliberately has no main element</p>'
