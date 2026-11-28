@@ -370,6 +370,20 @@ def musickit_config(token_path: Path) -> dict | None:
     return {"developerToken": token, "app": {"name": "ONE 1.0 FM", "build": "2026.11.27"}} if token else None
 
 
+def hour_pages(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT) -> dict[str, str]:
+    """One hour's own pages, keyed by bucket path: its hour page and a page per aired story (when the story step
+    wrote stories.json). Never the front page. Used by every build and to rebuild past hours in today's frame."""
+    current = json.loads((run / "newscast.json").read_text())
+    today = todays_newscasts(run, runs_root) or [current]
+    extras_file = run / "stories.json"  # written by the story step; absent when it was skipped
+    extras = json.loads(extras_file.read_text()) if extras_file.exists() else None
+    pages = {hour_path(current["id"]): render_hour(current, prefs, today, extras=extras)}
+    if extras is not None:
+        for i, st in enumerate(current["stories"]):
+            pages[story_path(current["id"], i, st.get("headline") or "")] = render_story(current, st, extras.get(st["id"]), prefs)
+    return pages
+
+
 def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict | None = None,
          control_room: bool = True, musickit_token: Path = MUSICKIT_TOKEN) -> list[Path]:
     current = json.loads((run / "newscast.json").read_text())
@@ -389,14 +403,13 @@ def page(run: Path, prefs: Prefs, runs_root: Path = RUNS_ROOT, beat_counts: dict
                                   table=episodes[0] if episodes else None,
                                   corrections=json.loads(graded[0].read_text()) if graded else None, extras=extras,
                                   picks=picks))
-    hour.write_text(render_hour(current, prefs, today, extras=extras))
     story_pages = []
-    if extras is not None:
-        for i, st in enumerate(current["stories"]):
-            sp = site / story_path(current["id"], i, st.get("headline") or "")
-            sp.parent.mkdir(parents=True, exist_ok=True)
-            sp.write_text(render_story(current, st, extras.get(st["id"]), prefs))
-            story_pages.append(sp)
+    for key, html in hour_pages(run, prefs, runs_root).items():  # the hour page and its story pages
+        path = site / key
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(html)
+        if path != hour:
+            story_pages.append(path)
     for i, pk in enumerate((picks or {}).get("picks", [])):  # one page per music pick, rebuilt each hour
         mp = site / pk["page"].lstrip("/")
         mp.parent.mkdir(parents=True, exist_ok=True)
