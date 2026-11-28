@@ -91,3 +91,26 @@ def test_build_runs_table_after_7am_newscast(monkeypatch):
     main(["build", "--hour", "2026-11-27T07"])
     steps = got[0]
     assert steps[-3:] == ["table", "picks", "radio"] and "corrections" in steps  # Corrections joins the first build too
+
+
+def test_table_page_has_the_site_frame():  # Tarik, Nov 28 12:06 am: the Nov 26 page didn't match the other pages
+    from station.table.build import render_table
+    html = render_table(EPISODE, PREFS)
+    assert '<a href="/music/index.html">Music</a>' in html and 'src="/shell.js"' in html and 'id="wone-strip"' in html
+
+
+def test_front_table_box_dates_the_episode():  # the Nov 26 episode read as today's
+    from station.steps.page import render_front
+    from tests.test_page import newscast
+    n = newscast("2026-11-28T07")
+    html = render_front(n, [n], PREFS, table={**EPISODE, "day": "2026-11-26"})
+    assert "The Table · Thursday, November 26" in html and "daily debate" not in html
+
+
+def test_front_table_box_says_when_there_is_no_episode_today():
+    from station.steps.page import render_front
+    from tests.test_page import newscast
+    n = newscast("2026-11-28T07")
+    html = render_front(n, [n], PREFS, table={**EPISODE, "day": "2026-11-26"},
+                        table_note="Jev found no thread that was both a real dispute and low-stakes")
+    assert "No episode today: Jev found no thread that was both a real dispute and low-stakes." in html

@@ -120,3 +120,8 @@ def test_clock_station_has_listen_live_sampler_does_not():
 def test_music_link_goes_to_the_hub():  # music hub plan, Task 1
     for name, html in pages().items():
         assert '<a href="/music/index.html">Music</a>' in html, name
+
+
+def test_archive_in_the_menu():  # Tarik, Nov 28 12:08 am: no menu link to past newscasts
+    for name, html in pages().items():
+        assert '<a href="/archive/index.html">Archive</a>' in html, name
