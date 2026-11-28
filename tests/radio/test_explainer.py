@@ -46,3 +46,10 @@ def test_burnout_described_only_where_it_runs():  # Rhythm Lab's core gold never
     assert "steps down" not in page(load_station("rhythm-lab"))
     jazz = load_station("uk-jazz")
     assert "steps down" in page(jazz, counts={c.code: 0 for c in jazz.rotation.categories})
+
+
+def test_explainer_describes_the_breaks():  # Plan B2 Task 6
+    st = load_station("jazz")
+    html = render_explainer(st, {}, None, load_prefs())
+    assert "being built next" not in html and "Sulafat" in html and "cite" in html.lower()
+    assert "never over a song" in html

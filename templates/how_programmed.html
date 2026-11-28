@@ -123,7 +123,8 @@ td.n{font-family:var(--mono)}
 
 <section class="sec">
   <h2 class="marker ci"><span class="num">7</span><span class="lbl">Breaks, IDs and news</span></h2>
-  <p>The clock reserves time for station IDs ({{ (n.spoken.id / 1000) | int }} seconds), breaks ({{ (n.spoken["break"] / 1000) | int }} seconds), {% if half %}a tease at :30 and {% endif %}a back-announce before the top of the hour{% if st.news %}, plus the hourly newscast at :00 from {{ n.news_hours }}{% endif %}. The voices are synthetic. What gets said in breaks (short facts about the records, each one cited or cut) is being built next.</p>
+  <p>The clock reserves time for station IDs ({{ (n.spoken.id / 1000) | int }} seconds), breaks ({{ (n.spoken["break"] / 1000) | int }} seconds), {% if half %}a tease at :30 and {% endif %}a back-announce before the top of the hour{% if st.news %}, plus the hourly newscast at :00 from {{ n.news_hours }}{% endif %}.</p>
+  <p>{{ st.name }} has its own host{% if st.host %}, a synthetic voice (Gemini's {{ st.host.voice }}){% endif %}, different from the newsreaders. Every few songs the host back-announces what played, gives one fact about it and says where the agent found the record, then teases what's next. Every fact must cite a source or it's cut: the facts come from Apple Music and the post where the record was found, and Jev checks each script; one that says more than its facts is replaced by a plain back-announce. The words and their sources are listed in the playlist. In your player, the host and the news play between songs, never over a song; anything not yet voiced is skipped.</p>
 </section>
 
 <section class="sec">
