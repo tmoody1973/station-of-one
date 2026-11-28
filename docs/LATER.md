@@ -23,3 +23,12 @@ Tarik, Nov 27. Apple's native MusicKit (Swift) has a crossfade transition betwee
 (`MusicPlayer.Transition.crossfade`); MusicKit on the Web has none, Web Audio can't mix Apple's protected streams,
 and Apple's license allows songs only "as rendered by MusicKit JS". Check the API's iOS availability first. Apple's
 terms still apply in an app: our audio never plays over a song.
+
+## Load the held jazz tracks
+
+Tarik, Nov 27: skip for now. 24 core jazz tracks are held (a doubtful Apple Music match); the database keeps no
+suggested match for them, so checking means searching Apple Music by hand. The list is private: rebuild it on the
+Sprite with `spikes/jazz_held.py`-style query into `data/library/jazz_held.csv`. To load them: Tarik adds an
+`apple_url` per track he finds (Share → Copy Link); a small script looks each one up by its Apple id, marks the
+library row resolved and adds it to ONE Jazz's rotation under its tier's category and style. Worth also keeping the
+doubtful candidate on held rows from then on, so a later check is approve-or-reject instead of a search.
