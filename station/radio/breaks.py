@@ -48,8 +48,10 @@ def _clean(text: str) -> str:
 
 
 def _write(gw, prefs: Prefs, station: StationConfig, prev: list[dict], nxt: dict | None, facts: list[dict]) -> str:
-    user = {"just_played": [{"artist": s.get("artist"), "title": s.get("title")} for s in prev[-2:]],
-            "next": {"artist": nxt.get("artist"), "title": nxt.get("title")} if nxt else None,
+    song = lambda s: {"artist": s.get("artist"), "title": s.get("title")}
+    user = {"last_song": song(prev[-1]) if prev else None,  # named, not a list: a list was read newest-first once
+            "song_before": song(prev[-2]) if len(prev) > 1 else None,
+            "next": song(nxt) if nxt else None,
             "facts": [{"fact": f["text"], "source": f["source_name"]} for f in facts]}
     reply = gw.json("POST", "ollama", "/api/chat", {
         "model": prefs.writer.model, "stream": False, "think": False,

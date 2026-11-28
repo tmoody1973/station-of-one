@@ -98,6 +98,16 @@ def meeting_view(db: sqlite3.Connection, station: StationConfig) -> tuple[list[d
     return rows, board
 
 
+def unique_sources(sources: list[dict]) -> list[dict]:
+    """Each source name once (two Apple Music links read as "Apple Music, Apple Music")."""
+    seen, out = set(), []
+    for s in sources:
+        if s.get("name") not in seen:
+            seen.add(s.get("name"))
+            out.append(s)
+    return out
+
+
 SLOT_LABELS = {"break": "Host break", "backsell": "Host break", "id": "Station ID", "id_tease": "Station ID", "news": "News"}
 
 
@@ -108,7 +118,7 @@ def schedule_view(db: sqlite3.Connection, station: StationConfig, now: datetime,
     rows = _timed(window(db, station.id, now, now + timedelta(hours=AHEAD_HOURS)), ZoneInfo(prefs.station.timezone))
     for it in rows:
         it["label"] = SLOT_LABELS.get(it["kind"], "")
-        it["sources"] = json.loads(it.get("sources") or "[]") if it["kind"] != "song" else []
+        it["sources"] = unique_sources(json.loads(it.get("sources") or "[]")) if it["kind"] != "song" else []
         r = db.execute("SELECT energy FROM rotation WHERE station_id = ? AND candidate_id = ?", (station.id, it["candidate_id"])).fetchone() \
             if it["kind"] == "song" else None
         it["energy"] = r[0] if r else None
@@ -147,7 +157,7 @@ def station_page(db: sqlite3.Connection, station: StationConfig, prefs: Prefs, n
     rows = [it for it in _timed(window(db, station.id, now - timedelta(hours=PAGE_BACK_HOURS), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
             if it["kind"] == "song" or (it["kind"] in ("break", "backsell") and it.get("audio_url"))]  # breaks show their work (B2)
     for it in rows:
-        it["sources"] = json.loads(it.get("sources") or "[]") if it["kind"] != "song" else []
+        it["sources"] = unique_sources(json.loads(it.get("sources") or "[]")) if it["kind"] != "song" else []
     songs = [it for it in rows if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
     block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), list(reversed(rows)))

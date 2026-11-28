@@ -418,3 +418,17 @@ def test_failed_voice_file_advances_once(make_page):  # review C2: a 404 on a br
     pg.wait_for_timeout(1500)
     st = pg.evaluate("() => window.wone.state()")
     assert calls(pg, "setQueue")[1][1] == ["s2", "s3"] and not st["inVoice"] and st["segments"] == 2   # advanced exactly once
+
+
+def test_break_skipped_when_its_song_failed(make_page):  # Tarik, 11:37 pm: the break back-announced a song that never played
+    q = voiced_queue()
+    s1 = q["items"][0]
+    q["items"].insert(1, {**s1, "song_id": "sX", "starts_at": (datetime.fromisoformat(s1["starts_at"]) + timedelta(seconds=120)).isoformat(),
+                          "duration_ms": 20000})
+    pg = voiced_page(make_page, q)
+    pg.evaluate("() => { window.__mk.failSongs = ['sX'] }")
+    tune(pg)
+    assert calls(pg, "setQueue")[0][1] == ["s1", "sX"]
+    pg.locator("#wone-skip-song").click()                             # s1 ends; sX won't play here
+    pg.wait_for_function("() => window.__mk.calls.filter(c => c[0] === 'setQueue').length === 2", timeout=8000)
+    assert calls(pg, "setQueue")[1][1] == ["s2", "s3"] and pg.evaluate("() => window.wone.state().voicesPlayed") == 0

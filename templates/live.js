@@ -37,7 +37,7 @@
       } else if (it.kind === "news") {
         segs.push({ kind: "news", offset, starts_at: it.starts_at });
       } else if (it.audio_url) {
-        segs.push({ kind: "voice", src: it.audio_url, offset, starts_at: it.starts_at, text: it.text || "" });
+        segs.push({ kind: "voice", src: it.audio_url, offset, starts_at: it.starts_at, text: it.text || "", item: it.kind });
       }
     }
     return segs;
