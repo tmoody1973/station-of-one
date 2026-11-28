@@ -34,3 +34,15 @@ def seed_jazz_rotation(db: sqlite3.Connection, station, jazz_csv: Path) -> dict[
                                     (station.id,)):
         counts.setdefault(style, {})[cat] = n
     return counts
+
+
+ARTISTS = Path("data/library/jazz_artists.csv")  # Tarik's control file, private on the Sprite
+
+
+def scout_artists(station, path: Path = ARTISTS) -> list[str]:
+    """The artists the scout checks for new releases: the core artists in Tarik's file, or the station's seed list."""
+    try:
+        rows = list(csv.DictReader(open(path, encoding="utf-8-sig")))
+    except OSError:
+        return list(station.seeds.get("artists", []))
+    return [r["artist"] for r in rows if r.get("jazz_tier") == "core"]

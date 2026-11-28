@@ -29,6 +29,39 @@ QUESTIONS = {
 }
 
 
+STYLE_DESCRIPTIONS = {  # ONE Jazz's styles (Tarik's jazz library README), for Jev's style question
+    "contemporary": "Current US jazz",
+    "uk_jazz": "The current UK jazz scene",
+    "spiritual_avant": "Spiritual, cosmic or avant-garde jazz",
+    "jazz_funk_fusion": "Jazz-funk or fusion",
+    "heritage": "Classic jazz from the 1940s to the 1970s",
+    "vocal": "Jazz singing",
+    "latin_brazilian_afro": "Latin, Brazilian or Afro jazz",
+    "not_jazz": "Not jazz: pop, house, hip-hop or other music with no real jazz in it",
+}
+
+
+def _ask_styles(gw, station, songs: list[dict], db, now, notes) -> dict[str, str]:
+    """Jev's style for each song (a choice among the station's styles, or not_jazz), logged; {candidate: style}."""
+    criteria = {k: v for k, v in STYLE_DESCRIPTIONS.items() if k in (station.styles or {}) or k == "not_jazz"}
+    out: dict[str, str] = {}
+    for start in range(0, len(songs), BATCH):
+        batch = songs[start:start + BATCH]
+        questions = {f"style_{i}": {"type": "choice", "instructions": f"Which style of jazz is the recording `songs[{i}]`?",
+                                    "criteria": criteria} for i in range(len(batch))}
+        try:
+            resp = gw.json("POST", "typesafe", "/v1/systemone",
+                           {"model": MODEL, "state": {"station": {"brief": station.brief}, "songs": batch}, "questions": questions})
+            answers = [(s["id"], resp["answers"][f"style_{i}"]) for i, s in enumerate(batch)]
+        except (GatewayError, KeyError, TypeError) as e:
+            notes.append(f"meeting: Jev style question failed for {len(batch)} songs: {str(e)[:100]}")
+            continue
+        for cid, a in answers:
+            record_decision(db, f"radio:{cid}", "meeting:style", a, resp.get("model") or MODEL, now.isoformat())
+            out[cid] = a.get("choice", "")
+    return out
+
+
 @dataclass
 class MeetingResult:
     adds: list[str] = field(default_factory=list)
@@ -143,18 +176,25 @@ def music_meeting(gw, station: StationConfig, db: sqlite3.Connection, now: datet
     for prob, cid, frm, to, reason in sorted(proposals, key=lambda x: (-x[0], x[1])):
         move(cid, frm, to, prob, reason)
 
+    styles = {}
+    if station.styles:  # a styled station (ONE Jazz): Jev names each passing find's style before it can be added
+        styles = _ask_styles(gw, station, [s for s in addable if p.get(("add", s["id"]), 0.0) >= ADD_MIN], db, now, res.notes)
     catalog_before = f"{now.year - CATALOG_YEARS:04d}{now.strftime('-%m-%d')}"
     for s in sorted(addable, key=lambda s: (-p.get(("add", s["id"]), 0.0), s["id"])):
         pa = p.get(("add", s["id"]), 0.0)
         if pa < ADD_MIN:
+            continue
+        style = styles.get(s["id"]) if station.styles else None
+        if station.styles and style not in station.styles:
+            res.notes.append(f"{s['id']}: not added (Jev: {'not jazz' if style == 'not_jazz' else 'no style'})")
             continue
         released = db.execute("SELECT release_date FROM candidates WHERE id = ?", (s["id"],)).fetchone()[0] or ""
         to = rules["catalog"] if released and released < catalog_before else rules["new"]
         if count.get(to, 0) >= size.get(to, 0):
             res.notes.append(f"{s['id']}: no room in {to}")
             continue
-        db.execute("INSERT INTO rotation (station_id, candidate_id, category, added_at, moved_at) VALUES (?,?,?,?,?)",
-                   (sid, s["id"], to, held, held))
+        db.execute("INSERT INTO rotation (station_id, candidate_id, category, added_at, moved_at, style) VALUES (?,?,?,?,?,?)",
+                   (sid, s["id"], to, held, held, style))
         count[to] = count.get(to, 0) + 1
         res.adds.append(s["id"])
         log(s["id"], "add", None, to, pa, f"Jev: join the rotation ({pa:.2f})" + (" as a catalog record" if to == rules["catalog"] else ""))
