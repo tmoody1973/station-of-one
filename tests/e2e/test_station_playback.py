@@ -347,12 +347,12 @@ def _wav(seconds):
     return buf.getvalue()
 
 
-def voiced_queue(break_at_s=140, voiced=True, wav_s=0.6, start_ago_s=100):
+def voiced_queue(break_at_s=140, voiced=True, wav_s=0.6, start_ago_s=100, src="/voice-test.wav"):
     start = datetime.now(UTC) - timedelta(seconds=start_ago_s)
     t = lambda s: (start + timedelta(seconds=s)).isoformat()
     brk = {"starts_at": t(break_at_s), "kind": "break", "duration_ms": int(wav_s * 1000), "text": "That was s1."}
     if voiced:
-        brk |= {"audio_url": "/voice-test.wav", "audio_ms": int(wav_s * 1000)}
+        brk |= {"audio_url": src, "audio_ms": int(wav_s * 1000)}
     return {"station": "test-station", "items": [
         {"starts_at": t(0), "kind": "song", "song_id": "s1", "duration_ms": break_at_s * 1000},
         brk,
@@ -395,7 +395,9 @@ def test_unvoiced_item_is_skipped(make_page):  # B2 Focus 3
 
 
 def test_join_mid_break(make_page):  # B2 Focus 4
-    pg = voiced_page(make_page, voiced_queue(break_at_s=98, wav_s=6, start_ago_s=100), wav_s=6)
+    # a real file from the bucket (58 s newscast): seeking needs a server with range requests, which the stand-in WAV lacks
+    pg = voiced_page(make_page, voiced_queue(break_at_s=97, wav_s=57, start_ago_s=100, src="/audio/2026-11-26T11.mp3"))
     pg.locator("#tune").click()                                        # tune() waits for Apple Music; here the voice comes first
     pg.wait_for_function(VOICE, timeout=8000)
-    assert pg.evaluate("() => window.wone.state().voiceTime") >= 1 and calls(pg, "setQueue") == []
+    pg.wait_for_timeout(500)
+    assert pg.evaluate("() => window.wone.state().voiceTime") >= 2.5 and calls(pg, "setQueue") == []   # joined 3 s in
