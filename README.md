@@ -16,8 +16,9 @@ Built for Fly.io Hacksgiving, Nov 23–29, 2026. The voices are synthetic and th
 | Podcast feed (latest newscast plus every Table episode) | https://patient-mountain-3400.fly.storage.tigris.dev/feed.xml |
 | Rhythm Lab, the flagship music station (on now, what's coming up, with start times) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/index.html |
 | This week's music meeting (every add, move and drop, with Jev's probability and reason; the rotation board) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/meeting/index.html |
-| How the station is programmed (rotation, hour clocks, separation, the meeting) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/how-it-works/index.html |
-| ONE Jazz, the UK jazz sampler (a fresh 50-minute set each hour) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/uk-jazz/index.html |
+| How the station is programmed (rotation, hour clocks, separation, the meeting) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/rhythm-lab/how-it-works/index.html |
+| ONE Jazz, 24/7 jazz programmed by style (tracklist, Listen live) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/jazz/index.html |
+| How ONE Jazz is programmed (its seven styles, five daypart clocks, where new records come from) | https://patient-mountain-3400.fly.storage.tigris.dev/radio/jazz/how-it-works/index.html |
 
 ## What happens each hour
 
@@ -53,11 +54,17 @@ Tarik's Rhythm Lab Radio library (563 shows, 10,701 tracks, 2005 and 2013–2026
 
 New music still comes in: five feeds (Bandcamp Daily, Stones Throw, Brownswood, DJ Mag, The Quietus) are read each daytime hour, and Jev rates each find against the brief before the meeting considers it. Why this design, and what it gave up: `docs/decisions/009-24-7-music.md`.
 
-### ONE Jazz: the UK jazz sampler
+### ONE Jazz: jazz around the clock, programmed by style
 
-ONE Jazz keeps the simpler hourly programmer: it reads its feeds (UK Vibe, Brownswood, Bandcamp Daily, r/Jazz), has Ollama list the music each item names, Jev rate every find against the brief, matches them on Apple Music (under 80% confidence is held; originals beat remasters and live takes), and programs a 50-minute set (no artist twice in 3 hours, a mix of new, recent and older records). Its ~30 matched songs are too few for a 24-hour clock, so it moves to the program director when its catalog grows (one line in its config).
+ONE Jazz runs on the same program director as Rhythm Lab, with one addition: each slot in its hour clocks names a style of jazz. Five daypart clocks (rise 6-9, workday 10-14, drive 15-18, after hours 19-23, overnight 0-5) come from Tarik's jazz programming folder, 11 style slots an hour in his order. A slot takes a rested song of its style from any category; if none can play, it tries that style's fallback list, then any jazz. The song's category still sets its rest: 72 hours for Power and New, 78 for Rotation, 84 for Library, and no artist twice in 4 hours.
 
-Both pages show Apple's 30-second previews (they play only when tapped and never advance on their own) and a "Listen on Apple Music" link. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: full songs through MusicKit ("Connect Apple Music" in settings), then voice breaks with cited facts and news on the music stations.
+- **The catalog.** The core jazz from Rhythm Lab Radio's library, each record filed under its style and the category its plays earned: 949 songs at go-live on Nov 27 (contemporary 293, UK jazz 181, spiritual and avant-garde 153, jazz-funk and fusion 138, heritage 86, vocal 52, Latin/Brazilian/Afro 46). Holiday records play only from Nov 22 to Dec 25.
+- **New records.** At each music meeting the agent checks the station's 440 core artists on Apple Music for releases from the last 60 days, and fills the thin styles (heritage, vocal, Latin, with targets of 150, 120 and 120) with well-known recordings by their artists. Jev rates each find's fit, names its style and says whether it's a holiday record; a record Jev calls not jazz is never added, and the same recording never joins twice. The first meeting added 86.
+- **Where to look.** The station page is a tracklist with Listen live; the program director's page shows the meeting and a count per style; the explainer draws the five clocks in style colors. The old sampler's address points here.
+
+Why this design and what it gave up: `docs/decisions/013-jazz-format.md`.
+
+Both stations' pages show Apple's 30-second previews (they play only when tapped and never advance on their own) and a "Listen on Apple Music" link; listeners with Apple Music can connect it in Settings and hear the full songs live. The Apple Music developer token is signed on Tarik's Mac and held in a Custom API connector (`docs/decisions/008-music-stations.md`). Next: voice breaks with cited facts and news on the music stations.
 
 ## How the site plays
 
