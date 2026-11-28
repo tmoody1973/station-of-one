@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS station_candidates (
   PRIMARY KEY (station_id, candidate_id));
 CREATE TABLE IF NOT EXISTS rotation (
   station_id TEXT, candidate_id TEXT, category TEXT, energy INTEGER, vocal INTEGER, added_at TEXT, moved_at TEXT,
-  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT, tags TEXT,
+  plays INTEGER DEFAULT 0, last_played_at TEXT, opener INTEGER DEFAULT 0, closer INTEGER DEFAULT 0, source_note TEXT, tags TEXT, style TEXT,
   PRIMARY KEY (station_id, candidate_id));
 CREATE TABLE IF NOT EXISTS queue (
   station_id TEXT, starts_at TEXT, kind TEXT, candidate_id TEXT, song_id TEXT, duration_ms INTEGER, category TEXT,
@@ -118,6 +118,10 @@ CREATE TABLE IF NOT EXISTS meeting (
 
 def open_radio(db: sqlite3.Connection) -> None:
     db.executescript(SCHEMA)
+    have = {r[1] for r in db.execute("PRAGMA table_info(rotation)")}
+    for col in ("opener INTEGER DEFAULT 0", "closer INTEGER DEFAULT 0", "source_note TEXT", "tags TEXT", "style TEXT"):
+        if col.split()[0] not in have:  # databases created before the column existed
+            db.execute(f"ALTER TABLE rotation ADD COLUMN {col}")
     db.commit()
 
 
