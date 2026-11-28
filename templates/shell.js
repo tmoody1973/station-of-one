@@ -27,7 +27,8 @@
   // (The bar's shared <audio> means "the listener chose something else" and would leave the station.)
   const voice = new Audio();
   voice.preload = "auto";
-  let segs = [], inVoice = false;
+  let segs = [], inVoice = false, segTok = 0;  // segTok: only the segment playing now may advance the player (review C2)
+  const SILENT = "data:audio/wav;base64,UklGRnQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
   const say = (t) => { if (!msgEl) return; msgEl.textContent = t || ""; msgEl.hidden = !t; };  // older pages have no msg line (C1)
   const playing = () => (mk.isPlaying ?? (mk.playbackState === MusicKit.PlaybackStates.playing));  // isPlaying unconfirmed (I6)
 
@@ -118,8 +119,7 @@
       if (my !== gen) return;
       // After the segments run out, carry on after the last one already played, never back to what was just heard (I5).
       if (fromEnd && lastStart) items = items.filter((it) => Date.parse(it.starts_at) > lastStart);
-      const news = stripData && (stripData.stations || []).find((st) => st.id === "news");
-      segs = window.woneLive.liveSegments(items, Date.now(), news && news.play ? { src: news.play.src, hour_local: news.hour_local } : null);
+      segs = window.woneLive.liveSegments(items, Date.now());
       if (!segs.length) { say("Nothing is scheduled right now."); return; }
       if (fromEnd) { segs[0].startTime = 0; segs[0].offset = 0; }
       errors = 0;
@@ -129,13 +129,21 @@
   async function nextSegment(my = gen) {  // play the next segment: a block of songs in Apple Music, or a voice item here
     if (my !== gen || !station) return;
     const seg = segs.shift();
+    const tok = ++segTok;
     if (!seg) { rejoinAt = Date.now() + 30000; return join(true, my); }  // the published queue ran out: fetch what's next
     lastStart = Date.parse(seg.last_at || seg.starts_at);  // a block resumes after its last song, never inside it (I5)
     audio.pause(); embed.replaceChildren(); embed.hidden = true;  // one sound at a time
     if (seg.kind === "songs") {
       inVoice = false; voice.pause();
+      rejoinAt = Date.now() + 5000;  // while Apple loads the block it may still say "completed": don't advance again (I1)
       try { await mk.setQueue({ songs: seg.songIds, startTime: seg.startTime, startPlaying: true }); } catch (e) { await failed(e); }
       return;
+    }
+    if (seg.kind === "news") {  // the newscast for this slot's hour, chosen now from the strip's latest data (C1)
+      const news = stripData && (stripData.stations || []).find((st) => st.id === "news");
+      seg.src = window.woneLive.newsSrc(seg, news && news.play ? { src: news.play.src, hour_local: news.hour_local } : null);
+      seg.news = true;
+      if (!seg.src) return nextSegment(my);
     }
     if (mk && playing()) mk.pause();  // Apple's audio stops before ours starts
     inVoice = true;
@@ -143,9 +151,11 @@
     voice.src = new URL(seg.src, location.href).href;
     const at = () => { try { voice.currentTime = seg.offset || 0; } catch (e) { /* not seekable yet */ } };
     voice.readyState ? at() : voice.addEventListener("loadedmetadata", at, { once: true });
-    try { await voice.play(); } catch (e) { inVoice = false; return nextSegment(my); }  // can't play it: skip, never stall
+    try { await voice.play(); } catch (e) {  // can't play it: skip, never stall — unless its error event already moved on
+      if (tok === segTok && inVoice) { inVoice = false; return nextSegment(my); }
+    }
   }
-  const voiceDone = () => { if (inVoice) { inVoice = false; nextSegment(); } };
+  const voiceDone = () => { if (inVoice) { inVoice = false; nextSegment(); } };  // nextSegment bumps segTok, so a late catch stays put
   voice.addEventListener("ended", voiceDone);
   voice.addEventListener("error", voiceDone);
   async function playStation(next) {
@@ -154,6 +164,7 @@
     if (!(await signIn()) || my !== gen) return;  // a newer tap (the newscast, a preview) wins
     localStorage.setItem("wone-apple", "1");
     station = next; item = next;
+    voice.src = SILENT; voice.play().then(() => { if (!inVoice) voice.pause(); }).catch(() => {});  // unlock our player inside the tap (iOS; review I4)
     root.classList.add("station");
     label.textContent = next.label || next.title || "Live";
     nowEl.textContent = next.title || "";

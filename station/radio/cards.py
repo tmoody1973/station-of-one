@@ -26,10 +26,10 @@ def own_facts(db: sqlite3.Connection, candidate_id: str) -> list[dict]:
     artist, title, album, released, apple, feed, item_title, link = r
     facts = []
     if album and (released or "")[:4].isdigit():
-        facts.append({"text": f"{title} is on {artist}'s album {album}, released in {released[:4]}.", "source_url": apple or "",
+        facts.append({"text": f"Apple Music lists {title} on {artist}'s album {album}, dated {released[:4]}.", "source_url": apple or "",
                       "source_name": "Apple Music"})
     if feed and link:
-        facts.append({"text": f"The agent found it through {feed}: “{item_title}”.", "source_url": link, "source_name": feed})
+        facts.append({"text": f"The agent found it through {feed}.", "source_url": link, "source_name": feed})  # never the scraped title
     return _cited(facts)
 
 

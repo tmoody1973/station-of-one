@@ -61,10 +61,11 @@ def _beyond_facts(gw, text: str, facts: list[dict], prev: list[dict], nxt: dict 
     playlist = {"just_played": [{"artist": s.get("artist"), "title": s.get("title")} for s in prev[-2:]],
                 "next": {"artist": nxt.get("artist"), "title": nxt.get("title")} if nxt else None}
     resp = gw.json("POST", "typesafe", "/v1/systemone", {"model": JEV,
-        "state": {"script": text, "facts": [f["text"] for f in facts], "playlist": playlist},
+        "state": {"script": text, "facts": [{"fact": f["text"], "source": f["source_name"]} for f in facts], "playlist": playlist},
         "questions": {"beyond_facts": {"type": "noul", "instructions": "Does `script` state any fact about the music or the artists "
-                                       "that is not in `facts`? Naming the songs and artists in `playlist`, the station's name, "
-                                       "and mood or opinion words (warm, classic, a groove) are not facts and don't count."}}})
+                                       "that is not in `facts`, or credit a fact to the wrong source? Naming the songs and artists in "
+                                       "`playlist`, the station's name, and mood or opinion words (warm, classic, a groove) are not "
+                                       "facts and don't count."}}})
     answer = resp["answers"]["beyond_facts"]
     return float(answer["noul"]), answer, resp.get("model") or JEV
 

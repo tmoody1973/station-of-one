@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 
-const { liveSegments } = createRequire(import.meta.url)("../../templates/live.js");
+const { liveSegments, newsSrc } = createRequire(import.meta.url)("../../templates/live.js");
 const T0 = Date.parse("2026-11-27T22:00:00+00:00");
 const at = (s) => new Date(T0 + s * 1000).toISOString().replace(".000Z", "+00:00");
 const Q = [
@@ -19,16 +19,16 @@ const Q = [
 const FRESH = { src: "/audio/2026-11-27T16.mp3", hour_local: "2026-11-27T16:00:00-06:00" };   // = T0
 
 test("segments in order", () => {
-  const s = liveSegments(Q, T0 + 10 * 1000, FRESH);
-  assert.deepEqual(s.map((x) => x.kind), ["voice", "voice", "songs", "voice", "songs"]);
-  assert.equal(s[0].src, FRESH.src);
+  const s = liveSegments(Q, T0 + 10 * 1000);
+  assert.deepEqual(s.map((x) => x.kind), ["news", "voice", "songs", "voice", "songs"]);
+  assert.equal(s[0].src, undefined);                                   // the newscast is chosen when the slot comes, not at join
   assert.equal(s[0].offset, 10);
   assert.deepEqual(s[2].songIds, ["1", "2"]);
   assert.deepEqual(s[4].songIds, ["3", "4"]);                          // the unvoiced break between them is dropped
 });
 
 test("join mid-break", () => {
-  const s = liveSegments(Q, T0 + (653 + 12) * 1000, FRESH);
+  const s = liveSegments(Q, T0 + (653 + 12) * 1000);
   assert.equal(s[0].kind, "voice");
   assert.equal(s[0].src, "/audio/radio/x/b.mp3");
   assert.equal(s[0].offset, 12);
@@ -36,12 +36,15 @@ test("join mid-break", () => {
 });
 
 test("join mid-song", () => {
-  const s = liveSegments(Q, T0 + (413 + 30) * 1000, FRESH);
+  const s = liveSegments(Q, T0 + (413 + 30) * 1000);
   assert.deepEqual(s[0], { kind: "songs", songIds: ["2"], startTime: 30, starts_at: at(413), last_at: at(413) });
 });
 
-test("stale news is skipped", () => {
-  const old = { src: "/audio/old.mp3", hour_local: "2026-11-27T14:00:00-06:00" };   // two hours old
-  assert.equal(liveSegments(Q, T0 + 10 * 1000, old)[0].src, "/audio/radio/x/id.mp3");
-  assert.equal(liveSegments(Q, T0 + 10 * 1000, null)[0].src, "/audio/radio/x/id.mp3");
+test("stale news is skipped", () => {  // review C1: only the newscast made for that slot's hour
+  const slot = liveSegments(Q, T0 + 10 * 1000)[0];
+  assert.equal(newsSrc(slot, FRESH), FRESH.src);
+  assert.equal(newsSrc(slot, { src: "/audio/old.mp3", hour_local: "2026-11-27T15:00:00-06:00" }), null);   // last hour's
+  assert.equal(newsSrc(slot, null), null);
+  const next = { kind: "news", starts_at: at(3600), offset: 0 };
+  assert.equal(newsSrc(next, FRESH), null);                            // tuned in at noon, the 1 pm slot never gets the noon news
 });

@@ -401,3 +401,20 @@ def test_join_mid_break(make_page):  # B2 Focus 4
     pg.wait_for_function(VOICE, timeout=8000)
     pg.wait_for_timeout(500)
     assert pg.evaluate("() => window.wone.state().voiceTime") >= 2.5 and calls(pg, "setQueue") == []   # joined 3 s in
+
+
+
+def test_failed_voice_file_advances_once(make_page):  # review C2: a 404 on a break must not skip the next break over a song
+    q = voiced_queue()
+    t = lambda s: (datetime.fromisoformat(q["items"][0]["starts_at"]) + timedelta(seconds=s)).isoformat()
+    q["items"][1]["audio_url"] = "/missing-voice.wav"
+    q["items"] += [{"starts_at": t(400), "kind": "break", "audio_url": "/voice-test.wav", "audio_ms": 3000, "duration_ms": 3000, "text": "x"},
+                   {"starts_at": t(403), "kind": "song", "song_id": "s4", "duration_ms": 240000}]
+    pg = voiced_page(make_page, q, wav_s=3)
+    pg.route("**/missing-voice.wav", lambda route: route.fulfill(status=404, body="no"))
+    tune(pg)
+    pg.locator("#wone-skip-song").click()                             # s1 ends; the break's file is missing
+    pg.wait_for_function("() => window.__mk.calls.filter(c => c[0] === 'setQueue').length >= 2", timeout=8000)
+    pg.wait_for_timeout(1500)
+    st = pg.evaluate("() => window.wone.state()")
+    assert calls(pg, "setQueue")[1][1] == ["s2", "s3"] and not st["inVoice"] and st["segments"] == 2   # advanced exactly once

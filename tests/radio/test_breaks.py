@@ -80,3 +80,12 @@ def test_jev_sees_the_playlist():  # rehearsal, Nov 27 9:40 pm: without it, ever
     body = next(b for m, p, path, b in g.calls if p == "typesafe")
     assert body["state"]["playlist"] == {"just_played": PREV, "next": NEXT}
     assert "mood" in body["questions"]["beyond_facts"]["instructions"]
+
+
+
+def test_jev_checks_sources_too():  # review I3b: a fact credited to the wrong source
+    g = gw()
+    script_for(g, db(), ST, item("break"), PREV, NEXT, PREFS, FACTS)
+    body = next(b for m, p, path, b in g.calls if p == "typesafe")
+    assert body["state"]["facts"] == [{"fact": FACTS[0]["text"], "source": "example.org"}]
+    assert "wrong source" in body["questions"]["beyond_facts"]["instructions"]

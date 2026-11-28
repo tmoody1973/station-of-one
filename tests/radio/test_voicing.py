@@ -31,9 +31,10 @@ def q(d, minutes, kind, cid=None, dur=240000):
 
 class Rec:
     def __init__(self, fail=False):
-        self.texts, self.uploads, self.fail = [], {}, fail
+        self.texts, self.uploads, self.fail, self.calls = [], {}, fail, 0
 
     def tts(self, text, host):
+        self.calls += 1
         if self.fail:
             raise GatewayError("gemini", 500, "down")
         self.texts.append((text, host["voice"]))
@@ -98,3 +99,19 @@ def test_queue_json_carries_voice_fields():
     items = window(d, "jazz", NOW - timedelta(minutes=1), NOW + timedelta(hours=1))
     brk = next(it for it in items if it["kind"] == "break")
     assert brk["audio_url"].endswith(".mp3") and brk["text"] and json.loads(brk["sources"] or "[]") == [] and brk["audio_ms"] == 9500
+
+
+
+def test_voicing_keeps_to_its_budget():  # review I2: never past the build lock
+    d, r = db(), Rec()
+    hour(d)
+    counts = voice_spoken(object(), d, ST, PREFS, NOW, tts=r.tts, put=r.put, facts=lambda cid: [], budget_s=0)
+    assert counts["voiced"] == 0 and any("budget" in n for n in counts["notes"])
+
+
+def test_voicing_stops_after_repeated_failures():
+    d, r = db(), Rec(fail=True)
+    for m in range(0, 100, 10):
+        q(d, m, "id")
+    voice_spoken(object(), d, ST, PREFS, NOW, tts=r.tts, put=r.put, facts=lambda cid: [])
+    assert r.calls <= 2

@@ -9,6 +9,7 @@ import json
 import sqlite3
 import subprocess
 import tempfile
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -21,6 +22,8 @@ from station.steps.voice import synthesize_request
 
 SPOKEN = ("id", "id_tease", "break", "backsell")
 VOICE_AHEAD = timedelta(hours=2)
+BUDGET_S = 240  # per station per run: the build lock goes stale at 20 minutes (review I2)
+MAX_FAILURES = 2  # after this many failed items, the rest wait for the next run
 
 
 def gemini_tts(gw, text: str, host: dict) -> tuple[bytes, float]:
@@ -43,7 +46,7 @@ def _song(db, cid: str | None) -> dict | None:
 
 
 def voice_spoken(gw, db: sqlite3.Connection, station: StationConfig, prefs: Prefs, now: datetime,
-                 tts=None, put=None, facts=None) -> dict:
+                 tts=None, put=None, facts=None, budget_s: float = BUDGET_S) -> dict:
     tts = tts or (lambda text, host: gemini_tts(gw, text, host))
     put = put or (lambda key, data: put_object(gw, prefs.hosting.bucket, key, data, "audio/mpeg", cache_control(key)))
     facts = facts or (lambda cid: [])
@@ -52,8 +55,13 @@ def voice_spoken(gw, db: sqlite3.Connection, station: StationConfig, prefs: Pref
     rows = db.execute(f"SELECT starts_at, kind FROM queue WHERE station_id = ? AND kind IN ({','.join('?' * len(SPOKEN))}) "
                       "AND starts_at >= ? AND starts_at < ? AND audio_url IS NULL ORDER BY starts_at",
                       (station.id, *SPOKEN, now.isoformat(), (now + VOICE_AHEAD).isoformat())).fetchall()
-    voiced, notes, made = 0, [], {}
+    voiced, notes, made, failures = 0, [], {}, 0
+    deadline = time.monotonic() + budget_s
     for starts_at, kind in rows:
+        if time.monotonic() >= deadline or failures >= MAX_FAILURES:
+            notes.append(f"voicing stopped ({'time budget used' if failures < MAX_FAILURES else 'repeated failures'}): "
+                         "the rest wait for the next run")
+            break
         try:
             prev = [s for s in (_song(db, c) for (c,) in reversed(db.execute(
                 "SELECT candidate_id FROM queue WHERE station_id = ? AND kind = 'song' AND starts_at < ? ORDER BY starts_at DESC LIMIT 2",
@@ -78,6 +86,7 @@ def voice_spoken(gw, db: sqlite3.Connection, station: StationConfig, prefs: Pref
                        (script["text"], json.dumps(script["sources"]), "/" + key, made[key], station.id, starts_at))
             voiced += 1
         except Exception as e:  # noqa: BLE001 — one item's voice must never stop the station; the browser skips it
+            failures += 1
             notes.append(f"voice failed for {kind} at {starts_at}: {type(e).__name__}: {str(e)[:120]}")
     db.commit()
     return {"voiced": voiced, "notes": notes}
