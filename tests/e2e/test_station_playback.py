@@ -270,7 +270,7 @@ def test_bar_and_strip_name_songs_the_same_way(make_page):  # one order everywhe
 def _rhythm_lab(pg):
     pg.goto(f"{BASE}/radio/rhythm-lab/index.html", wait_until="networkidle")
     pg.evaluate("() => { window.__marker = 1 }")
-    pg.wait_for_selector("main li.trk", timeout=10000)
+    pg.wait_for_selector("main li.trk", state="attached", timeout=10000)   # the newest rows are later songs, hidden by design
 
 
 def test_now_follows_the_clock_when_not_listening(make_page):  # live-playlist Focus 2
