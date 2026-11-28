@@ -128,6 +128,10 @@ def open_radio(db: sqlite3.Connection) -> None:
     for col in ("opener INTEGER DEFAULT 0", "closer INTEGER DEFAULT 0", "source_note TEXT", "tags TEXT", "style TEXT"):
         if col.split()[0] not in have:  # databases created before the column existed
             db.execute(f"ALTER TABLE rotation ADD COLUMN {col}")
+    have_q = {r[1] for r in db.execute("PRAGMA table_info(queue)")}
+    for col in ("text TEXT", "sources TEXT", "audio_url TEXT", "audio_ms INTEGER"):  # Plan B2: the voiced spoken items
+        if col.split()[0] not in have_q:
+            db.execute(f"ALTER TABLE queue ADD COLUMN {col}")
     db.commit()
 
 

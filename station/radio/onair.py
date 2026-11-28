@@ -17,6 +17,7 @@ from station.radio.page import (EXPLAINER_PATH, PLAYLISTS_PATH, explainer_path, 
 from station.radio.program import Block
 from station.radio.scheduler import schedule_hour
 from station.radio.tags import tag_songs
+from station.radio.voicing import voice_spoken
 from station.runs import RUNS_ROOT
 from station.steps.publish import cache_control, put_object
 from station.store import record_decision
@@ -65,11 +66,11 @@ def window(db: sqlite3.Connection, station_id: str, start: datetime, end: dateti
     rows = db.execute(
         "SELECT q.starts_at, q.kind, q.song_id, q.duration_ms, q.category, q.note, q.source_url, q.candidate_id, "
         "COALESCE(c.matched_artist, c.artist), COALESCE(c.matched_title, c.title), c.album, c.release_date, c.apple_url, "
-        "c.artwork_url, c.preview_url FROM queue q LEFT JOIN candidates c ON c.id = q.candidate_id "
+        "c.artwork_url, c.preview_url, q.text, q.sources, q.audio_url, q.audio_ms FROM queue q LEFT JOIN candidates c ON c.id = q.candidate_id "
         "WHERE q.station_id = ? AND q.starts_at >= ? AND q.starts_at < ? ORDER BY q.starts_at",
         (station_id, start.isoformat(), end.isoformat())).fetchall()
     keys = ("starts_at", "kind", "song_id", "duration_ms", "category", "note", "source_url", "candidate_id", "artist", "title",
-            "album", "release_date", "apple_url", "artwork_url", "preview_url")
+            "album", "release_date", "apple_url", "artwork_url", "preview_url", "text", "sources", "audio_url", "audio_ms")
     return [dict(zip(keys, r)) for r in rows]
 
 
@@ -166,6 +167,9 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     for k in range(AHEAD_HOURS + 1):  # this hour and the next two; an hour already scheduled is left alone
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
         schedule_hour(station, db, local, news_for_hour(station, local, prefs, news))
+    voiced = voice_spoken(gw, db, station, prefs, now)  # Plan B2: IDs, teases and breaks in the host's voice
+    counts["voiced"] = voiced["voiced"]
+    notes += voiced["notes"]
     items = _timed(window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
