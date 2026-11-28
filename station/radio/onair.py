@@ -12,7 +12,8 @@ from zoneinfo import ZoneInfo
 from station.config import Prefs
 from station.radio.meeting import meeting_due, music_meeting
 from station.radio.model import StationConfig
-from station.radio.page import EXPLAINER_PATH, meeting_path, render_explainer, render_meeting, render_sampler, sampler_path
+from station.radio.page import (EXPLAINER_PATH, PLAYLISTS_PATH, meeting_path, render_explainer, render_meeting, render_playlists,
+                                render_sampler, sampler_path)
 from station.radio.program import Block
 from station.radio.scheduler import schedule_hour
 from station.radio.tags import tag_songs
@@ -95,6 +96,51 @@ def _explainer(db, station: StationConfig, prefs: Prefs) -> str:
     return render_explainer(station, counts, last, prefs)
 
 
+PAGE_BACK_HOURS = 3  # the tracklist shows what played in the last 3 hours
+
+
+def _timed(items: list[dict], tz) -> list[dict]:
+    """Start time on the listener's clock, and the end time the browser uses to mark what's on."""
+    for it in items:
+        start_dt = datetime.fromisoformat(it["starts_at"])
+        it["at"] = start_dt.astimezone(tz).strftime("%-I:%M %p").lower()
+        it["ends_at"] = (start_dt + timedelta(milliseconds=it["duration_ms"] or 0)).isoformat()
+    return items
+
+
+def station_page(db: sqlite3.Connection, station: StationConfig, prefs: Prefs, now: datetime, counts: dict | None = None) -> str:
+    """The clock station's page as a tracklist (KCRW pattern): every song from 3 hours back to 3 ahead, newest first.
+    The browser shows the one playing now on top and hides later ones (shell.js). Reads only; schedules nothing."""
+    now = now.astimezone(UTC)
+    tz = ZoneInfo(prefs.station.timezone)
+    hour0 = now.replace(minute=0, second=0, microsecond=0)
+    songs = [it for it in _timed(window(db, station.id, now - timedelta(hours=PAGE_BACK_HOURS), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
+             if it["kind"] == "song"]
+    on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
+    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), list(reversed(songs)))
+    return render_sampler(station, block, counts or {}, prefs, on_now=on_now)
+
+
+def playlists_page(db: sqlite3.Connection, now: datetime, prefs: Prefs, radio_root: Path = Path("data/radio")) -> str:
+    """One tab per station: a clock station's songs today (newest first, the browser hides later ones), a sampler's set."""
+    from station.radio.model import STATIONS_ROOT, load_station
+    now = now.astimezone(UTC)
+    tz = ZoneInfo(prefs.station.timezone)
+    midnight = now.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(UTC)
+    tabs = []
+    for st in sorted((load_station(p.stem) for p in STATIONS_ROOT.glob("*.json")), key=lambda s: (s.type != "flagship", s.name)):
+        if st.programmer == "clock":
+            rows = [it for it in _timed(window(db, st.id, midnight, now + timedelta(hours=AHEAD_HOURS)), tz) if it["kind"] == "song"]
+            tabs.append({"st": st, "clock": True, "rows": list(reversed(rows))})
+        else:
+            try:
+                rows = json.loads((Path(radio_root) / st.id / "latest.json").read_text())["block"]["tracks"]
+            except (OSError, ValueError, KeyError, TypeError):
+                rows = []
+            tabs.append({"st": st, "clock": False, "rows": rows})
+    return render_playlists(tabs, prefs)
+
+
 def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime, prefs: Prefs, out_root: Path,
               counts: dict, notes: list[str]) -> dict:
     now = now.astimezone(UTC)  # queue times are UTC ISO strings, compared as text: never mix offsets
@@ -109,11 +155,7 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     for k in range(AHEAD_HOURS + 1):  # this hour and the next two; an hour already scheduled is left alone
         local = (hour0 + timedelta(hours=k)).astimezone(tz)
         schedule_hour(station, db, local, news if station.clock_for(local.hour).name == "day" else 0)
-    items = window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1))
-    for it in items:  # the listener's clock: start times in the station's time zone; end times for the browser
-        start_dt = datetime.fromisoformat(it["starts_at"])
-        it["at"] = start_dt.astimezone(tz).strftime("%-I:%M %p").lower()
-        it["ends_at"] = (start_dt + timedelta(milliseconds=it["duration_ms"] or 0)).isoformat()
+    items = _timed(window(db, station.id, now - timedelta(hours=1), hour0 + timedelta(hours=AHEAD_HOURS + 1)), tz)
     songs = [it for it in items if it["kind"] == "song"]
     on_now = next((s for s in reversed(songs) if s["starts_at"] <= now.isoformat()), None)
     counts["scheduled"] = len([s for s in songs if s["starts_at"] > now.isoformat()])
@@ -122,11 +164,10 @@ def run_clock(gw, station: StationConfig, db: sqlite3.Connection, now: datetime,
     out.mkdir(parents=True, exist_ok=True)
     tracks = [t for t in [on_now, *[s for s in songs if s["starts_at"] > now.isoformat()]] if t]  # the strip's 3-hour schedule
     (out / "latest.json").write_text(json.dumps({"station": station.id, "block": {"tracks": tracks}}, indent=1))
-    on_page = [s for s in songs if s["ends_at"] > now.isoformat()]  # the browser picks what's on from these (shell.js)
-    block = Block(station.id, f"queue-{hour0:%Y%m%dT%H}", now.isoformat(), on_page)
     queue = {"station": station.id, "updated": now.isoformat(), "items": [{k: v for k, v in it.items() if k != "candidate_id"} for it in items]}
     pages = ((f"data/radio/{station.id}/queue.json", json.dumps(queue).encode(), "application/json"),
-             (sampler_path(station.id), render_sampler(station, block, counts, prefs, on_now=on_now).encode(), "text/html; charset=utf-8"),
+             (sampler_path(station.id), station_page(db, station, prefs, now, counts).encode(), "text/html; charset=utf-8"),
+             (PLAYLISTS_PATH, playlists_page(db, now, prefs).encode(), "text/html; charset=utf-8"),
              (meeting_path(station.id), render_meeting(station, *meeting_view(db, station), prefs).encode(), "text/html; charset=utf-8"),
              (EXPLAINER_PATH, _explainer(db, station, prefs).encode(), "text/html; charset=utf-8"))
     for key, body, ctype in pages:

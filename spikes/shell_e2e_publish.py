@@ -27,6 +27,12 @@ latest = json.loads(Path("data/radio/uk-jazz/latest.json").read_text())
 b = latest["block"]
 pages["radio/uk-jazz/index.html"] = render_sampler(load_station("uk-jazz"), Block(b["station_id"], b["block_id"], b["built_at"], b["tracks"]),
                                                    latest["counts"], prefs)
+import sqlite3 as _sqlite3  # the Rhythm Lab tracklist and the Playlists page, from the real schedule (read only)
+from datetime import UTC as _UTC, datetime as _dt
+from station.radio.onair import playlists_page, station_page
+_db = _sqlite3.connect("data/station.db")
+pages["radio/rhythm-lab/index.html"] = station_page(_db, load_station("rhythm-lab"), prefs, _dt.now(_UTC))
+pages["playlists/index.html"] = playlists_page(_db, _dt.now(_UTC), prefs)
 pages["old/index.html"] = '<!doctype html><title>an older page</title><main><p>an older page, built before the shell</p><audio src="/x.mp3"></audio></main>'
 pages["broken/index.html"] = '<!doctype html><title>no main here</title><p>deliberately has no main element</p>'
 

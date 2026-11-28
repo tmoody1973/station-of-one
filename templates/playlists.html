@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/logo-one.png" type="image/png">
+<title>Playlists · {{ station.name }}</title>
+<meta name="description" content="What each ONE 1.0 FM music station has played today.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Jost:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+{% include "_bauhaus.css" %}
+main.wrap{padding-top:34px;padding-bottom:56px;display:flex;flex-direction:column;gap:28px;max-width:960px}
+h1{margin:0;font-size:56px;font-weight:800;line-height:1}
+.tabs{display:flex;gap:6px;border-bottom:3px solid var(--ink)}
+.tabs a{padding:10px 18px;font-weight:800;letter-spacing:.1em;text-transform:lowercase;text-decoration:none;color:var(--ink)}
+.tabs a:hover{background:var(--yellow)}
+section.pl{scroll-margin-top:20px}
+section.pl h2{margin:10px 0 6px;font-size:30px}
+.tracklist{list-style:none;margin:0;padding:0}
+.trk{display:grid;grid-template-columns:96px 56px minmax(0,1fr) auto;gap:16px;align-items:center;border-top:2px solid var(--ink);padding:12px 0}
+.trk .at{font-family:var(--mono);font-size:14px;color:var(--muted)}
+.trk img{width:56px;height:56px;border:2px solid var(--ink);object-fit:cover;background:var(--blue)}
+.trk h3{margin:0;font-size:18px}.trk .by{font-size:15px;color:var(--ink-2)}.trk .am{font-size:13px;font-weight:700}
+.trk.future{display:none}.trk.now{background:var(--card);box-shadow:inset 6px 0 0 var(--red);padding-left:14px}
+.trk.now .at{color:var(--red);font-weight:800}.trk.next .at{color:var(--blue)}
+.empty{color:var(--muted)}
+@media (max-width:640px){h1{font-size:40px}.trk{grid-template-columns:64px 48px minmax(0,1fr)}.trk .am{display:none}}
+</style>
+</head>
+<body>
+{% set masthead_line = "Playlists" %}{% include "_masthead.html" %}
+<main class="wrap">
+<h1>Playlists</h1>
+<nav class="tabs" aria-label="Stations">{% for tab in tabs %}<a href="#{{ tab.st.id }}">{{ tab.st.name }}</a>{% endfor %}</nav>
+{% for tab in tabs %}
+<section class="pl" id="{{ tab.st.id }}">
+  <h2>{{ tab.st.name }}</h2>
+  <p class="by">{% if tab.clock %}Played today, newest first. <a href="/radio/{{ tab.st.id }}/index.html">Listen live</a>.{% else %}The current set. <a href="/radio/{{ tab.st.id }}/index.html">Previews on its page</a>.{% endif %}</p>
+  <ol class="tracklist"{% if tab.clock %} data-station-src="/data/radio/{{ tab.st.id }}/queue.json"{% endif %}>
+  {% for t in tab.rows %}
+    <li class="trk"{% if tab.clock %} data-song="{{ t.song_id }}" data-starts="{{ t.starts_at }}" data-ends="{{ t.ends_at }}" data-at="{{ t.at }}"{% endif %}>
+      <span class="at">{{ t.at or "" }}</span>
+      <img src="{{ t.artwork_url | safe_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      <div><h3>{{ t.title }}</h3><div class="by">{{ t.artist }}</div></div>
+      <a class="am" href="{{ t.apple_url | safe_url }}" rel="noopener" target="_blank">Apple Music</a>
+    </li>
+  {% else %}<li class="empty">Nothing yet today.</li>{% endfor %}
+  </ol>
+</section>
+{% endfor %}
+<footer>
+  <span>Machine-programmed. Songs play through each listener's own Apple Music; no audio is stored by this station.</span>
+  <span>{{ station.call_sign }} {{ station.frequency }} is a fictional station.</span>
+</footer>
+</main>
+{% set player_default = {} %}{% include "_player.html" %}
+</body>
+</html>

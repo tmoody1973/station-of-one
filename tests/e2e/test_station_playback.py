@@ -265,3 +265,35 @@ def test_bar_and_strip_name_songs_the_same_way(make_page):  # one order everywhe
     pg = make_page()
     tune(pg)
     pg.wait_for_function("() => document.getElementById('wone-now').textContent === 'Artist s1 · Song s1'", timeout=5000)
+
+
+def _rhythm_lab(pg):
+    pg.goto(f"{BASE}/radio/rhythm-lab/index.html", wait_until="networkidle")
+    pg.evaluate("() => { window.__marker = 1 }")
+    pg.wait_for_selector("main li.trk", state="attached", timeout=10000)   # the newest rows are later songs, hidden by design
+
+
+def test_now_follows_the_clock_when_not_listening(make_page):  # live-playlist Focus 2
+    pg = make_page()
+    _rhythm_lab(pg)
+    pg.wait_for_timeout(500)
+    bad = pg.evaluate("""() => [...document.querySelectorAll('main li.trk')].filter(r => getComputedStyle(r).display !== 'none'
+        && Date.parse(r.dataset.starts) > Date.now() && !r.classList.contains('next')).length""")
+    assert bad == 0                                              # no later song shows, except an "Up next" during a break
+    now = pg.evaluate("""() => { const r = document.querySelector('main li.trk.now');
+        return r ? Date.parse(r.dataset.starts) <= Date.now() && Date.now() < Date.parse(r.dataset.ends) : 'none' }""")
+    assert now in (True, "none")
+
+
+def test_now_follows_the_player(make_page):  # live-playlist Focus 1: the page names the song you hear
+    pg = make_page()
+    _rhythm_lab(pg)
+    pg.locator("main button:has-text('Listen live')").click()
+    pg.wait_for_function("() => window.__mk.calls.some(c => c[0] === 'setQueue')", timeout=10000)
+    for _ in range(2):
+        pg.locator("#wone-skip-song").click()
+    pg.wait_for_timeout(1200)
+    s = pg.evaluate("""() => ({playing: String(MusicKit.getInstance().nowPlayingItem.id),
+        now: (document.querySelector('main li.trk.now') || {dataset: {}}).dataset.song,
+        box: document.querySelector('#onnow h2').textContent})""")
+    assert s["now"] == s["playing"]

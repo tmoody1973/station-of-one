@@ -77,3 +77,10 @@ def render_explainer(station: StationConfig, counts: dict[str, int], last_meetin
     clocks = [{"clock": c, "arcs": clock_arcs(station, c)} for c in station.clocks]
     return env().get_template("how_programmed.html").render(st=station, counts=counts, last_meeting=last_meeting, n=numbers,
                                                             clocks=clocks, station=prefs.station)
+
+
+PLAYLISTS_PATH = "playlists/index.html"
+
+
+def render_playlists(tabs: list[dict], prefs: Prefs) -> str:
+    return env().get_template("playlists.html").render(tabs=tabs, station=prefs.station)
