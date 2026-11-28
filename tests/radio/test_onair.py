@@ -81,7 +81,7 @@ def test_sampler_shows_on_now(tmp_path, monkeypatch):
     on = db.execute("SELECT q.candidate_id, c.matched_title FROM queue q JOIN candidates c ON c.id = q.candidate_id "
                     "WHERE q.station_id = ? AND q.kind = 'song' AND q.starts_at <= ? ORDER BY q.starts_at DESC LIMIT 1",
                     (RL, NOW.isoformat())).fetchone()
-    assert "On now" in html and on[1] in html and "Coming up" in html
+    assert "On now" in html and on[1] in html and "Playlist" in html
     latest = json.loads((tmp_path / RL / "latest.json").read_text())
     assert latest["block"]["tracks"][0]["title"] == on[1]          # the station strip shows what's on now
     assert f"radio/{RL}/meeting/index.html" in uploads and "radio/how-it-works/index.html" in uploads
@@ -131,7 +131,37 @@ def test_page_lets_the_browser_pick_on_now(tmp_path, monkeypatch):  # review min
     db = rl_db()
     _, uploads = run(db, tmp_path, monkeypatch)
     html = uploads[f"radio/{RL}/index.html"].decode()
-    rows = re.findall(r'<div class="trk" data-starts="([^"]+)" data-ends="([^"]+)" data-title="[^"]+" data-by="[^"]*" data-apple="[^"]*"', html)
-    assert len(rows) >= 20                                       # this song through the next two hours
-    assert rows[0][0] <= NOW.isoformat() < rows[0][1]            # the first row is the song on when the page was built
+    rows = re.findall(r'<li class="trk"[^>]* data-starts="([^"]+)" data-ends="([^"]+)"', html)
+    assert len(rows) >= 20                                       # played songs and the next hours, for the browser to advance
+    assert any(a <= NOW.isoformat() < b for a, b in rows)       # the song on when the page was built is among them
     assert 'id="onnow"' in html and '<span class="tag kicker lbl">On now</span>' in html
+
+
+def test_station_page_rows_newest_first(tmp_path, monkeypatch):  # live-playlist Task 3 (KCRW tracklist)
+    import re
+    db = rl_db()
+    run(db, tmp_path, monkeypatch, now=NOW - timedelta(hours=2))        # two hours of schedule already behind us
+    _, uploads = run(db, tmp_path, monkeypatch)
+    html = uploads[f"radio/{RL}/index.html"].decode()
+    starts = re.findall(r'<li class="trk"[^>]* data-starts="([^"]+)"', html)
+    assert len(starts) >= 30 and starts == sorted(starts, reverse=True)     # newest first
+    assert min(starts) <= (NOW - timedelta(hours=1, minutes=50)).isoformat()  # songs already played are listed
+    assert all(re.search(r'data-song="[^"]+"', row) for row in re.findall(r'<li class="trk"[^>]*>', html))
+    assert "Coming up" not in html and "Playlist" in html
+
+
+def test_playlists_page_has_a_tab_per_station(tmp_path, monkeypatch):
+    from station.radio.onair import playlists_page
+    db = rl_db()
+    run(db, tmp_path, monkeypatch)
+    html = playlists_page(db, NOW, load_prefs())
+    assert 'href="#rhythm-lab"' in html and 'id="rhythm-lab"' in html and 'href="#uk-jazz"' in html
+    assert "<script>" not in html
+
+
+def test_empty_queue_page():  # live-playlist Focus 5
+    from station.radio.onair import station_page
+    db = station_db()
+    db.executescript(STORE_SCHEMA)
+    html = station_page(db, load_station(RL), load_prefs(), NOW)
+    assert "Nothing scheduled yet" in html and '<li class="trk"' not in html

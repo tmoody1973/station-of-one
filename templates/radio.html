@@ -25,7 +25,10 @@ main.wrap{padding-top:34px;padding-bottom:56px;display:grid;grid-template-column
 .pv{background:var(--card);border:2px solid var(--ink);padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap}
 .pv.on{background:var(--yellow)}
 .am{font-size:13px;font-weight:700;white-space:nowrap}
-.trk.past{display:none}.trk.now{background:var(--card);box-shadow:inset 6px 0 0 var(--red);padding-left:10px}
+.tracklist{list-style:none;margin:0;padding:0}
+.trk.future{display:none}.trk.now{background:var(--card);box-shadow:inset 6px 0 0 var(--red);padding-left:10px}
+.trk.now .at{color:var(--red);font-weight:800}.trk.now .at::before{content:"";display:inline-block;width:12px;height:12px;margin-right:6px;border-radius:50%;background:var(--red);animation:onair 1.2s ease-in-out infinite}
+@keyframes onair{50%{opacity:.25}}.trk.next .at{color:var(--blue)}
 .at{font-family:var(--mono);font-size:14px;font-weight:500;color:var(--red);margin-right:6px}
 .onnow{background:var(--ink);color:var(--paper);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--red);padding:18px 20px;margin-bottom:28px;display:flex;flex-direction:column;gap:6px}
 .onnow h2{margin:0;font-size:30px;line-height:1.1}.onnow .by{color:#d9d2bf}.onnow .am{color:var(--yellow)}
@@ -51,9 +54,11 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
 <div class="list">
   {% if on_now %}<div class="onnow" id="onnow"><span class="tag kicker lbl">On now</span><h2>{{ on_now.title }}</h2><div class="by">{{ on_now.artist }}{% if on_now.note %} · {{ on_now.note }}{% endif %}</div>
     <a class="am" href="{{ on_now.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a></div>{% endif %}
-  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">{% if st.programmer == "clock" %}Coming up{% else %}This set{% endif %}</span></h2>
+  {% set clock = st.programmer == "clock" %}
+  <h2 class="marker ci" style="margin-bottom:8px"><span class="num">1</span><span class="lbl">{% if clock %}Playlist{% else %}This set{% endif %}</span></h2>
+  {% if clock %}<ol class="tracklist" data-station-src="/data/radio/{{ st.id }}/queue.json">{% endif %}
   {% for t in block.tracks %}
-  <div class="trk"{% if t.ends_at %} data-starts="{{ t.starts_at }}" data-ends="{{ t.ends_at }}" data-title="{{ t.title }}" data-by="{{ t.artist }}{% if t.note %} · {{ t.note }}{% endif %}" data-apple="{{ t.apple_url | safe_url }}"{% endif %}>
+  <{{ "li" if clock else "div" }} class="trk"{% if clock %} data-song="{{ t.song_id }}" data-starts="{{ t.starts_at }}" data-ends="{{ t.ends_at }}" data-at="{{ t.at }}" data-title="{{ t.title }}" data-by="{{ t.artist }}{% if t.note %} · {{ t.note }}{% endif %}" data-apple="{{ t.apple_url | safe_url }}"{% endif %}>
     <img src="{{ t.artwork_url | safe_url }}" alt="" loading="lazy" referrerpolicy="no-referrer">
     <div><h3>{% if t.at %}<span class="at">{{ t.at }}</span> {% endif %}{{ t.title }}</h3><div class="by">{{ t.artist }} · {{ t.album }}{% if t.release_date %} · {{ t.release_date[:4] }}{% endif %}</div>
       <div class="note">{% if t.source_url %}<a href="{{ t.source_url | safe_url }}" rel="noopener" target="_blank">{{ t.note }}</a>{% else %}{{ t.note }}{% endif %}</div></div>
@@ -61,10 +66,11 @@ aside{display:flex;flex-direction:column;gap:22px;position:sticky;top:20px}
       {% if t.preview_url %}<button class="pv" {{ play(t.preview_url | safe_url, t.artist ~ " · " ~ t.title, "Preview · " ~ st.name, 0, [], "preview") }} aria-label="Play a 30-second preview of {{ t.title }}">▶ Preview</button>{% endif %}
       <a class="am" href="{{ t.apple_url | safe_url }}" rel="noopener" target="_blank">Listen on Apple Music</a>
     </div>
-  </div>
+  </{{ "li" if clock else "div" }}>
   {% else %}
   <p>{% if st.programmer == "clock" %}Nothing scheduled yet: the program director fills the next two hours on each run.{% else %}No set yet: nothing has matched on Apple Music this hour.{% endif %}</p>
   {% endfor %}
+  {% if clock %}</ol>{% endif %}
 </div>
 <aside>
   <div class="log">
